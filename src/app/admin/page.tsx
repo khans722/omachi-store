@@ -1300,12 +1300,12 @@ export default function AdminPage() {
                                       <div className="min-w-0">
                                         <p className="font-black text-gray-800 text-xs truncate">{group.productName}</p>
                                         <p className="text-[10px] text-gray-500">
-                                          Giá lẻ: {formatVND(group.basePrice)}/con
+                                          Đơn giá: {formatVND(group.basePrice)}/cái
                                         </p>
                                       </div>
                                     </div>
                                     <span className="text-[11px] font-black text-rose-600 bg-white px-2 py-0.5 rounded-lg border border-pink-200 shrink-0 shadow-2xs">
-                                      Tổng: {group.totalQty} con
+                                      Tổng: {group.totalQty} gói
                                     </span>
                                   </div>
 

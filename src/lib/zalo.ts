@@ -11,7 +11,9 @@ export async function sendOrderNotification(order: Order, settings: ShopSettings
       const variant = item.variantName || item.selectedVariant?.name || '';
       const qty = item.quantity || 1;
       const total = item.totalPrice || 0;
-      return `   ${idx + 1}. ${name} ${variant ? `(${variant})` : ''} x${qty} = ${formatVND(total)}`;
+      const pkg = item.selectedPackage?.name || '';
+      const details = [variant, pkg ? `Quy cách: ${pkg}` : ''].filter(Boolean).join(' • ');
+      return `   ${idx + 1}. ${name} ${details ? `(${details})` : ''} x${qty} gói = ${formatVND(total)}`;
     })
     .join('\n');
 

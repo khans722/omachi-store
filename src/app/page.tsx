@@ -6,9 +6,11 @@ import CategoryFilter from '@/components/CategoryFilter';
 import ProductCard from '@/components/ProductCard';
 import { INITIAL_PRODUCTS } from '@/data/products';
 import { Product, CustomerFeedback, ShopSettings } from '@/types';
+import { useTheme } from '@/context/ThemeContext';
 import { Sparkles } from 'lucide-react';
 
 export default function HomePage() {
+  const { theme } = useTheme();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [feedbacks, setFeedbacks] = useState<CustomerFeedback[]>([]);
@@ -43,6 +45,51 @@ export default function HomePage() {
     ? products
     : products.filter((p) => p.category === selectedCategory || p.categoryId === selectedCategory);
 
+  const themeConfig = {
+    green: {
+      starIcon: 'text-[#78B159]',
+      policyBox: 'bg-gradient-to-r from-[#F4F9EE]/70 via-[#FAFCF8]/60 to-[#FFFDF2]/60 border-[#DCEDCE]',
+      policyTag: 'text-[#456F2F] bg-[#F4F9EE] border-[#DCEDCE]',
+      policyCard: 'border-[#DCEDCE]',
+      policyIcon: 'bg-[#F4F9EE] border-[#DCEDCE]',
+      feedbackTag: 'text-[#456F2F] bg-[#F4F9EE] border-[#DCEDCE]',
+      feedbackCard: 'border-[#DCEDCE]',
+      feedbackAvatar: 'bg-[#F4F9EE] text-[#456F2F] border-[#DCEDCE]',
+    },
+    pink: {
+      starIcon: 'text-[#F0789E]',
+      policyBox: 'bg-gradient-to-r from-[#FFF2F6]/70 via-[#FFF8FA]/60 to-[#FFF5F8]/60 border-[#FAD1DE]',
+      policyTag: 'text-[#9E2B54] bg-[#FFF2F6] border-[#FAD1DE]',
+      policyCard: 'border-[#FAD1DE]',
+      policyIcon: 'bg-[#FFF2F6] border-[#FAD1DE]',
+      feedbackTag: 'text-[#9E2B54] bg-[#FFF2F6] border-[#FAD1DE]',
+      feedbackCard: 'border-[#FAD1DE]',
+      feedbackAvatar: 'bg-[#FFF2F6] text-[#9E2B54] border-[#FAD1DE]',
+    },
+    purple: {
+      starIcon: 'text-[#9C80D8]',
+      policyBox: 'bg-gradient-to-r from-[#F8F4FF]/70 via-[#FAF8FE]/60 to-[#F5F2FF]/60 border-[#E0D4FA]',
+      policyTag: 'text-[#613CA8] bg-[#F8F4FF] border-[#E0D4FA]',
+      policyCard: 'border-[#E0D4FA]',
+      policyIcon: 'bg-[#F8F4FF] border-[#E0D4FA]',
+      feedbackTag: 'text-[#613CA8] bg-[#F8F4FF] border-[#E0D4FA]',
+      feedbackCard: 'border-[#E0D4FA]',
+      feedbackAvatar: 'bg-[#F8F4FF] text-[#613CA8] border-[#E0D4FA]',
+    },
+    cream: {
+      starIcon: 'text-[#E5A84B]',
+      policyBox: 'bg-gradient-to-r from-[#FFF9EE]/70 via-[#FFFDF7]/60 to-[#FFF7E8]/60 border-[#F7E4BE]',
+      policyTag: 'text-[#8E5A13] bg-[#FFF9EE] border-[#F7E4BE]',
+      policyCard: 'border-[#F7E4BE]',
+      policyIcon: 'bg-[#FFF9EE] border-[#F7E4BE]',
+      feedbackTag: 'text-[#8E5A13] bg-[#FFF9EE] border-[#F7E4BE]',
+      feedbackCard: 'border-[#F7E4BE]',
+      feedbackAvatar: 'bg-[#FFF9EE] text-[#8E5A13] border-[#F7E4BE]',
+    },
+  };
+
+  const curr = themeConfig[theme] || themeConfig.green;
+
   return (
     <div className="space-y-8 pb-16">
       {/* Hero Banner */}
@@ -60,10 +107,10 @@ export default function HomePage() {
           <div>
             <h2 className="text-xl sm:text-2xl font-black text-stone-800 tracking-tight flex items-center gap-2">
               <span>Sản Phẩm Xinh Tại Xưởng</span>
-              <span className="text-[#78B159]">✨</span>
+              <span className={curr.starIcon}>✨</span>
             </h2>
             <p className="text-xs text-stone-500 mt-1">
-              Hiển thị {filteredProducts.length} mẫu charm & vòng cườm pastel đang có sẵn
+              Hiển thị {filteredProducts.length} mẫu charm &amp; vòng cườm pastel đang có sẵn
             </p>
           </div>
         </div>
@@ -76,13 +123,13 @@ export default function HomePage() {
       </section>
 
       {/* Shop Purchase Policies */}
-      <section className="bg-gradient-to-r from-pink-50/70 via-rose-50/40 to-amber-50/60 rounded-3xl p-6 sm:p-8 border border-pink-100/80 shadow-xs space-y-6">
+      <section className={`rounded-3xl p-6 sm:p-8 border shadow-xs space-y-6 ${curr.policyBox}`}>
         <div className="text-center space-y-1.5 max-w-xl mx-auto">
-          <span className="text-xs font-bold text-rose-600 uppercase tracking-widest bg-pink-100/80 px-3.5 py-1 rounded-full border border-pink-200">
+          <span className={`text-xs font-bold uppercase tracking-widest px-3.5 py-1 rounded-full border ${curr.policyTag}`}>
             🎀 An Tâm Mua Sắm
           </span>
           <h2 className="text-xl sm:text-2xl font-black text-stone-800 pt-1">
-            Chính Sách Mua Hàng & Cam Kết Của Tiệm
+            Chính Sách Mua Hàng &amp; Cam Kết Của Tiệm
           </h2>
           <p className="text-xs text-stone-500">
             {settings?.purchasePolicyDetail || 'Mọi đơn hàng vòng charm và phụ kiện handmade đều được chăm chút tỉ mỉ từ xưởng tới tay bạn.'}
@@ -96,16 +143,16 @@ export default function HomePage() {
             { icon: '🎀', title: '100% Ảnh Thật Tại Xưởng', desc: 'Mọi hình ảnh charm, vòng tay và kẹp hoa đều do shop tự quay chụp thật, đan thủ công tỉ mỉ.' },
             { icon: '🚚', title: 'Gói Quà Pastel & Giao Nhanh', desc: 'Đóng gói hộp quà pastel xinh xắn kèm bọc bóng khí chống sốc, giao toàn quốc từ 1 - 3 ngày.' },
           ]).map((policy, idx) => (
-            <div key={idx} className="bg-white/90 backdrop-blur-sm p-4.5 rounded-2xl border border-pink-100 shadow-2xs hover:shadow-sm transition flex flex-col justify-between space-y-2">
+            <div key={idx} className={`bg-white p-5 rounded-2xl border shadow-2xs hover:shadow-sm transition flex flex-col justify-between space-y-2.5 ${curr.policyCard}`}>
               <div className="flex items-center gap-3">
-                <span className="w-10 h-10 rounded-xl bg-pink-50 border border-pink-200 flex items-center justify-center text-xl shrink-0 shadow-2xs">
+                <span className={`w-11 h-11 rounded-2xl border flex items-center justify-center text-2xl shrink-0 shadow-2xs ${curr.policyIcon}`}>
                   {policy.icon || '✨'}
                 </span>
-                <h3 className="text-xs font-black text-stone-800 leading-snug">
+                <h3 className="text-sm font-black text-stone-800 leading-snug">
                   {policy.title}
                 </h3>
               </div>
-              <p className="text-[11px] text-stone-500 leading-relaxed">
+              <p className="text-xs text-stone-600 leading-relaxed font-normal pt-1">
                 {policy.desc}
               </p>
             </div>
@@ -117,7 +164,7 @@ export default function HomePage() {
       {(settings?.showFeedbacks !== false) && feedbacks.length > 0 && (
         <section className="space-y-6 pt-6">
           <div className="text-center space-y-1">
-            <span className="text-xs font-bold text-[#5E9B3D] uppercase tracking-widest bg-[#F4F9EE] px-3 py-1 rounded-full border border-[#DCEDCE]">
+            <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${curr.feedbackTag}`}>
               #OmachiFeedback 💕
             </span>
             <h2 className="text-xl sm:text-2xl font-black text-stone-800 pt-2">Khách Yêu Nói Gì Về Omachi?</h2>
@@ -125,7 +172,7 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {feedbacks.map((fb) => (
-              <div key={fb.id} className="bg-white p-5 rounded-3xl border border-[#DCEDCE] shadow-xs space-y-3 flex flex-col justify-between hover:shadow-md transition">
+              <div key={fb.id} className={`bg-white p-5 rounded-3xl border shadow-xs space-y-3 flex flex-col justify-between hover:shadow-md transition ${curr.feedbackCard}`}>
                 <div className="space-y-2">
                   <div className="flex items-center gap-0.5 text-amber-400 text-xs">
                     {Array.from({ length: fb.rating || 5 }).map((_, i) => (
@@ -137,8 +184,8 @@ export default function HomePage() {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2.5 pt-2.5 border-t border-[#F4F9EE]">
-                  <div className="w-8 h-8 rounded-full bg-[#F4F9EE] text-[#456F2F] font-bold text-xs flex items-center justify-center border border-[#DCEDCE]">
+                <div className="flex items-center gap-2.5 pt-2.5 border-t border-stone-100">
+                  <div className={`w-8 h-8 rounded-full font-bold text-xs flex items-center justify-center border ${curr.feedbackAvatar}`}>
                     {fb.avatarText || fb.customerName.slice(0, 2).toUpperCase()}
                   </div>
                   <div>

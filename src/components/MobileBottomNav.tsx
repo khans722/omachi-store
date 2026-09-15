@@ -5,10 +5,45 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Sparkles, ShoppingBag, MessageCircle, Package } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
   const { totalItems, setIsCartOpen } = useCart();
+  const { theme } = useTheme();
+
+  const themeConfig = {
+    green: {
+      activeText: 'text-[#456F2F] font-extrabold',
+      cartBg: 'bg-gradient-to-tr from-[#6EA64E] via-[#78B159] to-[#84C265] shadow-md shadow-[#DCEDCE]',
+      cartBadge: 'bg-[#FFF59D] text-[#31521F]',
+      cartText: 'text-[#456F2F]',
+      hoverText: 'hover:text-[#456F2F]',
+    },
+    pink: {
+      activeText: 'text-[#9E2B54] font-extrabold',
+      cartBg: 'bg-gradient-to-tr from-[#E0688E] via-[#F0789E] to-[#F472B6] shadow-md shadow-[#FAD1DE]',
+      cartBadge: 'bg-[#FFF59D] text-[#7A1E3C]',
+      cartText: 'text-[#9E2B54]',
+      hoverText: 'hover:text-[#9E2B54]',
+    },
+    purple: {
+      activeText: 'text-[#613CA8] font-extrabold',
+      cartBg: 'bg-gradient-to-tr from-[#8C6EC8] via-[#9C80D8] to-[#A855F7] shadow-md shadow-[#E0D4FA]',
+      cartBadge: 'bg-[#FFF59D] text-[#4F2D8E]',
+      cartText: 'text-[#613CA8]',
+      hoverText: 'hover:text-[#613CA8]',
+    },
+    cream: {
+      activeText: 'text-[#8E5A13] font-extrabold',
+      cartBg: 'bg-gradient-to-tr from-[#D6973A] via-[#E5A84B] to-[#F59E0B] shadow-md shadow-[#F7E4BE]',
+      cartBadge: 'bg-[#FFF59D] text-[#70440C]',
+      cartText: 'text-[#8E5A13]',
+      hoverText: 'hover:text-[#8E5A13]',
+    },
+  };
+
+  const curr = themeConfig[theme] || themeConfig.green;
 
   // Ẩn thanh điều hướng chung khi ở trang Chi tiết sản phẩm (đã có thanh mua hàng Shopee riêng),
   // trang Đặt hàng (checkout), trang Admin và trang Đơn hàng chi tiết
@@ -29,7 +64,7 @@ export default function MobileBottomNav() {
         <Link
           href="/"
           className={`flex flex-col items-center gap-1 p-1 transition ${
-            pathname === '/' ? 'text-rose-600 font-extrabold' : 'text-gray-400 font-medium'
+            pathname === '/' ? curr.activeText : 'text-gray-400 font-medium'
           }`}
         >
           <Home className="w-5 h-5" />
@@ -39,7 +74,7 @@ export default function MobileBottomNav() {
         {/* 2. Categories / Charm */}
         <Link
           href="/#categories"
-          className="flex flex-col items-center gap-1 p-1 text-gray-400 hover:text-rose-600 transition font-medium"
+          className="flex flex-col items-center gap-1 p-1 `text-gray-400 ${curr.hoverText} transition font-medium`"
         >
           <Sparkles className="w-5 h-5" />
           <span className="text-[10px]">Bộ sưu tập</span>
@@ -49,19 +84,19 @@ export default function MobileBottomNav() {
         <button
           type="button"
           onClick={() => setIsCartOpen(true)}
-          className="relative flex flex-col items-center gap-1 p-1 text-rose-600 font-extrabold group"
+          className={`relative flex flex-col items-center gap-1 p-1 ${curr.cartText} font-extrabold group`}
         >
           <div className="relative">
-            <div className="w-9 h-9 -mt-3 rounded-full bg-gradient-to-tr from-red-500 via-rose-500 to-pink-500 text-white flex items-center justify-center shadow-md shadow-rose-200">
+            <div className="w-9 h-9 -mt-3 rounded-full ${curr.cartBg} text-white flex items-center justify-center">
               <ShoppingBag className="w-5 h-5" />
             </div>
             {totalItems > 0 && (
-              <span className="absolute -top-3.5 -right-1.5 bg-yellow-300 text-red-950 font-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
+              <span className="absolute -top-3.5 -right-1.5 ${curr.cartBadge} font-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
                 {totalItems > 99 ? '99+' : totalItems}
               </span>
             )}
           </div>
-          <span className="text-[10px] font-black text-rose-600">Giỏ hàng</span>
+          <span className={`text-[10px] font-black ${curr.cartText}`}>Giỏ hàng</span>
         </button>
 
         {/* 4. Chat Zalo with Shop */}
@@ -79,7 +114,7 @@ export default function MobileBottomNav() {
         <Link
           href="/tra-cuu-don-hang"
           className={`flex flex-col items-center gap-1 p-1 transition ${
-            pathname === '/tra-cuu-don-hang' ? 'text-rose-600 font-extrabold' : 'text-gray-400 font-medium'
+            pathname === '/tra-cuu-don-hang' ? curr.activeText : 'text-gray-400 font-medium'
           }`}
         >
           <Package className="w-5 h-5" />

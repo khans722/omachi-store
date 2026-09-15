@@ -175,9 +175,7 @@ export default function Navbar() {
               <ShoppingBag className="w-4 h-4" />
               <span className="hidden sm:inline">Giỏ hàng</span>
               {totalItems > 0 && (
-                <span className={`absolute -top-1 -right-1 sm:relative sm:top-0 sm:right-0 ${curr.cartBadge} font-black text-[10px] sm:text-xs w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center shadow-xs`}>
-                  {totalItems > 99 ? '99+' : totalItems}
-                </span>
+                <span className={`min-w-[20px] h-5 px-1.5 ${curr.cartBadge} font-black text-[10px] rounded-full flex items-center justify-center shadow-xs shrink-0`}>{totalItems > 99 ? "99+" : totalItems}</span>
               )}
             </button>
           </div>

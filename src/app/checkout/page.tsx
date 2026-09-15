@@ -349,7 +349,7 @@ export default function CheckoutPage() {
             </div>
             <div className="flex justify-between text-gray-500 pt-1 border-t border-gray-100">
               <span>Số lượng sản phẩm:</span>
-              <strong className="text-gray-800">{createdOrder.items.reduce((s, i) => s + i.quantity, 0)} món / charm</strong>
+              <strong className="text-gray-800">{createdOrder.items.reduce((s, i) => s + i.quantity, 0)} gói</strong>
             </div>
             <div className={`pt-2 border-t ${curr.cardBorder} flex justify-between text-gray-600`}>
               <span>Địa chỉ nhận hàng:</span>
@@ -450,7 +450,7 @@ export default function CheckoutPage() {
           <span className="text-2xl">✨</span>
         </h1>
         <p className="text-xs text-gray-500">
-          Vui lòng chọn Tỉnh/Thành nhận hàng để hệ thống tính phí vận chuyển <strong>SPX Express</strong> chính xác nhất.
+          Xác nhận thông tin nhận hàng để xưởng Omachi chuẩn bị và đóng gói đơn hàng handmade cho bạn ✨
         </p>
       </div>
 
@@ -741,7 +741,7 @@ export default function CheckoutPage() {
                       <div className="min-w-0 flex-1">
                         <p className="font-extrabold text-xs text-gray-800 line-clamp-2 leading-snug">{group.product.name}</p>
                         <p className="text-[10px] text-gray-400 mt-0.5">
-                          {group.totalQty} món • Giá lẻ: {formatVND(group.product.basePrice)}/con
+                          {group.items.length} phân loại • Tổng: {group.totalQty} gói
                         </p>
                       </div>
                     </div>
