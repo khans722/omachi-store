@@ -72,17 +72,17 @@ export default function HeroBanner({ settings }: HeroBannerProps) {
   const curr = themeConfig[theme] || themeConfig.green;
 
   return (
-    <div className={`relative overflow-hidden rounded-3xl ${curr.bg} border p-6 sm:p-10 my-4 transition-all duration-300`}>
-      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+    <div className={`relative overflow-hidden rounded-3xl ${curr.bg} border p-4 sm:p-10 my-2 sm:my-4 transition-all duration-300`}>
+      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 items-center">
         
         {/* Left column: Text */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full ${curr.tagBg} border text-xs font-bold shadow-2xs`}>
-            <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+        <div className="lg:col-span-7 space-y-3 sm:space-y-4">
+          <div className={`inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full ${curr.tagBg} border text-[11px] sm:text-xs font-bold shadow-2xs`}>
+            <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-500 animate-pulse" />
             <span>{slogan}</span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-black text-stone-800 leading-tight tracking-tight">
+          <h1 className="text-2xl sm:text-5xl font-black text-stone-800 leading-tight tracking-tight">
             {title.includes('&') ? (
               <>
                 {title.split('&')[0].trim()}
@@ -96,7 +96,7 @@ export default function HeroBanner({ settings }: HeroBannerProps) {
             )}
           </h1>
 
-          <p className="text-sm sm:text-base text-stone-600 max-w-lg leading-relaxed">
+          <p className="text-xs sm:text-base text-stone-600 max-w-lg leading-relaxed">
             {subtitle}
           </p>
 

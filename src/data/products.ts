@@ -20,18 +20,17 @@ export let productsStore: Product[] = [
     rating: 4.9,
     reviewCount: 236,
     variants: [
-      { id: 'v1', name: 'Mix Hồng Pastel 🌸', colorHex: '#FFB6C1' },
-      { id: 'v2', name: 'Mix Tím Lavender 💜', colorHex: '#D8B4FE' },
-      { id: 'v3', name: 'Mix Xanh Bơ Mint 🌿', colorHex: '#A7F3D0' },
-      { id: 'v4', name: 'Mix Vàng Kem 🧈', colorHex: '#FDE68A' },
-      { id: 'v5', name: 'Mix Cầu Vồng Pastel 🌈', colorHex: '#FDA4AF' },
+      { id: 'v1', name: '#11 Hồng Pastel 🌸', colorHex: '#FFB6C1', imageUrl: 'https://images.unsplash.com/photo-1596944924616-7b38e7cfac36?w=200&auto=format&fit=crop&q=80' },
+      { id: 'v2', name: '#12 Tím Lavender 💜', colorHex: '#D8B4FE', imageUrl: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=200&auto=format&fit=crop&q=80' },
+      { id: 'v3', name: '#13 Xanh Bơ Mint 🌿', colorHex: '#A7F3D0', imageUrl: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?w=200&auto=format&fit=crop&q=80' },
+      { id: 'v4', name: '#14 Trộn màu ngẫu nhiên 🌈', colorHex: '#FDA4AF', imageUrl: 'https://images.unsplash.com/photo-1596944924616-7b38e7cfac36?w=200&auto=format&fit=crop&q=80' },
+      { id: 'v5', name: '#15 Vàng Kem 🧈', colorHex: '#FDE68A', imageUrl: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=200&auto=format&fit=crop&q=80' },
     ],
-    comboTiers: [
-      { minQuantity: 50, unitPrice: 1500, label: 'Combo 50 pcs', badge: 'Tiết kiệm 25%', discountPercent: 25 },
-      { minQuantity: 100, unitPrice: 1200, label: 'Combo 100 pcs', badge: 'Hot Bán Chạy 🔥 (Giảm 40%)', discountPercent: 40 },
-      { minQuantity: 200, unitPrice: 1000, label: 'Combo 200 pcs (Sỉ VIP)', badge: 'Sỉ VIP 💎 (Giảm 50%)', discountPercent: 50 },
-      { minQuantity: 500, unitPrice: 800, label: 'Combo 500 pcs (Xưởng Charm)', badge: 'Cực Rẻ 👑 (Giảm 60%)', discountPercent: 60 },
-    ]
+    packageOptions: [
+      { id: 'pkg-50', name: '50 chiếc', price: 15000 },
+      { id: 'pkg-100', name: '100 chiếc', price: 28000 },
+      { id: 'pkg-200', name: '200 chiếc', price: 50000 },
+    ],
   },
   {
     id: 'prod-2',
@@ -57,11 +56,10 @@ export let productsStore: Product[] = [
       { id: 'k3', name: 'Hoa Tím Lavender 💜', colorHex: '#C084FC' },
       { id: 'k4', name: 'Hoa Vàng Bơ 🧈', colorHex: '#FDE047' },
     ],
-    comboTiers: [
-      { minQuantity: 5, unitPrice: 15000, label: 'Set 5 kẹp', badge: 'Giảm 17%', discountPercent: 17 },
-      { minQuantity: 10, unitPrice: 12000, label: 'Set 10 kẹp (Tặng hộp)', badge: 'Siêu Hời 🎁 (Giảm 33%)', discountPercent: 33 },
-      { minQuantity: 50, unitPrice: 9000, label: 'Sỉ 50 kẹp', badge: 'Giá Sỉ 👑 (Giảm 50%)', discountPercent: 50 },
-    ]
+    packageOptions: [
+      { id: 'p-1', name: '1 chiếc', price: 18000 },
+      { id: 'p-pair', name: '1 đôi (2 chiếc)', price: 32000 },
+    ],
   },
   {
     id: 'prod-3',
@@ -88,11 +86,10 @@ export let productsStore: Product[] = [
       { id: 'v-purple', name: 'Tím Khói Fairy', colorHex: '#A855F7' },
       { id: 'v-mint', name: 'Xanh Bơ Thanh Mát', colorHex: '#34D399' },
     ],
-    comboTiers: [
-      { minQuantity: 2, unitPrice: 40000, label: 'Cặp đôi (2 chiếc)', badge: 'Tiết kiệm 10k' },
-      { minQuantity: 5, unitPrice: 35000, label: 'Set 5 bạn thân', badge: 'Giảm 22%' },
-      { minQuantity: 20, unitPrice: 28000, label: 'Combo sỉ 20 vòng', badge: 'Giá Sỉ 🌟' },
-    ]
+    packageOptions: [
+      { id: 'v-1', name: '1 chiếc', price: 45000 },
+      { id: 'v-pair', name: '1 đôi bạn thân', price: 85000 },
+    ],
   },
   {
     id: 'prod-4',
@@ -113,13 +110,13 @@ export let productsStore: Product[] = [
     rating: 4.8,
     reviewCount: 54,
     variants: [
-      { id: 'p1', name: 'Dây Thẻ Đeo Cổ (Dài 45cm)', colorHex: '#E879F9' },
-      { id: 'p2', name: 'Móc Phone Charm Cầm Tay (15cm)', colorHex: '#FB7185' },
+      { id: 'p1', name: 'Dây Thẻ Đeo Cổ (45cm)', colorHex: '#E879F9' },
+      { id: 'p2', name: 'Móc Charm Cầm Tay (15cm)', colorHex: '#FB7185' },
     ],
-    comboTiers: [
-      { minQuantity: 3, unitPrice: 30000, label: 'Combo 3 dây', badge: 'Giảm 14%' },
-      { minQuantity: 10, unitPrice: 24000, label: 'Combo 10 dây', badge: 'Giảm 31%' },
-    ]
+    packageOptions: [
+      { id: 'c-1', name: '1 sợi', price: 35000 },
+      { id: 'c-combo', name: 'Combo 2 sợi', price: 65000 },
+    ],
   },
   {
     id: 'prod-5',
@@ -144,10 +141,10 @@ export let productsStore: Product[] = [
       { id: 'dh-gold', name: 'Mặt Tròn Vàng Gold + Cườm Ngọc', colorHex: '#F59E0B' },
       { id: 'dh-silver', name: 'Mặt Vuông Bạc + Cườm Xanh Băng', colorHex: '#06B6D4' },
     ],
-    comboTiers: [
-      { minQuantity: 2, unitPrice: 115000, label: 'Combo 2 chiếc', badge: 'Tặng túi nhung' },
-      { minQuantity: 5, unitPrice: 99000, label: 'Combo 5 chiếc', badge: 'Giá Ưu Đãi' },
-    ]
+    packageOptions: [
+      { id: 'dh-1', name: '1 chiếc', price: 129000 },
+      { id: 'dh-box', name: 'Set 1 chiếc + Hộp quà nhung', price: 149000 },
+    ],
   },
   {
     id: 'prod-6',
@@ -171,10 +168,11 @@ export let productsStore: Product[] = [
       { id: 'tm-1', name: 'Túi Mù Charm Hoa & Quả 🍓', colorHex: '#EF4444' },
       { id: 'tm-2', name: 'Túi Mù Kẹp Tóc & Nơ 🎀', colorHex: '#EC4899' },
     ],
-    comboTiers: [
-      { minQuantity: 5, unitPrice: 12000, label: 'Set 5 túi mù', badge: 'Xé cực cuốn' },
-      { minQuantity: 10, unitPrice: 10000, label: 'Set 10 túi', badge: 'Tiết kiệm 33%' },
-    ]
+    packageOptions: [
+      { id: 'tm-single', name: '1 túi lẻ', price: 15000 },
+      { id: 'tm-set5', name: 'Gói 5 túi mù', price: 65000 },
+      { id: 'tm-set10', name: 'Gói 10 túi mù (Tặng charm VIP)', price: 120000 },
+    ],
   }
 ];
 

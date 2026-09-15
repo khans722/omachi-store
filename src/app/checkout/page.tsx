@@ -759,15 +759,11 @@ export default function CheckoutPage() {
                             )}
                             <span className="text-[11px] font-semibold text-gray-800">
                               {item.selectedVariant?.name || 'Mặc định'}
+                              {item.selectedPackage ? ` (${item.selectedPackage.name})` : ''}
                             </span>
                             <span className="text-[11px] font-extrabold text-gray-900 bg-gray-100 px-1.5 py-0.2 rounded shrink-0">
                               x{item.quantity}
                             </span>
-                            {item.appliedTier && (
-                              <span className="bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded text-[9px] shrink-0">
-                                Giảm {item.appliedTier.discountPercent}%
-                              </span>
-                            )}
                           </div>
                           <div className="text-right shrink-0">
                             <span className="font-bold text-xs text-gray-800">

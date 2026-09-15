@@ -10,6 +10,17 @@ export default function MobileBottomNav() {
   const pathname = usePathname();
   const { totalItems, setIsCartOpen } = useCart();
 
+  // Ẩn thanh điều hướng chung khi ở trang Chi tiết sản phẩm (đã có thanh mua hàng Shopee riêng),
+  // trang Đặt hàng (checkout), trang Admin và trang Đơn hàng chi tiết
+  if (
+    pathname.startsWith('/product/') ||
+    pathname.startsWith('/checkout') ||
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/order/')
+  ) {
+    return null;
+  }
+
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-pink-100 px-3 py-2 shadow-lg safe-area-bottom">
       <div className="flex items-center justify-around">

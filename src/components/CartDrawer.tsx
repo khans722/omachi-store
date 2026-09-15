@@ -260,6 +260,7 @@ export default function CartDrawer() {
                               <div className="min-w-0">
                                 <span className={`text-xs font-extrabold ${isChecked ? 'text-rose-700' : 'text-stone-500'}`}>
                                   {item.selectedVariant ? item.selectedVariant.name : 'Mẫu chuẩn'}
+                                  {item.selectedPackage ? ` • ${item.selectedPackage.name}` : ''}
                                 </span>
                                 {item.customNote && (
                                   <p className="text-[10px] text-stone-400 italic truncate">
@@ -310,26 +311,15 @@ export default function CartDrawer() {
                                   <Plus className="w-3 h-3" />
                                 </button>
                               </div>
-
-                              <button
-                                type="button"
-                                onClick={() => updateQuantity(item.id, item.quantity + 10)}
-                                className="h-7 px-2 flex items-center justify-center bg-pink-50 hover:bg-pink-100 text-rose-600 border border-pink-200 rounded-lg text-[10px] font-black tracking-tight transition active:scale-95 shadow-2xs cursor-pointer shrink-0"
-                                title="Cộng nhanh +10 cái"
-                              >
-                                +10
-                              </button>
                             </div>
 
                             <div className="text-right shrink-0">
                               <span className={`text-xs font-black ${curr.priceColor}`}>
                                 {formatVND(item.totalPrice)}
                               </span>
-                              {item.appliedTier && (
-                                <span className="block text-[9px] text-emerald-700 font-bold">
-                                  {item.appliedTier.label}
-                                </span>
-                              )}
+                              <span className="block text-[10px] text-stone-400">
+                                {formatVND(item.unitPrice)}/cái
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -344,17 +334,6 @@ export default function CartDrawer() {
           {/* Footer & Checkout Button */}
           {items.length > 0 && (
             <div className={`p-4 sm:p-5 ${curr.footerBg} border-t space-y-3`}>
-              {/* Savings Announcement */}
-              {selectedTotalSavings > 0 && (
-                <div className="bg-[#F4F9EE] border border-[#DCEDCE] rounded-xl p-2 flex items-center justify-between text-xs text-[#456F2F] font-bold">
-                  <div className="flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Tiết kiệm từ giá sỉ:</span>
-                  </div>
-                  <span className="text-[#3D6329] font-black">-{formatVND(selectedTotalSavings)}</span>
-                </div>
-              )}
-
               {/* Subtotal of Selected Items */}
               <div className="flex items-center justify-between">
                 <div>

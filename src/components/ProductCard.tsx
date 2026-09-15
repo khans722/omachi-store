@@ -16,10 +16,6 @@ export default function ProductCard({ product }: ProductCardProps) {
   const { addItem } = useCart();
   const { theme } = useTheme();
 
-  const lowestComboPrice = product.comboTiers && product.comboTiers.length > 0
-    ? product.comboTiers[product.comboTiers.length - 1].unitPrice
-    : null;
-
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -94,48 +90,37 @@ export default function ProductCard({ product }: ProductCardProps) {
             </span>
           )}
         </div>
-
-        {/* Combo tag */}
-        {product.comboTiers && product.comboTiers.length > 0 && (
-          <div className={`absolute bottom-2.5 left-2.5 right-2.5 ${style.comboTag} backdrop-blur-md px-2.5 py-1.5 rounded-2xl text-[10px] font-black flex items-center justify-between shadow-xs border`}>
-            <span className="flex items-center gap-1">
-              <Zap className="w-3 h-3 text-amber-500 fill-amber-500" />
-              <span>Giá Combo sỉ</span>
-            </span>
-            <span className="font-extrabold">Từ {formatVND(lowestComboPrice || 0)}</span>
-          </div>
-        )}
       </Link>
 
       {/* Product Info */}
-      <div className="p-3.5 sm:p-4 flex flex-col flex-1 justify-between gap-3 bg-white/60 backdrop-blur-xs">
+      <div className="p-2.5 sm:p-4 flex flex-col flex-1 justify-between gap-2.5 bg-white/60 backdrop-blur-xs">
         <div>
           {/* Category & Rating */}
           <div className="flex items-center justify-between text-[11px] mb-1">
-            <span className={`${style.catText} font-bold uppercase tracking-wider text-[10px]`}>{product.categoryName}</span>
-            <div className="flex items-center gap-1 text-amber-400">
+            <span className={`${style.catText} font-bold uppercase tracking-wider text-[9px] sm:text-[10px] truncate max-w-[90px]`}>{product.categoryName}</span>
+            <div className="flex items-center gap-1 text-amber-400 shrink-0">
               <Star className="w-3 h-3 fill-amber-400" />
-              <span className="font-extrabold text-stone-700">{product.rating || 5.0}</span>
-              <span className="text-[10px] text-stone-400">({product.soldCount || 0})</span>
+              <span className="font-extrabold text-stone-700 text-[10px] sm:text-xs">{product.rating || 5.0}</span>
+              <span className="text-[9px] sm:text-[10px] text-stone-400">({product.soldCount || 0})</span>
             </div>
           </div>
 
           {/* Product Name */}
           <Link href={`/product/${product.id}`}>
-            <h3 className={`text-xs sm:text-sm font-bold text-stone-800 line-clamp-2 ${style.nameHover} transition leading-snug`}>
+            <h3 className={`text-xs sm:text-sm font-bold text-stone-800 line-clamp-2 ${style.nameHover} transition leading-snug min-h-[32px] sm:min-h-[38px]`}>
               {product.name}
             </h3>
           </Link>
 
           {/* Stock status indicator */}
-          <div className="mt-1 flex items-center gap-1.5 text-[10px]">
+          <div className="mt-1 flex items-center gap-1 text-[9px] sm:text-[10px]">
             {product.stock !== undefined && product.stock > 0 ? (
-              <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold bg-emerald-50/80 px-1.5 py-0.5 rounded-md border border-emerald-100">
+              <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold bg-emerald-50/80 px-1.5 py-0.2 rounded-md border border-emerald-100">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                <span>Kho sẵn: <strong className="font-extrabold">{product.stock.toLocaleString('vi-VN')}</strong></span>
+                <span>Kho: <strong className="font-extrabold">{product.stock.toLocaleString('vi-VN')}</strong></span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 text-rose-600 font-semibold bg-rose-50 px-1.5 py-0.5 rounded-md border border-rose-100">
+              <span className="inline-flex items-center gap-1 text-rose-600 font-semibold bg-rose-50 px-1.5 py-0.2 rounded-md border border-rose-100">
                 <span>Tạm hết</span>
               </span>
             )}
@@ -146,14 +131,14 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Price & Action */}
-        <div className="pt-2 border-t border-stone-100/80 flex items-center justify-between">
+        <div className="pt-2 border-t border-stone-100/80 flex items-center justify-between gap-1">
           <div>
-            <div className={`text-sm sm:text-base font-black ${style.priceText}`}>
+            <div className={`text-xs sm:text-base font-black ${style.priceText}`}>
               {formatVND(product.basePrice)}
-              <span className="text-[10px] text-stone-400 font-normal ml-0.5">/cái</span>
+              <span className="text-[9px] sm:text-[10px] text-stone-400 font-normal ml-0.5">/cái</span>
             </div>
             {product.originalPrice && product.originalPrice > product.basePrice && (
-              <div className="text-[10px] text-stone-400 line-through">
+              <div className="text-[9px] sm:text-[10px] text-stone-400 line-through">
                 {formatVND(product.originalPrice)}
               </div>
             )}
@@ -161,10 +146,10 @@ export default function ProductCard({ product }: ProductCardProps) {
 
           <button
             onClick={handleQuickAdd}
-            className={`p-2.5 rounded-2xl ${style.btnBg} transition-all duration-200 flex items-center justify-center active:scale-90 shadow-2xs`}
+            className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl ${style.btnBg} transition-all duration-200 flex items-center justify-center active:scale-90 shadow-2xs shrink-0`}
             title="Thêm vào giỏ"
           >
-            <ShoppingBag className="w-4 h-4" />
+            <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
         </div>
       </div>

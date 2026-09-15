@@ -1,12 +1,17 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { CartItem, Product, ProductVariant } from '@/types';
-import { calculateSmartUnitPrice } from '@/lib/utils';
+import { CartItem, Product, ProductVariant, ProductPackageOption } from '@/types';
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (product: Product, quantity?: number, variant?: ProductVariant, customNote?: string) => void;
+  addItem: (
+    product: Product,
+    quantity?: number,
+    variant?: ProductVariant,
+    customNote?: string,
+    packageOption?: ProductPackageOption
+  ) => void;
   updateQuantity: (cartItemId: string, newQuantity: number) => void;
   removeItem: (cartItemId: string) => void;
   clearCart: () => void;
@@ -64,9 +69,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [items, isHydrated]);
 
-  const addItem = (product: Product, quantity = 1, variant?: ProductVariant, customNote?: string) => {
+  const addItem = (
+    product: Product,
+    quantity = 1,
+    variant?: ProductVariant,
+    customNote?: string,
+    packageOption?: ProductPackageOption
+  ) => {
     setItems((prevItems) => {
-      const cartItemId = `${product.id}-${variant?.id || 'default'}`;
+      const cartItemId = `${product.id}-${variant?.id || 'default'}-${packageOption?.id || 'standard'}`;
       const existingIndex = prevItems.findIndex((item) => item.id === cartItemId);
 
       let newQuantity = quantity;
@@ -74,22 +85,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         newQuantity = prevItems[existingIndex].quantity + quantity;
       }
 
-      // Calculate smart unit price for the new quantity
-      const { unitPrice, appliedTier } = calculateSmartUnitPrice(
-        product.basePrice,
-        newQuantity,
-        product.comboTiers
-      );
+      // Clear, straightforward unit price: packageOption price > variant price > product basePrice
+      const unitPrice = packageOption?.price ?? variant?.price ?? product.basePrice;
 
       const updatedItem: CartItem = {
         id: cartItemId,
         product,
         selectedVariant: variant,
+        selectedPackage: packageOption,
         customNote: customNote || (existingIndex > -1 ? prevItems[existingIndex].customNote : undefined),
         quantity: newQuantity,
         unitPrice,
         totalPrice: unitPrice * newQuantity,
-        appliedTier,
         selected: true, // Auto selected when added
       };
 
@@ -114,17 +121,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems((prevItems) =>
       prevItems.map((item) => {
         if (item.id === cartItemId) {
-          const { unitPrice, appliedTier } = calculateSmartUnitPrice(
-            item.product.basePrice,
-            newQuantity,
-            item.product.comboTiers
-          );
           return {
             ...item,
             quantity: newQuantity,
-            unitPrice,
-            totalPrice: unitPrice * newQuantity,
-            appliedTier,
+            totalPrice: item.unitPrice * newQuantity,
           };
         }
         return item;

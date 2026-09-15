@@ -46,7 +46,7 @@ export default function SmartPricingBar({
       </div>
 
       {/* Quick Select Buttons (50 pcs, 100 pcs, 200 pcs...) */}
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         {comboTiers.map((tier) => {
           const isActive = quantity >= tier.minQuantity;
           const savingsPerUnit = basePrice > 0 ? Math.max(0, basePrice - tier.unitPrice) : 0;
@@ -67,7 +67,7 @@ export default function SmartPricingBar({
               key={tier.minQuantity}
               type="button"
               onClick={() => onQuantityChange(tier.minQuantity)}
-              className={`flex-1 min-w-[100px] text-left p-2.5 rounded-xl border transition-all duration-200 ${
+              className={`w-full text-left p-2 sm:p-2.5 rounded-xl border transition-all duration-200 flex flex-col justify-between ${
                 isActive
                   ? 'bg-white border-pink-500 shadow-md ring-2 ring-pink-300'
                   : 'bg-white/60 border-pink-100 hover:border-pink-300 hover:bg-white'

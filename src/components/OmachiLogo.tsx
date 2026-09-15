@@ -46,23 +46,21 @@ export default function OmachiLogo({
         <img
           src="/images/omachi_bear_hd.png"
           alt="Omachi Bear Mascot"
-          style={{ height: `${curr.bearH}px`, width: 'auto' }}
-          className="object-contain drop-shadow-xs transition-transform duration-300 group-hover:scale-105"
+          className="h-11 sm:h-[64px] w-auto object-contain drop-shadow-xs transition-transform duration-300 group-hover:scale-105"
         />
       </div>
 
-      {/* 2. Bên Phải: Chữ OMACHI HD vẽ tay chuẩn 100% gốc, KHÔNG DÍNH BẤT KỲ MẢNH LÁ NÀO */}
+      {/* 2. Bên Phải: Chữ OMACHI HD vẽ tay chuẩn 100% gốc */}
       <div className="flex flex-col justify-center">
         <img
           src="/images/omachi_text_clean_hd.png"
           alt="OMACHI"
-          style={{ height: `${curr.titleH}px`, width: 'auto' }}
-          className="object-contain drop-shadow-xs transition-transform duration-300 group-hover:scale-102"
+          className="h-6 sm:h-[36px] w-auto object-contain drop-shadow-xs transition-transform duration-300 group-hover:scale-102"
         />
 
-        {/* Subtitle Badge */}
+        {/* Subtitle Badge - Ẩn trên mobile để header không bị chật chội */}
         {showSubtitle && (
-          <div className="flex items-center gap-1.5 mt-1.5">
+          <div className="hidden sm:flex items-center gap-1.5 mt-1">
             <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-[#3E6B28] bg-[#F4F9EE] px-2.5 py-0.5 rounded-full border border-[#DCEDCE] shadow-2xs">
               Handmade Studio ✨
             </span>

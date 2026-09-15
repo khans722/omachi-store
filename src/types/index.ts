@@ -20,6 +20,13 @@ export interface ComboTier {
   isPopular?: boolean;
 }
 
+export interface ProductPackageOption {
+  id: string;
+  name: string;
+  price?: number;
+  stock?: number;
+}
+
 export interface ProductVariant {
   id: string;
   sku?: string;
@@ -27,6 +34,7 @@ export interface ProductVariant {
   image?: string;
   imageUrl?: string;
   colorHex?: string;
+  price?: number;
   stock?: number;
   soldCount?: number;
   isActive?: boolean;
@@ -57,6 +65,7 @@ export interface Product {
   reviewCount?: number;
   ratingCount?: number;
   variants?: ProductVariant[];
+  packageOptions?: ProductPackageOption[];
   comboTiers?: ComboTier[];
   isActive?: boolean;
   createdAt?: string;
@@ -67,6 +76,7 @@ export interface CartItem {
   id: string;
   product: Product;
   selectedVariant?: ProductVariant;
+  selectedPackage?: ProductPackageOption;
   customNote?: string;
   quantity: number;
   unitPrice: number;
