@@ -56,8 +56,8 @@ export let productsStore: Product[] = [
       { id: 'k4', name: 'Hoa Vàng Bơ 🧈', colorHex: '#FDE047' },
     ],
     packageOptions: [
-      { id: 'pkg-10', name: '10 cái', price: 150000 },
-      { id: 'pkg-100', name: '100 cái', price: 1200000 },
+      { id: 'pkg-1', name: '1 cái', price: 20000 },
+      { id: 'pkg-5', name: 'Set 5 cái', price: 85000 },
     ],
   },
   {
@@ -69,14 +69,14 @@ export let productsStore: Product[] = [
     basePrice: 45000,
     originalPrice: 65000,
     images: [
-      'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1611591475879-11516f86641e?w=800&auto=format&fit=crop&q=80',
     ],
-    description: 'Vòng tay đan thủ công từ hạt cườm Miyuki kết hợp charm hoa bướm dạ quang phát sáng nhẹ ban đêm. Dây rút tiện lợi vừa mọi cỡ tay.',
-    isHot: true,
+    description: 'Vòng tay handmade đan hạt cườm hoa pastel phối charm bướm dạ quang phát sáng nhẹ trong bóng tối. Dây chun co giãn cao cấp siêu bền.',
+    isHot: false,
     isNewArrival: true,
     isCustomizable: true,
     stock: 120,
-    soldCount: 450,
+    soldCount: 430,
     rating: 4.9,
     reviewCount: 89,
     variants: [
@@ -86,8 +86,8 @@ export let productsStore: Product[] = [
       { id: 'v-mint', name: 'Xanh Bơ Thanh Mát', colorHex: '#34D399' },
     ],
     packageOptions: [
-      { id: 'pkg-10', name: '10 cái', price: 380000 },
-      { id: 'pkg-100', name: '100 cái', price: 3200000 },
+      { id: 'pkg-1', name: '1 cái', price: 45000 },
+      { id: 'pkg-2', name: 'Combo 2 cái', price: 80000 },
     ],
   },
   {
@@ -113,8 +113,8 @@ export let productsStore: Product[] = [
       { id: 'p2', name: 'Móc Charm Cầm Tay (15cm)', colorHex: '#FB7185' },
     ],
     packageOptions: [
-      { id: 'pkg-10', name: '10 cái', price: 280000 },
-      { id: 'pkg-100', name: '100 cái', price: 2200000 },
+      { id: 'pkg-1', name: '1 cái', price: 35000 },
+      { id: 'pkg-3', name: 'Combo 3 cái', price: 90000 },
     ],
   },
   {
@@ -141,8 +141,7 @@ export let productsStore: Product[] = [
       { id: 'dh-silver', name: 'Mặt Vuông Bạc + Cườm Xanh Băng', colorHex: '#06B6D4' },
     ],
     packageOptions: [
-      { id: 'pkg-10', name: '10 cái', price: 990000 },
-      { id: 'pkg-100', name: '100 cái', price: 8500000 },
+      { id: 'pkg-1', name: '1 cái', price: 129000 },
     ],
   },
   {
@@ -168,8 +167,9 @@ export let productsStore: Product[] = [
       { id: 'tm-2', name: 'Túi Mù Kẹp Tóc & Nơ 🎀', colorHex: '#EC4899' },
     ],
     packageOptions: [
-      { id: 'pkg-10', name: '10 cái', price: 120000 },
-      { id: 'pkg-100', name: '100 cái', price: 1000000 },
+      { id: 'pkg-1', name: '1 túi', price: 15000 },
+      { id: 'pkg-5', name: 'Set 5 túi', price: 65000 },
+      { id: 'pkg-10', name: 'Set 10 túi', price: 120000 },
     ],
   }
 ];

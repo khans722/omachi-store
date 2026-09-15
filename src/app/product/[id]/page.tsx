@@ -20,15 +20,20 @@ export default function ProductDetailPage() {
   const initialFound = INITIAL_PRODUCTS.find((p) => p.id === productId || p.slug === productId);
   const [product, setProduct] = useState<Product | undefined>(initialFound);
 
-  // 2 Option cố định theo yêu cầu: chỉ bán gói 10 cái và gói 100 cái, không bán lẻ
+  // Linh động cấu hình packageOptions: 1 cái, 10 cái, 100 cái hoặc combo
   const getPackageOptions = (prod: Product): ProductPackageOption[] => {
-    if (prod.packageOptions && prod.packageOptions.length === 2) {
+    if (prod.packageOptions && prod.packageOptions.length > 0) {
       return prod.packageOptions;
     }
     return [
-      { id: 'pkg-10', name: '10 cái', price: prod.basePrice * 10 },
-      { id: 'pkg-100', name: '100 cái', price: Math.round(prod.basePrice * 100 * 0.8) },
+      { id: 'pkg-1', name: '1 cái', price: prod.basePrice },
     ];
+  };
+
+  const getPackQuantity = (pkg?: ProductPackageOption): number => {
+    if (!pkg) return 1;
+    const match = pkg.name.match(/\d+/);
+    return match ? parseInt(match[0], 10) : 1;
   };
 
   const initialPackages = initialFound ? getPackageOptions(initialFound) : [];
@@ -206,7 +211,7 @@ export default function ProductDetailPage() {
   const totalPrice = unitPrice * quantity;
 
   // Tính tổng số cái thực tế
-  const itemsPerPack = selectedPackage?.id === 'pkg-100' || selectedPackage?.name.includes('100') ? 100 : 10;
+  const itemsPerPack = getPackQuantity(selectedPackage);
   const totalItemCount = quantity * itemsPerPack;
 
   const totalStockCount =
@@ -534,15 +539,17 @@ export default function ProductDetailPage() {
                     })}
                   </div>
                   <p className="text-[11px] text-gray-500 italic pt-1">
-                    * Tiệm đóng gói chuẩn theo <strong className="text-gray-800">10 cái</strong> hoặc <strong className="text-gray-800">100 cái</strong>, không bán lẻ.
+                    * Vui lòng chọn quy cách đóng gói phù hợp với nhu cầu của bạn.
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Desktop Quantity Stepper (Số lượng gói) */}
+            {/* Desktop Quantity Stepper */}
             <div className="flex items-center gap-4 flex-wrap">
-              <span className="text-xs text-gray-500 font-bold min-w-[70px]">Số Lượng Gói:</span>
+              <span className="text-xs text-gray-500 font-bold min-w-[70px]">
+                {itemsPerPack > 1 ? 'Số Lượng Gói:' : 'Số Lượng:'}
+              </span>
               <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white shadow-2xs">
                 <button
                   type="button"
@@ -806,11 +813,13 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* Group 2: Quy cách - CHỈ 2 OPTION: 10 VÀ 100 */}
+              {/* Group 2: Quy cách */}
               <div className="space-y-2 pt-2 border-t border-gray-100">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold text-gray-700">Quy cách đóng gói:</h4>
-                  <span className="text-[10px] text-gray-400">Không bán lẻ từng cái</span>
+                  <span className="text-[10px] text-gray-400">
+                    {itemsPerPack > 1 ? `Gói ${itemsPerPack} cái` : 'Bán lẻ'}
+                  </span>
                 </div>
                 <div className="flex flex-wrap gap-2.5">
                   {packageOptions.map((pkg) => {
@@ -851,11 +860,13 @@ export default function ProductDetailPage() {
                 </div>
               </div>
 
-              {/* Group 3: Số lượng gói */}
+              {/* Group 3: Số lượng */}
               <div className="space-y-2 pt-2 border-t border-gray-100">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold text-gray-700 block">Số lượng gói:</span>
+                    <span className="text-xs font-bold text-gray-700 block">
+                      {itemsPerPack > 1 ? 'Số lượng gói:' : 'Số lượng:'}
+                    </span>
                     <span className="text-[10px] text-gray-400">
                       Tổng = <strong className={curr.highlightText}>{totalItemCount.toLocaleString('vi-VN')}</strong> cái
                     </span>

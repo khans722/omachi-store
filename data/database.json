@@ -177,7 +177,19 @@
       ],
       "isActive": true,
       "createdAt": "2026-01-10T08:00:00.000Z",
-      "updatedAt": "2026-09-15T00:42:22.811Z"
+      "updatedAt": "2026-09-15T00:42:22.811Z",
+      "packageOptions": [
+        {
+          "id": "pkg-10",
+          "name": "Gói 10 cái",
+          "price": 20000
+        },
+        {
+          "id": "pkg-100",
+          "name": "Gói 100 cái (Tiết kiệm)",
+          "price": 120000
+        }
+      ]
     },
     {
       "id": "prod-2",
@@ -269,7 +281,19 @@
       ],
       "isActive": true,
       "createdAt": "2026-02-15T08:00:00.000Z",
-      "updatedAt": "2026-09-15T01:32:58.871Z"
+      "updatedAt": "2026-09-15T01:32:58.871Z",
+      "packageOptions": [
+        {
+          "id": "pkg-1",
+          "name": "1 cái",
+          "price": 20000
+        },
+        {
+          "id": "pkg-5",
+          "name": "Set 5 cái (Tiết kiệm 15%)",
+          "price": 85000
+        }
+      ]
     },
     {
       "id": "prod-3",
@@ -360,7 +384,19 @@
       ],
       "isActive": true,
       "createdAt": "2026-03-01T08:00:00.000Z",
-      "updatedAt": "2026-09-15T01:36:27.614Z"
+      "updatedAt": "2026-09-15T01:36:27.614Z",
+      "packageOptions": [
+        {
+          "id": "pkg-1",
+          "name": "1 cái",
+          "price": 45000
+        },
+        {
+          "id": "pkg-2",
+          "name": "Combo Đôi 2 cái (Tặng hộp)",
+          "price": 80000
+        }
+      ]
     },
     {
       "id": "prod-4",
@@ -425,7 +461,19 @@
       ],
       "isActive": true,
       "createdAt": "2026-03-20T08:00:00.000Z",
-      "updatedAt": "2026-09-15T01:38:48.372Z"
+      "updatedAt": "2026-09-15T01:38:48.372Z",
+      "packageOptions": [
+        {
+          "id": "pkg-1",
+          "name": "1 cái",
+          "price": 35000
+        },
+        {
+          "id": "pkg-3",
+          "name": "Combo 3 cái (Tặng bạn thân)",
+          "price": 90000
+        }
+      ]
     },
     {
       "id": "prod-5",
@@ -490,7 +538,14 @@
       ],
       "isActive": true,
       "createdAt": "2026-04-01T08:00:00.000Z",
-      "updatedAt": "2026-09-15T01:37:27.931Z"
+      "updatedAt": "2026-09-15T01:37:27.931Z",
+      "packageOptions": [
+        {
+          "id": "pkg-1",
+          "name": "1 cái",
+          "price": 129000
+        }
+      ]
     },
     {
       "id": "prod-6",
@@ -555,7 +610,24 @@
       ],
       "isActive": true,
       "createdAt": "2026-04-10T08:00:00.000Z",
-      "updatedAt": "2026-09-15T01:39:39.167Z"
+      "updatedAt": "2026-09-15T01:39:39.167Z",
+      "packageOptions": [
+        {
+          "id": "pkg-1",
+          "name": "1 túi",
+          "price": 15000
+        },
+        {
+          "id": "pkg-5",
+          "name": "Set 5 túi (Tặng keo nano)",
+          "price": 65000
+        },
+        {
+          "id": "pkg-10",
+          "name": "Set 10 túi (Bao trúng charm hiếm)",
+          "price": 120000
+        }
+      ]
     }
   ],
   "customers": [

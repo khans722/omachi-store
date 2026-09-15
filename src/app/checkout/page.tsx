@@ -75,9 +75,10 @@ export default function CheckoutPage() {
     note: '',
   });
 
-  // Quản lý địa chỉ 3 cấp chuẩn hành chính để tính cước SPX Express
+  // Quản lý địa chỉ hành chính linh động thích ứng đợt sáp nhập tỉnh/huyện/xã
   const [selectedProvince, setSelectedProvince] = useState('Bắc Giang');
   const [selectedDistrict, setSelectedDistrict] = useState('Huyện Yên Dũng');
+  const [selectedWard, setSelectedWard] = useState('');
   const [specificAddress, setSpecificAddress] = useState('');
 
   // Quản lý địa chỉ đã lưu & đặt mặc định cho tài khoản
@@ -228,8 +229,9 @@ export default function CheckoutPage() {
 
     const fullAddress = [
       specificAddress.trim(),
-      selectedDistrict,
-      selectedProvince,
+      selectedWard.trim(),
+      selectedDistrict.trim(),
+      selectedProvince.trim(),
     ].filter(Boolean).join(', ');
 
     setIsSubmitting(true);
@@ -242,6 +244,7 @@ export default function CheckoutPage() {
           phone: customer.phone.trim(),
           address: fullAddress,
           specificAddress: specificAddress.trim(),
+          ward: selectedWard.trim(),
           city: selectedProvince,
           district: selectedDistrict,
           note: customer.note || '',
@@ -604,7 +607,7 @@ export default function CheckoutPage() {
                       <span className="text-[10px] text-gray-400 font-medium">Tự động tính cước</span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                       {/* 1. Tỉnh / Thành phố */}
                       <div>
                         <span className="text-[11px] font-bold text-gray-600 block mb-1">
@@ -632,36 +635,52 @@ export default function CheckoutPage() {
                         </select>
                       </div>
 
-                      {/* 2. Quận / Huyện */}
+                      {/* 2. Quận / Huyện / Thị xã (Hỗ trợ vừa chọn vừa gõ tự do tên mới sáp nhập) */}
                       <div>
                         <span className="text-[11px] font-bold text-gray-600 block mb-1">
                           Quận / Huyện / Thị xã <span className="text-rose-500">*</span>
                         </span>
-                        {currentDistricts.length > 0 ? (
-                          <select
-                            value={selectedDistrict}
-                            onChange={(e) => setSelectedDistrict(e.target.value)}
-                            className={`w-full px-3 py-2.5 text-xs ${curr.inputBg} border rounded-xl font-bold text-gray-800 focus:outline-none focus:ring-2 focus:bg-white transition cursor-pointer`}
-                          >
-                            {currentDistricts.map((d) => (
-                              <option key={d} value={d}>
-                                {d}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
+                        <div className="relative">
                           <input
                             type="text"
-                            placeholder="Nhập Quận / Huyện"
+                            list="district-datalist"
+                            placeholder="Chọn hoặc nhập tên huyện/thị xã..."
                             value={selectedDistrict}
                             onChange={(e) => setSelectedDistrict(e.target.value)}
-                            className={`w-full px-3 py-2.5 text-xs ${curr.inputBg} border rounded-xl font-medium text-gray-800 focus:outline-none focus:ring-2 focus:bg-white transition`}
+                            className={`w-full px-3 py-2.5 text-xs ${curr.inputBg} border rounded-xl font-bold text-gray-800 focus:outline-none focus:ring-2 focus:bg-white transition`}
                           />
-                        )}
+                          <datalist id="district-datalist">
+                            {currentDistricts.map((d) => (
+                              <option key={d} value={d} />
+                            ))}
+                          </datalist>
+                        </div>
+                      </div>
+
+                      {/* 3. Phường / Xã / Thị trấn (Linh động nhập theo địa giới mới/cũ) */}
+                      <div>
+                        <span className="text-[11px] font-bold text-gray-600 block mb-1">
+                          Phường / Xã / Thị trấn
+                        </span>
+                        <input
+                          type="text"
+                          placeholder="Nhập Phường/Xã (hoặc tên cũ)..."
+                          value={selectedWard}
+                          onChange={(e) => setSelectedWard(e.target.value)}
+                          className={`w-full px-3 py-2.5 text-xs ${curr.inputBg} border rounded-xl font-bold text-gray-800 focus:outline-none focus:ring-2 focus:bg-white transition`}
+                        />
                       </div>
                     </div>
 
-                    {/* 3. Địa chỉ chi tiết */}
+                    {/* Notice for administrative changes */}
+                    <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/80 text-[11px] text-amber-800 flex items-start gap-1.5">
+                      <span className="shrink-0 mt-0.5">💡</span>
+                      <span>
+                        <strong>Hỗ trợ sáp nhập địa giới:</strong> Nếu địa phương của bạn vừa sáp nhập xã/phường/huyện, bạn có thể tự do gõ tên mới hoặc ghi kèm tên cũ để bưu tá SPX giao hàng nhanh chóng và chuẩn xác nhất!
+                      </span>
+                    </div>
+
+                    {/* 4. Địa chỉ chi tiết */}
                     <div>
                       <span className="text-[11px] font-bold text-gray-600 block mb-1">
                         Số nhà, tên ngõ, đường hoặc thôn/xóm <span className="text-rose-500">*</span>
@@ -669,7 +688,7 @@ export default function CheckoutPage() {
                       <input
                         type="text"
                         required
-                        placeholder="VD: Thôn Giá, Xã Nội Hoàng (hoặc Số 18 Ngõ 65...)"
+                        placeholder="VD: Thôn Giá, Xóm Đình (hoặc Số 18 Ngõ 65...)"
                         value={specificAddress}
                         onChange={(e) => setSpecificAddress(e.target.value)}
                         className={`w-full px-3.5 py-2.5 text-xs ${curr.inputBg} border rounded-xl focus:outline-none focus:ring-2 focus:bg-white text-gray-800 transition`}
@@ -698,7 +717,7 @@ export default function CheckoutPage() {
                   <div className="p-2.5 bg-pink-50/40 rounded-xl border border-pink-100 text-[11px] text-gray-600 flex items-start gap-1.5">
                     <span className="font-bold text-rose-600 shrink-0">📍 Vận đơn:</span>
                     <span className="font-medium text-gray-800">
-                      {[specificAddress.trim(), selectedDistrict, selectedProvince].filter(Boolean).join(', ')}
+                      {[specificAddress.trim(), selectedWard.trim(), selectedDistrict.trim(), selectedProvince.trim()].filter(Boolean).join(', ')}
                     </span>
                   </div>
                 )}
