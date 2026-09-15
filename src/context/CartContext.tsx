@@ -10,6 +10,14 @@ interface CartContextType {
     quantity?: number,
     variant?: ProductVariant,
     customNote?: string,
+    packageOption?: ProductPackageOption,
+    openDrawer?: boolean
+  ) => void;
+  buyNow: (
+    product: Product,
+    quantity?: number,
+    variant?: ProductVariant,
+    customNote?: string,
     packageOption?: ProductPackageOption
   ) => void;
   updateQuantity: (cartItemId: string, newQuantity: number) => void;
@@ -74,7 +82,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     quantity = 1,
     variant?: ProductVariant,
     customNote?: string,
-    packageOption?: ProductPackageOption
+    packageOption?: ProductPackageOption,
+    openDrawer = false
   ) => {
     setItems((prevItems) => {
       const cartItemId = `${product.id}-${variant?.id || 'default'}-${packageOption?.id || 'standard'}`;
@@ -109,7 +118,47 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    setIsCartOpen(true);
+    if (openDrawer) {
+      setIsCartOpen(true);
+    }
+  };
+
+  const buyNow = (
+    product: Product,
+    quantity = 1,
+    variant?: ProductVariant,
+    customNote?: string,
+    packageOption?: ProductPackageOption
+  ) => {
+    const targetId = `${product.id}-${variant?.id || 'default'}-${packageOption?.id || 'standard'}`;
+    const unitPrice = packageOption?.price ?? variant?.price ?? product.basePrice;
+
+    setItems((prevItems) => {
+      // Chuẩn Shopee: Bỏ chọn các món khác trong giỏ, chỉ tick chọn món bấm Mua Ngay để thanh toán
+      const unselectedOthers: CartItem[] = prevItems.map((it) => ({ ...it, selected: false }));
+      const existingIndex = unselectedOthers.findIndex((item) => item.id === targetId);
+
+      const targetItem: CartItem = {
+        id: targetId,
+        product,
+        selectedVariant: variant,
+        selectedPackage: packageOption,
+        customNote,
+        quantity: existingIndex > -1 ? unselectedOthers[existingIndex].quantity + quantity : quantity,
+        unitPrice,
+        totalPrice: unitPrice * (existingIndex > -1 ? unselectedOthers[existingIndex].quantity + quantity : quantity),
+        selected: true,
+      };
+
+      if (existingIndex > -1) {
+        unselectedOthers[existingIndex] = targetItem;
+        return unselectedOthers;
+      } else {
+        return [...unselectedOthers, targetItem];
+      }
+    });
+
+    setIsCartOpen(false);
   };
 
   const updateQuantity = (cartItemId: string, newQuantity: number) => {
@@ -185,6 +234,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       value={{
         items,
         addItem,
+        buyNow,
         updateQuantity,
         removeItem,
         clearCart,

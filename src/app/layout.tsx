@@ -34,19 +34,12 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet" />
       </head>
-      <body className="min-h-screen flex flex-col transition-colors duration-500 pb-16 md:pb-0 relative overflow-x-hidden">
+      <body className="min-h-screen flex flex-col bg-[#FAF9F6] text-stone-800 transition-colors duration-300 pb-16 md:pb-0 relative overflow-x-hidden antialiased">
         <ThemeProvider>
           <CustomerProvider>
             <CartProvider>
-              {/* 🌈 Ambient Multi-Hue Silk Mesh Wave Glow Backgrounds */}
-              <div className="silk-mesh-blob-1" />
-              <div className="silk-mesh-blob-2" />
-              <div className="silk-mesh-blob-3" />
-              <div className="silk-mesh-blob-4" />
-              <div className="silk-acrylic-sheen" />
-
               <div className="relative z-10 flex flex-col min-h-screen">
                 <Navbar />
 

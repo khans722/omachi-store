@@ -13,7 +13,7 @@ import Link from 'next/link';
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { addItem, setIsCartOpen, totalItems } = useCart();
+  const { addItem, buyNow, setIsCartOpen, totalItems } = useCart();
   const { theme } = useTheme();
 
   const productId = params?.id as string;
@@ -242,7 +242,8 @@ export default function ProductDetailPage() {
   const handleAddToCart = () => {
     if (!validateSelection()) return;
 
-    addItem(product, quantity, selectedVariant, customNote, selectedPackage);
+    addItem(product, quantity, selectedVariant, customNote, selectedPackage, false);
+    setIsMobileSheetOpen(false);
     setIsAddedToast(true);
     setTimeout(() => setIsAddedToast(false), 2500);
   };
@@ -250,7 +251,8 @@ export default function ProductDetailPage() {
   const handleBuyNow = () => {
     if (!validateSelection()) return;
 
-    addItem(product, quantity, selectedVariant, customNote, selectedPackage);
+    buyNow(product, quantity, selectedVariant, customNote, selectedPackage);
+    setIsMobileSheetOpen(false);
     router.push('/checkout');
   };
 

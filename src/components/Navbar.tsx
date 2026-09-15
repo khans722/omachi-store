@@ -30,55 +30,55 @@ export default function Navbar() {
 
   const headerAccentMap = {
     green: {
-      bar: 'bg-[#F2F9EF]/95 text-[#355E22] border-b border-[#D8ECCE]/80',
-      searchBg: 'bg-white/80 border-[#D3E7C6] focus:ring-[#78B159]/50 placeholder:text-[#8AA878]',
-      searchIcon: 'text-[#78B159]',
-      orderBtn: 'text-[#3E6B28] bg-white/85 hover:bg-white border-[#D3E7C6]',
-      cartBtn: 'bg-gradient-to-r from-[#72AA55] to-[#3DBE87] hover:from-[#629744] hover:to-[#28B47E] shadow-[#D3E7C6]',
-      cartBadge: 'bg-[#FFF59D] text-[#335322]',
+      bar: 'bg-[#F2F9EF] text-[#2E5A1C] border-b border-[#D8ECCE]/70',
+      searchBg: 'bg-stone-100/80 border-stone-200 focus:border-[#2D6A24] focus:bg-white placeholder:text-stone-400',
+      searchIcon: 'text-stone-400',
+      orderBtn: 'text-stone-700 bg-white hover:bg-stone-50 border-stone-200 hover:text-[#2E5A1C]',
+      cartBtn: 'bg-[#2D6A24] hover:bg-[#24541D] text-white shadow-stone-200',
+      cartBadge: 'bg-white text-[#2D6A24] shadow-xs',
     },
     pink: {
-      bar: 'bg-[#FFF0F6]/95 text-[#91224A] border-b border-[#FCDCE8]/80',
-      searchBg: 'bg-white/80 border-[#FAD1DE] focus:ring-[#F472B6]/50 placeholder:text-[#D18FA6]',
-      searchIcon: 'text-[#F472B6]',
-      orderBtn: 'text-[#9E2B54] bg-white/85 hover:bg-white border-[#FAD1DE]',
-      cartBtn: 'bg-gradient-to-r from-[#EC4899] to-[#F472B6] hover:from-[#DB2777] hover:to-[#E0529A] shadow-[#FAD1DE]',
-      cartBadge: 'bg-[#FFF59D] text-[#7A1E3C]',
+      bar: 'bg-[#FFF0F6] text-[#9E2B54] border-b border-[#FCDCE8]/70',
+      searchBg: 'bg-stone-100/80 border-stone-200 focus:border-[#DB2777] focus:bg-white placeholder:text-stone-400',
+      searchIcon: 'text-stone-400',
+      orderBtn: 'text-stone-700 bg-white hover:bg-stone-50 border-stone-200 hover:text-[#9E2B54]',
+      cartBtn: 'bg-[#DB2777] hover:bg-[#BE185D] text-white shadow-stone-200',
+      cartBadge: 'bg-white text-[#DB2777] shadow-xs',
     },
     purple: {
-      bar: 'bg-[#F8F5FF]/95 text-[#582E9E] border-b border-[#E8DEF8]/80',
-      searchBg: 'bg-white/80 border-[#E0D4FA] focus:ring-[#A855F7]/50 placeholder:text-[#AA98D4]',
-      searchIcon: 'text-[#A855F7]',
-      orderBtn: 'text-[#613CA8] bg-white/85 hover:bg-white border-[#E0D4FA]',
-      cartBtn: 'bg-gradient-to-r from-[#9333EA] to-[#A855F7] hover:from-[#7E22CE] hover:to-[#9333EA] shadow-[#E0D4FA]',
-      cartBadge: 'bg-[#FFF59D] text-[#4F2D8E]',
+      bar: 'bg-[#F8F5FF] text-[#613CA8] border-b border-[#E8DEF8]/70',
+      searchBg: 'bg-stone-100/80 border-stone-200 focus:border-[#7E22CE] focus:bg-white placeholder:text-stone-400',
+      searchIcon: 'text-stone-400',
+      orderBtn: 'text-stone-700 bg-white hover:bg-stone-50 border-stone-200 hover:text-[#613CA8]',
+      cartBtn: 'bg-[#7E22CE] hover:bg-[#6B21A8] text-white shadow-stone-200',
+      cartBadge: 'bg-white text-[#7E22CE] shadow-xs',
     },
     cream: {
-      bar: 'bg-[#FFFBF0]/95 text-[#7E4C0E] border-b border-[#FCEECF]/80',
-      searchBg: 'bg-white/80 border-[#F7E4BE] focus:ring-[#F59E0B]/50 placeholder:text-[#C7A87A]',
-      searchIcon: 'text-[#F59E0B]',
-      orderBtn: 'text-[#8E5A13] bg-white/85 hover:bg-white border-[#F7E4BE]',
-      cartBtn: 'bg-gradient-to-r from-[#D97706] to-[#F59E0B] hover:from-[#B45309] hover:to-[#D97706] shadow-[#F7E4BE]',
-      cartBadge: 'bg-[#FFF59D] text-[#70440C]',
+      bar: 'bg-[#FFFBF0] text-[#8E5A13] border-b border-[#FCEECF]/70',
+      searchBg: 'bg-stone-100/80 border-stone-200 focus:border-[#B45309] focus:bg-white placeholder:text-stone-400',
+      searchIcon: 'text-stone-400',
+      orderBtn: 'text-stone-700 bg-white hover:bg-stone-50 border-stone-200 hover:text-[#8E5A13]',
+      cartBtn: 'bg-[#B45309] hover:bg-[#92400E] text-white shadow-stone-200',
+      cartBadge: 'bg-white text-[#B45309] shadow-xs',
     },
   };
 
   const curr = headerAccentMap[theme] || headerAccentMap.green;
 
   return (
-    <header className="sticky top-0 z-40 bg-white/85 backdrop-blur-2xl border-b border-white/60 shadow-[0_4px_25px_rgba(0,0,0,0.03)] transition-all">
-      {/* Top Announcement Bar - Soft Pastel Luxury Boutique */}
-      <div className={`${curr.bar} py-1 px-4 text-center text-[11px] sm:text-xs font-bold tracking-wide flex items-center justify-center gap-1.5 transition-colors duration-300 backdrop-blur-md`}>
-        <Sparkles className="w-3 h-3 text-amber-500 animate-pulse shrink-0" />
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b border-stone-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-all">
+      {/* Top Announcement Bar - Soft Boutique */}
+      <div className={`${curr.bar} py-1.5 px-4 text-center text-[11px] sm:text-xs font-semibold tracking-wide flex items-center justify-center gap-1.5 transition-colors duration-300`}>
+        <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
         <span className="truncate">{bannerText}</span>
-        <Sparkles className="w-3 h-3 text-amber-500 animate-pulse shrink-0" />
+        <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
       </div>
 
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
           
           {/* Logo */}
-          <Link href="/" className="flex items-center group flex-shrink-0 transform group-hover:scale-102 transition">
+          <Link href="/" className="flex items-center group shrink-0 transform group-hover:scale-102 transition">
             <OmachiLogo size="md" />
           </Link>
 
@@ -90,20 +90,20 @@ export default function Navbar() {
                 placeholder="Tìm vòng charm, kẹp tóc hoa, combo cườm sỉ..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className={`w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm ${curr.searchBg} border rounded-full focus:outline-none focus:ring-2 focus:bg-white text-stone-700 transition backdrop-blur-md`}
+                className={`w-full pl-10 pr-4 py-2 text-xs sm:text-sm ${curr.searchBg} border rounded-full focus:outline-none focus:ring-1 focus:bg-white text-stone-800 transition`}
               />
               <Search className={`w-4 h-4 ${curr.searchIcon} absolute left-3.5 top-1/2 -translate-y-1/2`} />
             </div>
           </div>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <ThemeSwitcher />
 
-            {/* Order Lookup Link - Ẩn trên mobile vì đã có ở thanh điều hướng đáy */}
+            {/* Order Lookup Link */}
             <Link
               href="/tra-cuu-don-hang"
-              className={`hidden sm:flex items-center gap-1.5 px-3 sm:px-3.5 py-2 text-xs font-bold ${curr.orderBtn} rounded-full border transition shadow-2xs backdrop-blur-md`}
+              className={`hidden sm:flex items-center gap-1.5 px-3 sm:px-3.5 py-2 text-xs font-medium ${curr.orderBtn} rounded-full border transition shadow-2xs`}
               title="Tra cứu hành trình đơn hàng bằng Số điện thoại hoặc Mã đơn"
             >
               <Package className="w-3.5 h-3.5" />
@@ -115,10 +115,10 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => openAuthModal('login')}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-gray-700 hover:text-rose-600 bg-white/85 hover:bg-white rounded-full border border-pink-100 transition shadow-2xs backdrop-blur-md cursor-pointer"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-stone-700 hover:text-stone-900 bg-white hover:bg-stone-50 rounded-full border border-stone-200 transition shadow-2xs cursor-pointer"
                 title="Đăng nhập / Đăng ký tài khoản"
               >
-                <User className="w-3.5 h-3.5 text-rose-500" />
+                <User className="w-3.5 h-3.5 text-stone-500" />
                 <span className="hidden md:inline">Đăng nhập</span>
               </button>
             ) : (
@@ -126,28 +126,28 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-bold text-gray-800 bg-pink-50/90 hover:bg-pink-100/90 rounded-full border border-pink-200 transition shadow-2xs backdrop-blur-md cursor-pointer"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-medium text-stone-800 bg-stone-100 hover:bg-stone-200 rounded-full border border-stone-200 transition shadow-2xs cursor-pointer"
                 >
-                  <span className="w-5 h-5 rounded-full bg-gradient-to-tr from-pink-400 to-rose-400 text-white text-[10px] font-black flex items-center justify-center">
+                  <span className="w-5 h-5 rounded-full bg-stone-900 text-white text-[10px] font-bold flex items-center justify-center">
                     {customer.fullName ? customer.fullName.charAt(0).toUpperCase() : 'U'}
                   </span>
                   <span className="hidden md:inline max-w-[90px] truncate">{customer.fullName?.split(' ').pop() || 'Tài khoản'}</span>
-                  <ChevronDown className="w-3 h-3 text-gray-500" />
+                  <ChevronDown className="w-3 h-3 text-stone-500" />
                 </button>
 
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-pink-100 py-2 z-50 animate-fade-in text-xs">
-                    <div className="px-3.5 py-2 border-b border-gray-100">
-                      <p className="font-bold text-gray-800 truncate">{customer.fullName}</p>
-                      <p className="text-[11px] text-gray-400 font-mono">{customer.phone}</p>
+                  <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-stone-200 py-2 z-50 animate-fade-in text-xs">
+                    <div className="px-3.5 py-2 border-b border-stone-100">
+                      <p className="font-semibold text-stone-900 truncate">{customer.fullName}</p>
+                      <p className="text-[11px] text-stone-400 font-mono">{customer.phone}</p>
                     </div>
 
                     <Link
                       href="/tra-cuu-don-hang"
                       onClick={() => setIsUserMenuOpen(false)}
-                      className="w-full text-left px-3.5 py-2 hover:bg-pink-50 text-gray-700 font-bold flex items-center gap-2 transition"
+                      className="w-full text-left px-3.5 py-2 hover:bg-stone-50 text-stone-700 font-medium flex items-center gap-2 transition"
                     >
-                      <Package className="w-3.5 h-3.5 text-pink-500" />
+                      <Package className="w-3.5 h-3.5 text-stone-500" />
                       <span>Đơn hàng của tôi</span>
                     </Link>
 
@@ -157,7 +157,7 @@ export default function Navbar() {
                         setIsUserMenuOpen(false);
                         logout();
                       }}
-                      className="w-full text-left px-3.5 py-2 hover:bg-rose-50 text-rose-600 font-bold flex items-center gap-2 transition border-t border-gray-100 cursor-pointer"
+                      className="w-full text-left px-3.5 py-2 hover:bg-rose-50 text-rose-600 font-medium flex items-center gap-2 transition border-t border-stone-100 cursor-pointer"
                     >
                       <LogOut className="w-3.5 h-3.5" />
                       <span>Đăng xuất</span>
@@ -170,12 +170,14 @@ export default function Navbar() {
             {/* Cart Button */}
             <button
               onClick={() => setIsCartOpen(true)}
-              className={`relative flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2.5 ${curr.cartBtn} text-white rounded-full shadow-md text-xs font-bold transition transform active:scale-95`}
+              className={`relative flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2.5 ${curr.cartBtn} rounded-full shadow-sm text-xs font-semibold transition transform active:scale-95 cursor-pointer`}
             >
               <ShoppingBag className="w-4 h-4" />
               <span className="hidden sm:inline">Giỏ hàng</span>
               {totalItems > 0 && (
-                <span className={`min-w-[20px] h-5 px-1.5 ${curr.cartBadge} font-black text-[10px] rounded-full flex items-center justify-center shadow-xs shrink-0`}>{totalItems > 99 ? "99+" : totalItems}</span>
+                <span className={`min-w-[20px] h-5 px-1.5 ${curr.cartBadge} font-bold text-[10px] rounded-full flex items-center justify-center shrink-0`}>
+                  {totalItems > 99 ? '99+' : totalItems}
+                </span>
               )}
             </button>
           </div>

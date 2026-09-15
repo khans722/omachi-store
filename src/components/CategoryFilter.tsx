@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Category } from '@/types';
 import { useTheme } from '@/context/ThemeContext';
+import { Sparkles } from 'lucide-react';
 
 interface CategoryFilterProps {
   selectedCategory: string;
@@ -44,41 +44,55 @@ export default function CategoryFilter({ selectedCategory, onSelectCategory, cat
       .catch(() => {});
   }, [categories]);
 
-  const activePillMap = {
-    green: 'bg-gradient-to-r from-[#6EA64E] to-[#78B159] text-white border-transparent shadow-md shadow-[#D3E7C6]',
-    pink: 'bg-gradient-to-r from-[#E0688E] to-[#F0789E] text-white border-transparent shadow-md shadow-[#FAD1DE]',
-    purple: 'bg-gradient-to-r from-[#8C6EC8] to-[#9C80D8] text-white border-transparent shadow-md shadow-[#E0D4FA]',
-    cream: 'bg-gradient-to-r from-[#D6973A] to-[#E5A84B] text-white border-transparent shadow-md shadow-[#F7E4BE]',
+  const themeConfig = {
+    green: {
+      active: 'bg-[#3A6B29] text-white shadow-sm',
+      hover: 'hover:border-[#3A6B29] hover:text-[#3A6B29]',
+    },
+    pink: {
+      active: 'bg-[#9E2B54] text-white shadow-sm',
+      hover: 'hover:border-[#9E2B54] hover:text-[#9E2B54]',
+    },
+    purple: {
+      active: 'bg-[#613CA8] text-white shadow-sm',
+      hover: 'hover:border-[#613CA8] hover:text-[#613CA8]',
+    },
+    cream: {
+      active: 'bg-[#8E5A13] text-white shadow-sm',
+      hover: 'hover:border-[#8E5A13] hover:text-[#8E5A13]',
+    },
   };
+
+  const style = themeConfig[theme] || themeConfig.green;
 
   return (
     <div className="my-6">
       <div className="flex items-center justify-between mb-3.5">
         <div className="flex items-center gap-2">
-          <span className="text-xl">🌿</span>
-          <h2 className="text-base sm:text-lg font-black text-stone-800 tracking-tight">
-            Khám Phá Danh Mục Charm
+          <h2 className="text-base sm:text-lg font-bold text-stone-900 tracking-tight flex items-center gap-1.5">
+            <span>Bộ sưu tập phụ kiện</span>
+            <Sparkles className="w-4 h-4 text-amber-500" />
           </h2>
         </div>
-        <span className="text-xs font-semibold text-[#5E9B3D] hidden sm:inline">
-          Bấm để lọc theo bộ sưu tập
+        <span className="text-xs font-medium text-stone-400 hidden sm:inline">
+          Lọc nhanh theo danh mục
         </span>
       </div>
 
-      <div className="flex items-center gap-2.5 overflow-x-auto pb-2 no-scrollbar">
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
         {catList.map((cat) => {
           const isSelected = selectedCategory === cat.id;
           return (
             <button
               key={cat.id}
               onClick={() => onSelectCategory(cat.id)}
-              className={`flex-shrink-0 px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-2 border ${
+              className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center gap-2 border cursor-pointer select-none ${
                 isSelected
-                  ? `${activePillMap[theme] || activePillMap.green} scale-102`
-                  : 'bg-white text-stone-600 border-[#DCEDCE] hover:border-[#78B159] hover:bg-[#F4F9EE]'
+                  ? `${style.active} border-transparent scale-[1.02]`
+                  : `bg-white text-stone-700 border-stone-200/80 shadow-2xs ${style.hover} hover:bg-stone-50`
               }`}
             >
-              <span>{cat.icon}</span>
+              <span className="text-sm">{cat.icon}</span>
               <span>{cat.name}</span>
             </button>
           );

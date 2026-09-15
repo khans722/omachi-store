@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { MessageCircle, Instagram, Sparkles, CheckCircle2, Phone } from 'lucide-react';
+import { MessageCircle, Instagram, Sparkles, MapPin, Clock, ShieldCheck, RefreshCw, Camera, Truck, ChevronRight } from 'lucide-react';
 import OmachiLogo from '@/components/OmachiLogo';
 import { ShopSettings } from '@/types';
 import { useTheme } from '@/context/ThemeContext';
@@ -34,47 +34,31 @@ export default function Footer() {
 
   const themeConfig = {
     green: {
-      bg: 'bg-gradient-to-b from-white via-[#F4F9EE] to-[#EAF4E2] border-[#DCEDCE]',
-      badge: 'bg-[#F4F9EE] text-[#456F2F] border-[#DCEDCE]',
-      hoverLink: 'hover:text-[#5E9B3D]',
-      checkIcon: 'text-[#78B159]',
-      cardBg: 'bg-white border-[#DCEDCE]',
-      igBadge: 'from-[#FFF0F5] to-[#FFF5F7] text-[#D81B60] border-[#FAD1DE]',
+      badge: 'bg-[#F2F9EF] text-[#2E5A1C] border-[#D8ECCE]',
+      hoverLink: 'hover:text-[#2E5A1C]',
     },
     pink: {
-      bg: 'bg-gradient-to-b from-white via-[#FFF2F6] to-[#FFE6EE] border-[#FAD1DE]',
-      badge: 'bg-[#FFF2F6] text-[#9E2B54] border-[#FAD1DE]',
-      hoverLink: 'hover:text-[#E0688E]',
-      checkIcon: 'text-[#F0789E]',
-      cardBg: 'bg-white border-[#FAD1DE]',
-      igBadge: 'from-[#FFF0F5] to-[#FFF5F7] text-[#D81B60] border-[#FAD1DE]',
+      badge: 'bg-[#FFF0F6] text-[#9E2B54] border-[#FCDCE8]',
+      hoverLink: 'hover:text-[#9E2B54]',
     },
     purple: {
-      bg: 'bg-gradient-to-b from-white via-[#F8F4FF] to-[#EFE6FD] border-[#E0D4FA]',
-      badge: 'bg-[#F8F4FF] text-[#613CA8] border-[#E0D4FA]',
-      hoverLink: 'hover:text-[#8C6EC8]',
-      checkIcon: 'text-[#9C80D8]',
-      cardBg: 'bg-white border-[#E0D4FA]',
-      igBadge: 'from-[#F8F4FF] to-[#FAF7FF] text-[#613CA8] border-[#E0D4FA]',
+      badge: 'bg-[#F8F5FF] text-[#613CA8] border-[#E8DEF8]',
+      hoverLink: 'hover:text-[#613CA8]',
     },
     cream: {
-      bg: 'bg-gradient-to-b from-white via-[#FFF9EE] to-[#FCF0D6] border-[#F7E4BE]',
-      badge: 'bg-[#FFF9EE] text-[#8E5A13] border-[#F7E4BE]',
-      hoverLink: 'hover:text-[#D6973A]',
-      checkIcon: 'text-[#E5A84B]',
-      cardBg: 'bg-white border-[#F7E4BE]',
-      igBadge: 'from-[#FFF9EE] to-[#FFFDF8] text-[#8E5A13] border-[#F7E4BE]',
+      badge: 'bg-[#FFFBF0] text-[#8E5A13] border-[#FCEECF]',
+      hoverLink: 'hover:text-[#8E5A13]',
     },
   };
 
   const curr = themeConfig[theme] || themeConfig.green;
 
   return (
-    <footer className={`${curr.bg} border-t pt-12 pb-8 mt-16 text-stone-600 transition-colors duration-300`}>
+    <footer className="bg-stone-50/90 border-t border-stone-200 pt-12 pb-8 mt-16 text-stone-600">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           
-          {/* Col 1: Brand Info & Big Logo */}
+          {/* Col 1: Brand Info */}
           <div className="md:col-span-1 space-y-3.5">
             <Link href="/" className="inline-block">
               <OmachiLogo size="md" />
@@ -82,7 +66,7 @@ export default function Footer() {
             <p className="text-xs text-stone-500 leading-relaxed">
               {slogan}
             </p>
-            <div className={`flex items-center gap-2 text-xs font-bold ${curr.badge} px-3 py-1.5 rounded-full w-fit border shadow-2xs`}>
+            <div className={`flex items-center gap-2 text-xs font-semibold ${curr.badge} px-3 py-1.5 rounded-full w-fit border`}>
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>100% Ảnh Thật Tại Xưởng</span>
             </div>
@@ -90,42 +74,72 @@ export default function Footer() {
 
           {/* Col 2: Categories */}
           <div>
-            <h4 className="text-sm font-black text-stone-800 uppercase tracking-wider mb-4 flex items-center gap-1.5">
-              <span>🌸 Danh Mục Charm</span>
+            <h4 className="text-xs font-bold text-stone-900 uppercase tracking-wider mb-4">
+              Danh Mục Sản Phẩm
             </h4>
-            <ul className="space-y-2.5 text-xs text-stone-600 font-medium">
-              <li><Link href="/?cat=vong-tay" className={`${curr.hoverLink} transition`}>✨ Vòng tay charm & custom size</Link></li>
-              <li><Link href="/?cat=kep-toc" className={`${curr.hoverLink} transition`}>🌸 Kẹp tóc hoa kem bơ pastel</Link></li>
-              <li><Link href="/?cat=phone-charm" className={`${curr.hoverLink} transition`}>📱 Phone charm & Dây đeo thẻ</Link></li>
-              <li><Link href="/?cat=beads-haul" className={`${curr.hoverLink} transition`}>💎 Hạt cườm sỉ & combo 50-200 pcs</Link></li>
-              <li><Link href="/?cat=tui-mu" className={`${curr.hoverLink} transition`}>🎁 Túi mù charm may mắn</Link></li>
+            <ul className="space-y-2.5 text-xs text-stone-600 font-normal">
+              <li>
+                <Link href="/?cat=vong-tay" className={`${curr.hoverLink} transition inline-flex items-center gap-1.5`}>
+                  <ChevronRight className="w-3 h-3 text-stone-400" />
+                  <span>Vòng tay charm &amp; Custom size</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/?cat=kep-toc" className={`${curr.hoverLink} transition inline-flex items-center gap-1.5`}>
+                  <ChevronRight className="w-3 h-3 text-stone-400" />
+                  <span>Kẹp tóc hoa kem bơ pastel</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/?cat=phone-charm" className={`${curr.hoverLink} transition inline-flex items-center gap-1.5`}>
+                  <ChevronRight className="w-3 h-3 text-stone-400" />
+                  <span>Phone charm &amp; Dây đeo thẻ</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/?cat=beads-haul" className={`${curr.hoverLink} transition inline-flex items-center gap-1.5`}>
+                  <ChevronRight className="w-3 h-3 text-stone-400" />
+                  <span>Hạt cườm sỉ &amp; Combo charm</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/?cat=tui-mu" className={`${curr.hoverLink} transition inline-flex items-center gap-1.5`}>
+                  <ChevronRight className="w-3 h-3 text-stone-400" />
+                  <span>Túi mù charm may mắn</span>
+                </Link>
+              </li>
             </ul>
           </div>
 
           {/* Col 3: Policy */}
           <div>
-            <h4 className="text-sm font-black text-stone-800 uppercase tracking-wider mb-4 flex items-center gap-1.5">
-              <span>🎀 Chính Sách & Cam Kết</span>
+            <h4 className="text-xs font-bold text-stone-900 uppercase tracking-wider mb-4">
+              Cam Kết Dịch Vụ
             </h4>
-            <ul className="space-y-2.5 text-xs text-stone-600 font-medium">
-              {(settings?.purchasePolicies && settings.purchasePolicies.length > 0 ? settings.purchasePolicies : [
-                { icon: '📦', title: 'Đồng kiểm hàng trước khi nhận' },
-                { icon: '🔄', title: 'Đổi trả 1-1 trong 48h nếu lỗi' },
-                { icon: '🎀', title: '100% Ảnh thật do tiệm tự chụp' },
-                { icon: '🚚', title: 'Đóng gói quà pastel & ship nhanh' },
-              ]).map((p, idx) => (
-                <li key={idx} className="flex items-center gap-2">
-                  <span className="text-xs">{p.icon || '✓'}</span>
-                  <span>{p.title}</span>
-                </li>
-              ))}
+            <ul className="space-y-3 text-xs text-stone-600 font-normal">
+              <li className="flex items-center gap-2.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Đồng kiểm hàng trước khi nhận</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <RefreshCw className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Đổi trả 1-1 trong 48h nếu lỗi</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Camera className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>100% ảnh thật chụp tại tiệm</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Truck className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Đóng gói cẩn thận &amp; giao nhanh toàn quốc</span>
+              </li>
             </ul>
           </div>
 
           {/* Col 4: Contact & Social */}
           <div>
-            <h4 className="text-sm font-black text-stone-800 uppercase tracking-wider mb-4 flex items-center gap-1.5">
-              <span>💬 Mạng Xã Hội & Hotline</span>
+            <h4 className="text-xs font-bold text-stone-900 uppercase tracking-wider mb-4">
+              Liên Hệ &amp; Hỗ Trợ
             </h4>
             <div className="space-y-2.5 text-xs">
               {/* Zalo Button */}
@@ -133,10 +147,10 @@ export default function Footer() {
                 href={`https://zalo.me/${zaloPhone.replace(/[^0-9]/g, '')}`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-2 p-2.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-2xl border border-blue-200 font-bold transition shadow-2xs"
+                className="flex items-center gap-2.5 p-2.5 bg-white hover:bg-stone-50 text-stone-800 rounded-xl border border-stone-200 font-medium transition shadow-2xs"
               >
                 <MessageCircle className="w-4 h-4 text-blue-600" />
-                <span>Zalo / Hotline: {hotline}</span>
+                <span>Zalo tư vấn: {hotline}</span>
               </a>
 
               {/* Instagram & TikTok Buttons */}
@@ -145,7 +159,7 @@ export default function Footer() {
                   href={igUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className={`flex items-center justify-center gap-1.5 p-2 bg-gradient-to-r ${curr.igBadge} hover:scale-102 rounded-xl border font-bold transition text-[11px] shadow-2xs`}
+                  className="flex items-center justify-center gap-1.5 p-2 bg-white hover:bg-stone-50 rounded-xl border border-stone-200 font-medium transition text-[11px] text-stone-700 hover:text-stone-900"
                 >
                   <Instagram className="w-3.5 h-3.5 text-rose-500" />
                   <span className="truncate">{igHandle}</span>
@@ -155,18 +169,26 @@ export default function Footer() {
                   href={tiktokUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-center gap-1.5 p-2 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-xl border border-gray-200 font-bold transition text-[11px] shadow-2xs hover:scale-102"
+                  className="flex items-center justify-center gap-1.5 p-2 bg-white hover:bg-stone-50 text-stone-700 hover:text-stone-900 rounded-xl border border-stone-200 font-medium transition text-[11px]"
                 >
-                  <span>🎵</span>
+                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                    <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-2.888 2.888 2.896 2.896 0 0 1-2.888-2.888 2.896 2.896 0 0 1 2.888-2.888c.328 0 .641.056.936.155V9.424a6.31 6.31 0 0 0-.936-.071C6.012 9.353 3.2 12.165 3.2 15.651 3.2 19.137 6.012 22 9.498 22c3.486 0 6.309-2.863 6.309-6.349V9.11a8.21 8.21 0 0 0 3.782.923v-3.347z"/>
+                  </svg>
                   <span className="truncate">{tiktokHandle}</span>
                 </a>
               </div>
 
               {/* Address info */}
-              <div className={`p-3 rounded-2xl border ${curr.cardBg} text-stone-600 space-y-0.5`}>
-                <p className="font-bold text-stone-800 text-[11px]">Tiệm Omachi Handmade Studio</p>
-                <p className="text-[10px] text-stone-500">📍 {address}</p>
-                <p className="text-[10px] text-stone-500">⏰ {hours}</p>
+              <div className="p-3 rounded-xl border border-stone-200 bg-white text-stone-600 space-y-1">
+                <p className="font-semibold text-stone-800 text-[11px]">Tiệm Omachi Handmade Studio</p>
+                <div className="flex items-center gap-1.5 text-[10px] text-stone-500">
+                  <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
+                  <span className="truncate">{address}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] text-stone-500">
+                  <Clock className="w-3 h-3 text-stone-400 shrink-0" />
+                  <span>{hours}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -174,12 +196,12 @@ export default function Footer() {
         </div>
 
         {/* Bottom */}
-        <div className="border-t border-black/5 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-400">
-          <p>© 2026 Omachi Handmade Studio. Thiết kế với trọn vẹn yêu thương 💕</p>
+        <div className="border-t border-stone-200 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-400">
+          <p>© 2026 Omachi Handmade Studio. Tinh tế &amp; Tận tâm.</p>
           <div className="flex items-center gap-4">
-            <Link href="/admin" className={`${curr.hoverLink} transition font-medium`}>Trang quản trị (Admin)</Link>
+            <Link href="/admin" className={`${curr.hoverLink} transition font-medium text-stone-500`}>Trang quản trị (Admin)</Link>
             <span>•</span>
-            <Link href="/checkout" className={`${curr.hoverLink} transition font-medium`}>Tra cứu đơn hàng</Link>
+            <Link href="/tra-cuu-don-hang" className={`${curr.hoverLink} transition font-medium text-stone-500`}>Tra cứu đơn hàng</Link>
           </div>
         </div>
       </div>

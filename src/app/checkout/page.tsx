@@ -608,31 +608,35 @@ export default function CheckoutPage() {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                      {/* 1. Tỉnh / Thành phố */}
+                      {/* 1. Tỉnh / Thành phố (Vừa gợi ý vừa cho gõ tự do) */}
                       <div>
                         <span className="text-[11px] font-bold text-gray-600 block mb-1">
                           Tỉnh / Thành phố <span className="text-rose-500">*</span>
                         </span>
-                        <select
-                          value={selectedProvince}
-                          onChange={(e) => {
-                            const prov = e.target.value;
-                            setSelectedProvince(prov);
-                            const found = VIETNAM_PROVINCES.find((p) => p.name === prov);
-                            if (found && found.districts.length > 0) {
-                              setSelectedDistrict(found.districts[0]);
-                            } else {
-                              setSelectedDistrict('');
-                            }
-                          }}
-                          className={`w-full px-3 py-2.5 text-xs ${curr.inputBg} border rounded-xl font-bold text-gray-800 focus:outline-none focus:ring-2 focus:bg-white transition cursor-pointer`}
-                        >
-                          {VIETNAM_PROVINCES.map((p) => (
-                            <option key={p.id} value={p.name}>
-                              {p.name} {p.region === 'NORTH' ? '(Miền Bắc)' : p.region === 'CENTRAL' ? '(Miền Trung)' : '(Miền Nam)'}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            list="province-datalist"
+                            placeholder="Chọn hoặc nhập Tỉnh/Thành..."
+                            value={selectedProvince}
+                            onChange={(e) => {
+                              const prov = e.target.value;
+                              setSelectedProvince(prov);
+                              const found = VIETNAM_PROVINCES.find((p) => p.name.toLowerCase() === prov.toLowerCase());
+                              if (found && found.districts.length > 0) {
+                                setSelectedDistrict(found.districts[0]);
+                              }
+                            }}
+                            className={`w-full px-3 py-2.5 text-xs ${curr.inputBg} border rounded-xl font-bold text-gray-800 focus:outline-none focus:ring-2 focus:bg-white transition`}
+                          />
+                          <datalist id="province-datalist">
+                            {VIETNAM_PROVINCES.map((p) => (
+                              <option key={p.id} value={p.name}>
+                                {p.name} {p.region === 'NORTH' ? '(Miền Bắc)' : p.region === 'CENTRAL' ? '(Miền Trung)' : '(Miền Nam)'}
+                              </option>
+                            ))}
+                          </datalist>
+                        </div>
                       </div>
 
                       {/* 2. Quận / Huyện / Thị xã (Hỗ trợ vừa chọn vừa gõ tự do tên mới sáp nhập) */}
