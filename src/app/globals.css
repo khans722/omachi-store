@@ -1,0 +1,379 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root, [data-theme="green"] {
+    --primary-gradient: linear-gradient(135deg, #72AA55 0%, #3DBE87 60%, #46CA91 100%);
+    --header-gradient: linear-gradient(135deg, #5D993E 0%, #72AA55 50%, #3DBE87 100%);
+    --hero-gradient: linear-gradient(135deg, #F3FAF0 0%, #FAFCF8 40%, #FFFBF2 100%);
+    --accent-bg: #F4FAF0;
+    --accent-border: #D8ECCB;
+    --accent-text: #376322;
+    
+    /* 🌿 Theme Xanh Matcha: Dịu nhẹ, thanh thoát, ngả pastel */
+    --silk-1: #88C16E;
+    --silk-2: #FCD34D;
+    --silk-3: #FDA4AF;
+    --silk-4: #6EE7B7;
+    --silk-5: #34D399;
+    --silk-glow-1: rgba(136, 193, 110, 0.24);
+    --silk-glow-2: rgba(252, 211, 77, 0.18);
+    --silk-glow-3: rgba(253, 164, 175, 0.16);
+    --silk-glow-4: rgba(110, 231, 183, 0.18);
+    --card-shadow: 0 12px 32px -8px rgba(120, 177, 89, 0.14);
+  }
+
+  [data-theme="pink"] {
+    --primary-gradient: linear-gradient(135deg, #EC4899 0%, #F472B6 50%, #FB923C 100%);
+    --header-gradient: linear-gradient(135deg, #DB2777 0%, #EC4899 50%, #F472B6 100%);
+    --hero-gradient: linear-gradient(135deg, #FFF3F7 0%, #FFF9FB 40%, #FFF7F2 100%);
+    --accent-bg: #FFF4F8;
+    --accent-border: #FCE0EC;
+    --accent-text: #9D174D;
+    
+    /* 🌸 Theme Hồng Dâu: Dịu ngọt ngào, pastel thạch anh */
+    --silk-1: #F9A8D4;
+    --silk-2: #FDBA74;
+    --silk-3: #D8B4FE;
+    --silk-4: #FEF08A;
+    --silk-5: #FDA4AF;
+    --silk-glow-1: rgba(249, 168, 212, 0.24);
+    --silk-glow-2: rgba(253, 186, 116, 0.18);
+    --silk-glow-3: rgba(216, 180, 254, 0.16);
+    --silk-glow-4: rgba(254, 240, 138, 0.15);
+    --card-shadow: 0 12px 32px -8px rgba(244, 114, 182, 0.15);
+  }
+
+  [data-theme="purple"] {
+    --primary-gradient: linear-gradient(135deg, #9333EA 0%, #A855F7 50%, #6366F1 100%);
+    --header-gradient: linear-gradient(135deg, #7E22CE 0%, #9333EA 50%, #6366F1 100%);
+    --hero-gradient: linear-gradient(135deg, #F8F5FF 0%, #FCFAFF 40%, #F2F5FF 100%);
+    --accent-bg: #F8F4FF;
+    --accent-border: #E8E0FE;
+    --accent-text: #6B21A8;
+    
+    /* 💜 Theme Tím Lavender: Huyền ảo, mềm mại, thanh lịch */
+    --silk-1: #C084FC;
+    --silk-2: #818CF8;
+    --silk-3: #F472B6;
+    --silk-4: #7DD3FC;
+    --silk-5: #A855F7;
+    --silk-glow-1: rgba(192, 132, 252, 0.24);
+    --silk-glow-2: rgba(129, 140, 248, 0.18);
+    --silk-glow-3: rgba(244, 114, 182, 0.16);
+    --silk-glow-4: rgba(125, 211, 252, 0.16);
+    --card-shadow: 0 12px 32px -8px rgba(168, 85, 247, 0.15);
+  }
+
+  [data-theme="cream"] {
+    --primary-gradient: linear-gradient(135deg, #D97706 0%, #F59E0B 50%, #FB923C 100%);
+    --header-gradient: linear-gradient(135deg, #B45309 0%, #D97706 50%, #F59E0B 100%);
+    --hero-gradient: linear-gradient(135deg, #FFFDF0 0%, #FFFFFA 40%, #FFF8EE 100%);
+    --accent-bg: #FFFDF2;
+    --accent-border: #FEEAB8;
+    --accent-text: #92400E;
+    
+    /* 🧈 Theme Vàng Kem Bơ: Ấm áp kem bơ, hổ phách dịu mắt */
+    --silk-1: #FBBF24;
+    --silk-2: #FDBA74;
+    --silk-3: #FEF08A;
+    --silk-4: #FB7185;
+    --silk-5: #F59E0B;
+    --silk-glow-1: rgba(251, 191, 36, 0.24);
+    --silk-glow-2: rgba(253, 186, 116, 0.18);
+    --silk-glow-3: rgba(251, 113, 133, 0.15);
+    --silk-glow-4: rgba(254, 240, 138, 0.18);
+    --card-shadow: 0 12px 32px -8px rgba(245, 158, 11, 0.15);
+  }
+
+  body {
+    @apply antialiased font-sans transition-colors duration-500 relative overflow-x-hidden min-h-screen;
+    background-color: #FAFBF8;
+  }
+
+  [data-theme="green"] body {
+    @apply bg-[#F8FAF5] text-[#2D3E24] selection:bg-[#DCEDCE] selection:text-[#31521F];
+  }
+
+  [data-theme="pink"] body {
+    @apply bg-[#FFF8FA] text-[#3D252E] selection:bg-[#FCE0E9] selection:text-[#7A1E3C];
+  }
+
+  [data-theme="purple"] body {
+    @apply bg-[#FAF8FE] text-[#2F2642] selection:bg-[#EBE2FC] selection:text-[#4F2D8E];
+  }
+
+  [data-theme="cream"] body {
+    @apply bg-[#FFFDF7] text-[#3D301F] selection:bg-[#FCECCF] selection:text-[#70440C];
+  }
+}
+
+/* ===================================================
+   🌈 HIỆU ỨNG DẢI LỤA PHÁT SÁNG ĐA SẮC (SILK MESH WAVE GLOW)
+   3D Organic Fluid Morphing & Iridescent Color Flow
+   =================================================== */
+
+@keyframes silk-wave-drift-1 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+  }
+  33% {
+    transform: translate3d(50px, -40px, 0) scale(1.16) rotate(18deg);
+    border-radius: 65% 35% 45% 55% / 30% 60% 40% 70%;
+  }
+  66% {
+    transform: translate3d(-35px, 45px, 0) scale(0.94) rotate(-14deg);
+    border-radius: 35% 65% 55% 45% / 60% 35% 65% 40%;
+  }
+}
+
+@keyframes silk-wave-drift-2 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    border-radius: 50% 50% 35% 65% / 55% 40% 60% 45%;
+  }
+  33% {
+    transform: translate3d(-55px, 40px, 0) scale(1.18) rotate(-22deg);
+    border-radius: 70% 30% 55% 45% / 40% 65% 35% 60%;
+  }
+  66% {
+    transform: translate3d(45px, -30px, 0) scale(0.92) rotate(15deg);
+    border-radius: 35% 65% 40% 60% / 60% 35% 65% 40%;
+  }
+}
+
+@keyframes silk-wave-drift-3 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    border-radius: 60% 40% 55% 45% / 50% 60% 40% 50%;
+  }
+  50% {
+    transform: translate3d(45px, -45px, 0) scale(1.14) rotate(22deg);
+    border-radius: 35% 65% 65% 35% / 65% 35% 65% 35%;
+  }
+}
+
+@keyframes silk-wave-drift-4 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    opacity: 0.28;
+  }
+  50% {
+    transform: translate3d(-30px, 25px, 0) scale(1.15) rotate(-12deg);
+    opacity: 0.38;
+  }
+}
+
+/* 4 Layered Multi-Hue Aurora Silk Mesh Blobs - Soft, Elegant & Pastel */
+.silk-mesh-blob-1 {
+  position: fixed;
+  top: -10%;
+  left: 5%;
+  width: 760px;
+  height: 620px;
+  background: conic-gradient(
+    from 140deg at 50% 50%,
+    var(--silk-1) 0deg,
+    var(--silk-2) 90deg,
+    var(--silk-3) 180deg,
+    var(--silk-4) 270deg,
+    var(--silk-1) 360deg
+  );
+  filter: blur(125px);
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 0;
+  animation: silk-wave-drift-1 22s ease-in-out infinite alternate;
+}
+
+.silk-mesh-blob-2 {
+  position: fixed;
+  top: 22%;
+  right: -6%;
+  width: 820px;
+  height: 680px;
+  background: conic-gradient(
+    from 280deg at 55% 45%,
+    var(--silk-3) 0deg,
+    var(--silk-2) 100deg,
+    var(--silk-4) 200deg,
+    var(--silk-1) 290deg,
+    var(--silk-3) 360deg
+  );
+  filter: blur(135px);
+  opacity: 0.32;
+  pointer-events: none;
+  z-index: 0;
+  animation: silk-wave-drift-2 26s ease-in-out infinite alternate;
+}
+
+.silk-mesh-blob-3 {
+  position: fixed;
+  bottom: 0%;
+  left: -5%;
+  width: 860px;
+  height: 700px;
+  background: conic-gradient(
+    from 45deg at 45% 55%,
+    var(--silk-4) 0deg,
+    var(--silk-1) 90deg,
+    var(--silk-2) 190deg,
+    var(--silk-3) 290deg,
+    var(--silk-4) 360deg
+  );
+  filter: blur(140px);
+  opacity: 0.30;
+  pointer-events: none;
+  z-index: 0;
+  animation: silk-wave-drift-3 24s ease-in-out infinite alternate;
+}
+
+.silk-mesh-blob-4 {
+  position: fixed;
+  bottom: 25%;
+  right: 15%;
+  width: 580px;
+  height: 500px;
+  background: radial-gradient(
+    ellipse at center,
+    var(--silk-glow-3) 0%,
+    var(--silk-glow-2) 40%,
+    var(--silk-glow-1) 70%,
+    transparent 100%
+  );
+  filter: blur(115px);
+  opacity: 0.34;
+  pointer-events: none;
+  z-index: 0;
+  animation: silk-wave-drift-4 20s ease-in-out infinite alternate;
+}
+
+/* Translucent 3D Acrylic Sheen Overlay */
+.silk-acrylic-sheen {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    1200px circle at 50% 20%,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(255, 255, 255, 0) 65%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Glass Card & Iridescent Mesh Classes */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+}
+
+.glass-card-hover {
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-card-hover:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 16px 40px -8px var(--glow-1);
+}
+
+/* Keyframe Animations for Hamster & Stars */
+@keyframes mascot-bob {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-4px) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-7px) rotate(0.5deg);
+  }
+  75% {
+    transform: translateY(-2px) rotate(1deg);
+  }
+}
+
+@keyframes star-swing-1 {
+  0% { transform: rotate(-10deg); }
+  50% { transform: rotate(9deg); }
+  100% { transform: rotate(-10deg); }
+}
+
+@keyframes star-swing-2 {
+  0% { transform: rotate(7deg); }
+  50% { transform: rotate(-9deg); }
+  100% { transform: rotate(7deg); }
+}
+
+@keyframes star-swing-3 {
+  0% { transform: rotate(-5deg); }
+  50% { transform: rotate(7deg); }
+  100% { transform: rotate(-5deg); }
+}
+
+@keyframes star-twinkle {
+  0%, 100% {
+    opacity: 0.85;
+    transform: scale(1);
+    filter: drop-shadow(0 0 2px rgba(255, 215, 0, 0.5));
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 7px rgba(255, 215, 0, 0.95));
+  }
+}
+
+.animate-mascot-bob {
+  animation: mascot-bob 3.4s ease-in-out infinite;
+}
+
+.animate-star-swing-1 {
+  transform-origin: top center;
+  animation: star-swing-1 2.8s ease-in-out infinite;
+}
+
+.animate-star-swing-2 {
+  transform-origin: top center;
+  animation: star-swing-2 3.4s ease-in-out infinite;
+}
+
+.animate-star-swing-3 {
+  transform-origin: top center;
+  animation: star-swing-3 2.5s ease-in-out infinite;
+}
+
+.animate-star-twinkle {
+  animation: star-twinkle 2s ease-in-out infinite;
+}
+
+/* Custom smooth scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBE2BC;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #A8D191;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

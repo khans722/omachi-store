@@ -1,0 +1,46 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { sendOrderNotification } from '@/lib/zalo';
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const order = db.orders.getById(params.id);
+  if (!order) {
+    return NextResponse.json({ success: false, message: 'Order not found' }, { status: 404 });
+  }
+  return NextResponse.json({ success: true, data: order });
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const body = await req.json();
+    const updated = db.orders.updateStatus(
+      params.id,
+      body.orderStatus,
+      body.paymentStatus,
+      body.carrierName,
+      body.trackingNumber,
+      body.shippingFee
+    );
+
+    if (!updated) {
+      return NextResponse.json({ success: false, message: 'Order not found' }, { status: 404 });
+    }
+
+    // Send notification update
+    const trigger = body.paymentStatus === 'PAID' ? 'PAYMENT_SUCCESS' : 'CONFIRMED';
+    const settings = db.settings.get();
+    await sendOrderNotification(updated, settings, trigger);
+
+    return NextResponse.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('Error updating order:', error);
+    return NextResponse.json({ success: false, message: 'Failed to update order' }, { status: 500 });
+  }
+}
+
