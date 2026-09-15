@@ -17,7 +17,7 @@ interface QuickSelectModalProps {
 
 export default function QuickSelectModal({ product, isOpen, onClose }: QuickSelectModalProps) {
   const router = useRouter();
-  const { addItem, setIsCartOpen } = useCart();
+  const { addItem, buyNow, setIsCartOpen } = useCart();
   const { theme } = useTheme();
 
   // Helper to extract package options
@@ -116,9 +116,8 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
       setErrorMsg('Mẫu này tạm thời hết hàng!');
       return;
     }
-    addItem(product, quantity, selectedVariant, undefined, selectedPackage);
+    addItem(product, quantity, selectedVariant, undefined, selectedPackage, false);
     onClose();
-    setIsCartOpen(true);
   };
 
   const handleBuyNow = () => {
@@ -130,7 +129,8 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
       setErrorMsg('Mẫu này tạm thời hết hàng!');
       return;
     }
-    addItem(product, quantity, selectedVariant, undefined, selectedPackage);
+    // Chuẩn Shopee: Bỏ chọn các món khác trong giỏ, chỉ mua đúng món này và đi tới checkout
+    buyNow(product, quantity, selectedVariant, undefined, selectedPackage);
     onClose();
     router.push('/checkout');
   };
