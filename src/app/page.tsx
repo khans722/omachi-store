@@ -122,7 +122,7 @@ export default function HomePage() {
       <section>
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight flex items-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-stone-800 tracking-tight flex items-center gap-2 font-sans">
               <span>Sản phẩm tuyển chọn tại xưởng</span>
               <Sparkles className="w-4 h-4 text-amber-500" />
             </h2>

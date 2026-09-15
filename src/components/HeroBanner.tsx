@@ -40,36 +40,40 @@ export default function HeroBanner({ settings }: HeroBannerProps) {
 
   const themeConfig = {
     green: {
-      cardBg: 'bg-[#F6FAF3]/90 border-[#DDEFD7] shadow-[0_12px_32px_rgba(103,168,82,0.10)]',
-      tagBg: 'bg-white text-[#4D853A] border-[#D1EAC7]',
-      titleAccent: 'text-[#569440]',
+      cardBg: 'bg-white/90 border-[#D4EAC9] shadow-[0_14px_36px_rgba(86,148,64,0.10)]',
+      tagBg: 'bg-[#F2FAF0] text-[#3E6B28] border-[#D1EAC7]',
+      titleLine1: 'text-[#2D5A1E]',
+      titleLine2: 'text-transparent bg-clip-text bg-gradient-to-r from-[#4FA832] via-[#2EB875] to-[#E5A817]',
       socialBtn: 'border-[#DCEDCE] hover:border-[#67A852] text-[#4A5D43] hover:text-[#386D27] bg-white',
-      imgBadge: 'bg-[#569440] text-white',
-      thumbActive: 'border-[#569440]',
+      imgBadge: 'bg-[#4FA832] text-white',
+      thumbActive: 'border-[#4FA832]',
     },
     pink: {
-      cardBg: 'bg-[#FFF5F8]/90 border-[#FFE0EA] shadow-[0_12px_32px_rgba(255,117,151,0.12)]',
-      tagBg: 'bg-white text-[#D84A74] border-[#FFD0DE]',
-      titleAccent: 'text-[#E84878]',
+      cardBg: 'bg-white/90 border-[#FFD6E4] shadow-[0_14px_36px_rgba(255,117,151,0.12)]',
+      tagBg: 'bg-[#FFF0F5] text-[#D84A74] border-[#FFD0DE]',
+      titleLine1: 'text-[#B82255]',
+      titleLine2: 'text-transparent bg-clip-text bg-gradient-to-r from-[#E83E76] via-[#F472B6] to-[#FB923C]',
       socialBtn: 'border-[#FFE0EA] hover:border-[#FF7597] text-[#634850] hover:text-[#D84A74] bg-white',
-      imgBadge: 'bg-[#E84878] text-white',
-      thumbActive: 'border-[#E84878]',
+      imgBadge: 'bg-[#FF6B8B] text-white',
+      thumbActive: 'border-[#FF6B8B]',
     },
     purple: {
-      cardBg: 'bg-[#F9F5FF]/90 border-[#EBE0FE] shadow-[0_12px_32px_rgba(155,124,227,0.10)]',
-      tagBg: 'bg-white text-[#7952C4] border-[#DFD1FC]',
-      titleAccent: 'text-[#845BCF]',
+      cardBg: 'bg-white/90 border-[#E6D8FD] shadow-[0_14px_36px_rgba(155,124,227,0.12)]',
+      tagBg: 'bg-[#F8F4FF] text-[#6839BE] border-[#DFD1FC]',
+      titleLine1: 'text-[#5829A8]',
+      titleLine2: 'text-transparent bg-clip-text bg-gradient-to-r from-[#7C4DFF] via-[#A855F7] to-[#EC4899]',
       socialBtn: 'border-[#EBE0FE] hover:border-[#9B7CE3] text-[#554665] hover:text-[#7952C4] bg-white',
-      imgBadge: 'bg-[#845BCF] text-white',
-      thumbActive: 'border-[#845BCF]',
+      imgBadge: 'bg-[#8E6ADF] text-white',
+      thumbActive: 'border-[#8E6ADF]',
     },
     cream: {
-      cardBg: 'bg-[#FFFBF2]/90 border-[#FCEBCC] shadow-[0_12px_32px_rgba(229,149,48,0.10)]',
-      tagBg: 'bg-white text-[#B56E16] border-[#FCE1B4]',
-      titleAccent: 'text-[#CC7D1A]',
+      cardBg: 'bg-white/90 border-[#FBE5BD] shadow-[0_14px_36px_rgba(229,149,48,0.12)]',
+      tagBg: 'bg-[#FFFBF2] text-[#A66008] border-[#FCE1B4]',
+      titleLine1: 'text-[#8E4D00]',
+      titleLine2: 'text-transparent bg-clip-text bg-gradient-to-r from-[#D97706] via-[#F59E0B] to-[#EC4899]',
       socialBtn: 'border-[#FCEBCC] hover:border-[#E59530] text-[#63533E] hover:text-[#B56E16] bg-white',
-      imgBadge: 'bg-[#CC7D1A] text-white',
-      thumbActive: 'border-[#CC7D1A]',
+      imgBadge: 'bg-[#E59530] text-white',
+      thumbActive: 'border-[#E59530]',
     },
   };
 
@@ -81,23 +85,27 @@ export default function HeroBanner({ settings }: HeroBannerProps) {
         
         {/* Left column: Text */}
         <div className="lg:col-span-7 space-y-4 sm:space-y-5">
+          {/* Slogan Pill */}
           <div className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full ${curr.tagBg} border text-xs font-bold tracking-wide shadow-xs`}>
-            <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0 animate-pulse" />
             <span>{slogan}</span>
             <Heart className="w-3 h-3 text-rose-400 fill-rose-400 shrink-0" />
           </div>
 
-          <h1 className="text-2xl sm:text-4xl lg:text-[40px] font-extrabold text-[#382B27] leading-[1.3] tracking-tight">
+          {/* Chubby Bubble Pastel Main Heading */}
+          <h1 className="font-bubble text-3xl sm:text-5xl lg:text-[48px] font-extrabold leading-[1.2] tracking-normal select-none">
             {title.includes('&') ? (
               <>
-                <span>{title.split('&')[0].trim()}</span>
-                <br />
-                <span className={`${curr.titleAccent} font-extrabold`}>
+                <span className={`block ${curr.titleLine1} drop-shadow-[0_2px_8px_rgba(255,255,255,0.8)]`}>
+                  {title.split('&')[0].trim()}
+                </span>
+                <span className={`inline-block mt-1 ${curr.titleLine2} drop-shadow-[0_2px_8px_rgba(255,255,255,0.8)]`}>
                   &amp; {title.split('&')[1].trim()}
                 </span>
+                <span className="inline-block ml-2 text-2xl sm:text-4xl animate-bounce-slow">✨</span>
               </>
             ) : (
-              <span className={curr.titleAccent}>{title}</span>
+              <span className={curr.titleLine1}>{title}</span>
             )}
           </h1>
 
@@ -126,7 +134,7 @@ export default function HeroBanner({ settings }: HeroBannerProps) {
                 rel="noreferrer"
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${curr.socialBtn} text-xs font-bold shadow-xs transition hover:scale-105`}
               >
-                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 fill-current text-stone-800" viewBox="0 0 24 24">
                   <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-2.888 2.888 2.896 2.896 0 0 1-2.888-2.888 2.896 2.896 0 0 1 2.888-2.888c.328 0 .641.056.936.155V9.424a6.31 6.31 0 0 0-.936-.071C6.012 9.353 3.2 12.165 3.2 15.651 3.2 19.137 6.012 22 9.498 22c3.486 0 6.309-2.863 6.309-6.349V9.11a8.21 8.21 0 0 0 3.782.923v-3.347z"/>
                 </svg>
                 <span>TikTok: {settings.tiktokHandle || '@jiji.omachistore'}</span>
@@ -138,7 +146,7 @@ export default function HeroBanner({ settings }: HeroBannerProps) {
         {/* Right column: Cute Polaroid Lookbook Frame */}
         <div className="lg:col-span-5 flex justify-center">
           <div className="relative w-full max-w-sm space-y-3">
-            <div className="relative aspect-[4/3] rounded-[24px] overflow-hidden shadow-md border-4 border-white bg-white group/banner">
+            <div className="relative aspect-[4/3] rounded-[26px] overflow-hidden shadow-md border-4 border-white bg-white group/banner">
               <img
                 key={activeImgIndex}
                 src={imagesList[activeImgIndex] || '/images/charm_feed_1.jpg'}

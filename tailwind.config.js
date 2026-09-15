@@ -26,9 +26,9 @@ module.exports = {
         }
       },
       fontFamily: {
+        bubble: ['"Baloo 2"', '"Fredoka"', 'cursive'],
         sans: ['"Quicksand"', '"Nunito"', 'sans-serif'],
-        rounded: ['"Quicksand"', 'sans-serif'],
-        cute: ['"Nunito"', 'sans-serif'],
+        body: ['"Nunito"', 'sans-serif'],
       },
       animation: {
         'bounce-slow': 'bounce 3s infinite',
