@@ -13,16 +13,18 @@ export default function HomePage() {
   const { theme } = useTheme();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [categories, setCategories] = useState<any[]>([]);
   const [feedbacks, setFeedbacks] = useState<CustomerFeedback[]>([]);
   const [settings, setSettings] = useState<ShopSettings | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [prodRes, fbRes, setRes] = await Promise.all([
+        const [prodRes, fbRes, setRes, catRes] = await Promise.all([
           fetch('/api/products').then((r) => r.json()).catch(() => null),
           fetch('/api/feedbacks').then((r) => r.json()).catch(() => null),
           fetch('/api/settings').then((r) => r.json()).catch(() => null),
+          fetch('/api/categories').then((r) => r.json()).catch(() => null),
         ]);
 
         if (prodRes && prodRes.success && prodRes.data && prodRes.data.length > 0) {
@@ -34,6 +36,9 @@ export default function HomePage() {
         if (setRes && setRes.success && setRes.data) {
           setSettings(setRes.data);
         }
+        if (catRes && catRes.success && catRes.data) {
+          setCategories(catRes.data);
+        }
       } catch (err) {
         console.error(err);
       }
@@ -41,9 +46,29 @@ export default function HomePage() {
     loadData();
   }, []);
 
-  const filteredProducts = selectedCategory === 'all'
+    const filteredProducts = selectedCategory === 'all'
     ? products
-    : products.filter((p) => p.category === selectedCategory || p.categoryId === selectedCategory);
+    : products.filter((p) => {
+        // Direct match with categoryId, category, or slug
+        if (p.categoryId === selectedCategory || p.category === selectedCategory) return true;
+        
+        // Find matching category definition
+        const matchedCat = categories.find(
+          (c) => c.id === selectedCategory || c.slug === selectedCategory
+        );
+        if (matchedCat) {
+          if (p.categoryId === matchedCat.id || p.categoryId === matchedCat.slug) return true;
+          if (p.category === matchedCat.id || p.category === matchedCat.slug) return true;
+          if (
+            p.categoryName &&
+            matchedCat.name &&
+            p.categoryName.trim().toLowerCase() === matchedCat.name.trim().toLowerCase()
+          ) {
+            return true;
+          }
+        }
+        return false;
+      });
 
   const themeConfig = {
     green: {
@@ -90,6 +115,7 @@ export default function HomePage() {
       <CategoryFilter
         selectedCategory={selectedCategory}
         onSelectCategory={setSelectedCategory}
+        categories={categories}
       />
 
       {/* Product Grid */}

@@ -1,25 +1,29 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useTheme } from '@/context/ThemeContext';
 import { Sparkles } from 'lucide-react';
+import { useTheme } from '@/context/ThemeContext';
 
 interface CategoryFilterProps {
   selectedCategory: string;
-  onSelectCategory: (category: string) => void;
+  onSelectCategory: (id: string) => void;
   categories?: any[];
 }
 
 const DEFAULT_CATEGORIES = [
   { id: 'all', name: 'Tất cả sản phẩm', icon: '✨' },
-  { id: 'beads-haul', name: 'Hạt Cườm & Beads', icon: '💎' },
-  { id: 'kep-toc', name: 'Kẹp Tóc Nàng Thơ', icon: '🌸' },
-  { id: 'vong-tay', name: 'Vòng Tay Cườm', icon: '🎀' },
-  { id: 'phone-charm', name: 'Phone Charm & Thẻ', icon: '📱' },
-  { id: 'tui-mu', name: 'Túi Mù May Mắn', icon: '🎁' },
+  { id: 'cat-1', slug: 'beads-haul', name: 'Charm Vòng', icon: '✨' },
+  { id: 'cat-2', slug: 'kep-toc', name: 'Kẹp Tóc', icon: '🎀' },
+  { id: 'cat-3', slug: 'vong-tay', name: 'Vòng Tay', icon: '🌸' },
+  { id: 'cat-4', slug: 'phone-charm', name: 'Phone Charm', icon: '📱' },
+  { id: 'cat-5', slug: 'tui-mu', name: 'Gấu', icon: '🎁' },
 ];
 
-export default function CategoryFilter({ selectedCategory, onSelectCategory, categories }: CategoryFilterProps) {
+export default function CategoryFilter({
+  selectedCategory,
+  onSelectCategory,
+  categories,
+}: CategoryFilterProps) {
   const { theme } = useTheme();
   const [catList, setCatList] = useState<any[]>(DEFAULT_CATEGORIES);
 
@@ -34,7 +38,8 @@ export default function CategoryFilter({ selectedCategory, onSelectCategory, cat
       .then((res) => {
         if (res.success && res.data && res.data.length > 0) {
           const mapped = res.data.map((c: any) => ({
-            id: c.slug || c.id,
+            id: c.id,
+            slug: c.slug,
             name: c.name,
             icon: c.icon || '🌸',
           }));
@@ -46,53 +51,57 @@ export default function CategoryFilter({ selectedCategory, onSelectCategory, cat
 
   const themeConfig = {
     green: {
-      active: 'bg-[#3A6B29] text-white shadow-sm',
-      hover: 'hover:border-[#3A6B29] hover:text-[#3A6B29]',
+      active: 'bg-gradient-to-r from-[#6EA64E] to-[#78B159] text-white shadow-md shadow-[#D3E7C6]',
+      inactive: 'bg-white/85 text-stone-700 hover:text-[#456F2F] hover:bg-[#F4F9EE] border-[#DCEDCE]',
     },
     pink: {
-      active: 'bg-[#9E2B54] text-white shadow-sm',
-      hover: 'hover:border-[#9E2B54] hover:text-[#9E2B54]',
+      active: 'bg-gradient-to-r from-[#FF7597] to-[#FFA0B4] text-white shadow-md shadow-[#FFE0EA]',
+      inactive: 'bg-white/85 text-stone-700 hover:text-[#D84A74] hover:bg-[#FFF0F5] border-[#FFE0EA]',
     },
     purple: {
-      active: 'bg-[#613CA8] text-white shadow-sm',
-      hover: 'hover:border-[#613CA8] hover:text-[#613CA8]',
+      active: 'bg-gradient-to-r from-[#8C6EC8] to-[#9C80D8] text-white shadow-md shadow-[#E0D4FA]',
+      inactive: 'bg-white/85 text-stone-700 hover:text-[#7952C4] hover:bg-[#F8F4FF] border-[#E0D4FA]',
     },
     cream: {
-      active: 'bg-[#8E5A13] text-white shadow-sm',
-      hover: 'hover:border-[#8E5A13] hover:text-[#8E5A13]',
+      active: 'bg-gradient-to-r from-[#D6973A] to-[#E5A84B] text-white shadow-md shadow-[#F7E4BE]',
+      inactive: 'bg-white/85 text-stone-700 hover:text-[#B56E16] hover:bg-[#FFFBF2] border-[#F7E4BE]',
     },
   };
 
-  const style = themeConfig[theme] || themeConfig.green;
+  const curr = themeConfig[theme] || themeConfig.green;
 
   return (
-    <div className="my-6">
-      <div className="flex items-center justify-between mb-3.5">
+    <div className="my-5">
+      <div className="flex items-center justify-between mb-3 px-1">
         <div className="flex items-center gap-2">
-          <h2 className="text-base sm:text-lg font-bold text-stone-900 tracking-tight flex items-center gap-1.5">
-            <span>Bộ sưu tập phụ kiện</span>
-            <Sparkles className="w-4 h-4 text-amber-500" />
+          <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
+          <h2 className="text-base sm:text-lg font-bold text-stone-800 tracking-tight font-sans">
+            Bộ sưu tập phụ kiện
           </h2>
         </div>
-        <span className="text-xs font-medium text-stone-400 hidden sm:inline">
+        <span className="text-xs font-semibold text-stone-400 hidden sm:inline">
           Lọc nhanh theo danh mục
         </span>
       </div>
 
       <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
         {catList.map((cat) => {
-          const isSelected = selectedCategory === cat.id;
+          const isSelected =
+            selectedCategory === cat.id ||
+            (cat.slug && selectedCategory === cat.slug);
+
           return (
             <button
               key={cat.id}
+              type="button"
               onClick={() => onSelectCategory(cat.id)}
-              className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center gap-2 border cursor-pointer select-none ${
+              className={`flex-shrink-0 px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-2 border cursor-pointer select-none backdrop-blur-xs ${
                 isSelected
-                  ? `${style.active} border-transparent scale-[1.02]`
-                  : `bg-white text-stone-700 border-stone-200/80 shadow-2xs ${style.hover} hover:bg-stone-50`
+                  ? `${curr.active} border-transparent scale-[1.03]`
+                  : `${curr.inactive} shadow-2xs hover:scale-102`
               }`}
             >
-              <span className="text-sm">{cat.icon}</span>
+              {cat.icon && <span className="text-sm">{cat.icon}</span>}
               <span>{cat.name}</span>
             </button>
           );

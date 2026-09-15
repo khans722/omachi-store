@@ -87,9 +87,9 @@
     --card-shadow: 0 12px 32px -8px rgba(245, 158, 11, 0.15);
   }
 
-  body {
+  html, body {
     @apply antialiased font-sans transition-colors duration-500 relative overflow-x-hidden min-h-screen;
-    background-color: #FAFBF8;
+    font-family: 'Quicksand', 'Nunito', sans-serif !important;
   }
 
   [data-theme="green"] body {
@@ -182,7 +182,7 @@
     var(--silk-1) 360deg
   );
   filter: blur(125px);
-  opacity: 0.35;
+  opacity: 0.55;
   pointer-events: none;
   z-index: 0;
   animation: silk-wave-drift-1 22s ease-in-out infinite alternate;
@@ -203,7 +203,7 @@
     var(--silk-3) 360deg
   );
   filter: blur(135px);
-  opacity: 0.32;
+  opacity: 0.50;
   pointer-events: none;
   z-index: 0;
   animation: silk-wave-drift-2 26s ease-in-out infinite alternate;
@@ -224,7 +224,7 @@
     var(--silk-4) 360deg
   );
   filter: blur(140px);
-  opacity: 0.30;
+  opacity: 0.48;
   pointer-events: none;
   z-index: 0;
   animation: silk-wave-drift-3 24s ease-in-out infinite alternate;
@@ -244,7 +244,7 @@
     transparent 100%
   );
   filter: blur(115px);
-  opacity: 0.34;
+  opacity: 0.52;
   pointer-events: none;
   z-index: 0;
   animation: silk-wave-drift-4 20s ease-in-out infinite alternate;

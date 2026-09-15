@@ -30,19 +30,19 @@ export default function Navbar() {
 
   const headerAccentMap = {
     green: {
-      bar: 'bg-[#F2F9EF] text-[#2E5A1C] border-b border-[#D8ECCE]/70',
+      bar: 'bg-[#F2FAF0] text-[#3E6B28] border-b border-[#D8ECCE]/80',
       searchBg: 'bg-stone-100/80 border-stone-200 focus:border-[#2D6A24] focus:bg-white placeholder:text-stone-400',
       searchIcon: 'text-stone-400',
       orderBtn: 'text-stone-700 bg-white hover:bg-stone-50 border-stone-200 hover:text-[#2E5A1C]',
-      cartBtn: 'bg-[#2D6A24] hover:bg-[#24541D] text-white shadow-stone-200',
+      cartBtn: 'bg-[#569440] hover:bg-[#467E33] text-white shadow-xs',
       cartBadge: 'bg-white text-[#2D6A24] shadow-xs',
     },
     pink: {
-      bar: 'bg-[#FFF0F6] text-[#9E2B54] border-b border-[#FCDCE8]/70',
+      bar: 'bg-[#FFF0F5] text-[#D84A74] border-b border-[#FFD0DE]/80',
       searchBg: 'bg-stone-100/80 border-stone-200 focus:border-[#DB2777] focus:bg-white placeholder:text-stone-400',
       searchIcon: 'text-stone-400',
       orderBtn: 'text-stone-700 bg-white hover:bg-stone-50 border-stone-200 hover:text-[#9E2B54]',
-      cartBtn: 'bg-[#DB2777] hover:bg-[#BE185D] text-white shadow-stone-200',
+      cartBtn: 'bg-[#FF6B8B] hover:bg-[#F25577] text-white shadow-xs',
       cartBadge: 'bg-white text-[#DB2777] shadow-xs',
     },
     purple: {

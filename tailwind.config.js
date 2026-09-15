@@ -26,8 +26,9 @@ module.exports = {
         }
       },
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-        serif: ['"Playfair Display"', 'serif'],
+        sans: ['"Quicksand"', '"Nunito"', 'sans-serif'],
+        rounded: ['"Quicksand"', 'sans-serif'],
+        cute: ['"Nunito"', 'sans-serif'],
       },
       animation: {
         'bounce-slow': 'bounce 3s infinite',
