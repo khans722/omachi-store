@@ -18,12 +18,26 @@ export default function ProductDetailPage() {
   const initialFound = INITIAL_PRODUCTS.find((p) => p.id === productId || p.slug === productId);
   const [product, setProduct] = useState<Product | undefined>(initialFound);
 
+  // 2 Option cố định theo yêu cầu: chỉ bán gói 10 cái và gói 100 cái, không bán lẻ
+  const getPackageOptions = (prod: Product): ProductPackageOption[] => {
+    if (prod.packageOptions && prod.packageOptions.length === 2) {
+      return prod.packageOptions;
+    }
+    return [
+      { id: 'pkg-10', name: '10 cái', price: prod.basePrice * 10 },
+      { id: 'pkg-100', name: '100 cái', price: Math.round(prod.basePrice * 100 * 0.8) },
+    ];
+  };
+
+  const initialPackages = initialFound ? getPackageOptions(initialFound) : [];
+
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(undefined);
-  const [selectedPackage, setSelectedPackage] = useState<ProductPackageOption | undefined>(
-    initialFound?.packageOptions?.[0] || undefined
+  // Mặc định luôn chọn gói 10 cái, tuyệt đối không cho chọn lẻ
+  const [selectedPackage, setSelectedPackage] = useState<ProductPackageOption>(
+    initialPackages[0] || { id: 'pkg-10', name: '10 cái', price: (initialFound?.basePrice || 2000) * 10 }
   );
+
   const [variantError, setVariantError] = useState(false);
-  const [packageError, setPackageError] = useState(false);
   const [warningToast, setWarningToast] = useState<string | null>(null);
   const variantSectionRef = useRef<HTMLDivElement>(null);
 
@@ -63,9 +77,11 @@ export default function ProductDetailPage() {
             if (found.images && found.images[0]) {
               setSelectedImage(found.images[0]);
             }
-            if (found.packageOptions && found.packageOptions.length > 0 && !selectedPackage) {
-              setSelectedPackage(found.packageOptions[0]);
-            }
+            const pkgs = getPackageOptions(found);
+            setSelectedPackage((prev) => {
+              if (prev && prev.id === 'pkg-100') return pkgs[1] || pkgs[0];
+              return pkgs[0];
+            });
           }
         }
       } catch (e) {
@@ -91,23 +107,15 @@ export default function ProductDetailPage() {
     );
   }
 
-  // Clear unit price: packageOption price > variant price > product basePrice
-  const unitPrice = selectedPackage?.price ?? selectedVariant?.price ?? product.basePrice;
+  const packageOptions = getPackageOptions(product);
+
+  // Đơn giá cho 1 gói (10 cái hoặc 100 cái)
+  const unitPrice = selectedPackage?.price ?? (packageOptions[0]?.price || product.basePrice * 10);
   const totalPrice = unitPrice * quantity;
 
-  // Price range calculation for initial display (Shopee style e.g. 9.923 - 31.020 đ)
-  const allPrices = [];
-  if (product.basePrice) allPrices.push(product.basePrice);
-  if (product.packageOptions) product.packageOptions.forEach((p) => p.price && allPrices.push(p.price));
-  if (product.variants) product.variants.forEach((v) => v.price && allPrices.push(v.price));
-  const minPrice = Math.min(...allPrices);
-  const maxPrice = Math.max(...allPrices);
-  const priceDisplay =
-    selectedPackage || selectedVariant
-      ? formatVND(unitPrice)
-      : minPrice !== maxPrice
-      ? `${formatVND(minPrice)} - ${formatVND(maxPrice)}`
-      : formatVND(product.basePrice);
+  // Tính tổng số cái thực tế
+  const itemsPerPack = selectedPackage?.id === 'pkg-100' || selectedPackage?.name.includes('100') ? 100 : 10;
+  const totalItemCount = quantity * itemsPerPack;
 
   const totalStockCount =
     product.variants && product.variants.length > 0
@@ -117,19 +125,12 @@ export default function ProductDetailPage() {
   const maxAvailable =
     selectedVariant?.stock !== undefined ? Math.max(0, selectedVariant.stock) : product.stock || 9999;
 
-  const validateSelection = () => {
+  const validateSelection = (): boolean => {
     if (product.variants && product.variants.length > 0 && !selectedVariant) {
       setVariantError(true);
       setWarningToast('⚠️ Vui lòng chọn Phân loại (Màu sắc / Mẫu) trước nhé!');
       setTimeout(() => setWarningToast(null), 3000);
       variantSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return false;
-    }
-
-    if (product.packageOptions && product.packageOptions.length > 0 && !selectedPackage) {
-      setPackageError(true);
-      setWarningToast('⚠️ Vui lòng chọn Kích cỡ / Quy cách đóng gói!');
-      setTimeout(() => setWarningToast(null), 3000);
       return false;
     }
 
@@ -145,13 +146,7 @@ export default function ProductDetailPage() {
   const handleAddToCart = () => {
     if (!validateSelection()) return;
 
-    let finalQty = quantity;
-    if (selectedVariant && selectedVariant.stock !== undefined && quantity > selectedVariant.stock) {
-      finalQty = Math.max(1, selectedVariant.stock);
-      setQuantity(finalQty);
-    }
-
-    addItem(product, finalQty, selectedVariant, customNote, selectedPackage);
+    addItem(product, quantity, selectedVariant, customNote, selectedPackage);
     setIsAddedToast(true);
     setTimeout(() => setIsAddedToast(false), 2500);
   };
@@ -159,13 +154,7 @@ export default function ProductDetailPage() {
   const handleBuyNow = () => {
     if (!validateSelection()) return;
 
-    let finalQty = quantity;
-    if (selectedVariant && selectedVariant.stock !== undefined && quantity > selectedVariant.stock) {
-      finalQty = Math.max(1, selectedVariant.stock);
-      setQuantity(finalQty);
-    }
-
-    addItem(product, finalQty, selectedVariant, customNote, selectedPackage);
+    addItem(product, quantity, selectedVariant, customNote, selectedPackage);
     router.push('/checkout');
   };
 
@@ -290,15 +279,14 @@ export default function ProductDetailPage() {
 
           {/* Price Tag (Shopee Style) */}
           <div className="bg-rose-50/60 p-4 rounded-2xl border border-rose-100 flex items-baseline gap-3">
-            <span className="text-2xl sm:text-3xl font-black text-[#ee4d2d]">{priceDisplay}</span>
-            {product.originalPrice && unitPrice < product.originalPrice && (
-              <span className="text-xs sm:text-sm text-gray-400 line-through">
-                {formatVND(product.originalPrice)}
-              </span>
-            )}
+            <span className="text-2xl sm:text-3xl font-black text-[#ee4d2d]">{formatVND(unitPrice)}</span>
+            <span className="text-xs text-gray-500 font-bold">/gói {selectedPackage.name}</span>
+            <span className="ml-auto text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+              Quy cách: {selectedPackage.name}
+            </span>
           </div>
 
-          {/* Variant Selection (SHOPEE STYLE - Group 1: Màu sắc / Phân loại) */}
+          {/* Option Group 1: Màu sắc / Phân loại */}
           {product.variants && product.variants.length > 0 && (
             <div
               ref={variantSectionRef}
@@ -345,9 +333,6 @@ export default function ProductDetailPage() {
                               if (v.image || v.imageUrl) {
                                 setSelectedImage(v.image || v.imageUrl || selectedImage);
                               }
-                              if (quantity > vStock && vStock > 0) {
-                                setQuantity(vStock);
-                              }
                             }
                           }}
                           className={`relative px-3 py-1.5 rounded-lg border text-xs font-bold transition-all flex items-center gap-1.5 select-none overflow-hidden ${
@@ -391,12 +376,12 @@ export default function ProductDetailPage() {
                   {selectedVariant ? (
                     <p className="text-[11px] text-gray-500 pt-0.5">
                       Đã chọn: <strong className="text-[#ee4d2d] font-bold">{selectedVariant.name}</strong> • Còn{' '}
-                      <strong className="text-emerald-700 font-bold">{selectedVariant.stock?.toLocaleString('vi-VN')}</strong> cái
+                      <strong className="text-emerald-700 font-bold">{selectedVariant.stock?.toLocaleString('vi-VN')}</strong> cái trong kho
                     </p>
                   ) : variantError ? (
                     <p className="text-xs text-[#ee4d2d] font-bold flex items-center gap-1 animate-pulse pt-0.5">
                       <AlertCircle className="w-3.5 h-3.5" />
-                      <span>Vui lòng chọn một phân loại trước khi tiếp tục</span>
+                      <span>Vui lòng chọn một màu sắc trước khi tiếp tục</span>
                     </p>
                   ) : null}
                 </div>
@@ -404,66 +389,58 @@ export default function ProductDetailPage() {
             </div>
           )}
 
-          {/* Package Selection (SHOPEE STYLE - Group 2: Kích cỡ / Quy cách nếu có) */}
-          {product.packageOptions && product.packageOptions.length > 0 && (
-            <div
-              className={`p-3.5 sm:p-4 rounded-2xl transition-all duration-300 ${
-                packageError
-                  ? 'bg-rose-50/70 border-2 border-[#ee4d2d] ring-4 ring-rose-200 shadow-md'
-                  : 'bg-stone-50/60 border border-stone-200/80'
-              }`}
-            >
-              <div className="flex items-start gap-3 sm:gap-4">
-                <span className="text-xs text-gray-500 font-bold min-w-[70px] pt-1.5">Quy Cách:</span>
-                <div className="flex-1 space-y-2">
-                  <div className="flex flex-wrap gap-2">
-                    {product.packageOptions.map((pkg) => {
-                      const isSelected = selectedPackage?.id === pkg.id;
-                      return (
-                        <button
-                          key={pkg.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedPackage(isSelected ? undefined : pkg);
-                            setPackageError(false);
-                          }}
-                          className={`relative px-3.5 py-1.5 rounded-lg border text-xs font-bold transition-all flex items-center gap-1.5 select-none overflow-hidden ${
-                            isSelected
-                              ? 'border-2 border-[#ee4d2d] text-[#ee4d2d] bg-white font-black shadow-xs'
-                              : 'border-gray-200 bg-white text-gray-700 hover:border-[#ee4d2d] hover:text-[#ee4d2d] hover:bg-rose-50/30'
-                          }`}
-                        >
-                          <span>{pkg.name}</span>
-                          {pkg.price && (
-                            <span className="text-[10px] text-gray-400 font-normal">({formatVND(pkg.price)})</span>
-                          )}
+          {/* Option Group 2: Quy Cách (CHỈ 2 OPTION: 10 VÀ 100 - KHÔNG BÁN LẺ) */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-stone-50/60 border border-stone-200/80 transition-all">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <span className="text-xs text-gray-500 font-bold min-w-[70px] pt-1.5">Quy Cách:</span>
+              <div className="flex-1 space-y-2">
+                <div className="flex flex-wrap gap-2.5">
+                  {packageOptions.map((pkg) => {
+                    const isSelected = selectedPackage?.id === pkg.id;
+                    return (
+                      <button
+                        key={pkg.id}
+                        type="button"
+                        onClick={() => setSelectedPackage(pkg)}
+                        className={`relative px-4 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-2 select-none overflow-hidden shadow-2xs ${
+                          isSelected
+                            ? 'border-2 border-[#ee4d2d] text-[#ee4d2d] bg-white font-black ring-2 ring-rose-100'
+                            : 'border-gray-200 bg-white text-gray-700 hover:border-[#ee4d2d] hover:text-[#ee4d2d]'
+                        }`}
+                      >
+                        <span className="text-sm">{pkg.name}</span>
+                        <span className={`text-[11px] font-semibold ${isSelected ? 'text-[#ee4d2d]' : 'text-gray-400'}`}>
+                          ({formatVND(pkg.price || 0)})
+                        </span>
 
-                          {isSelected && (
-                            <div className="absolute bottom-0 right-0 w-3 h-3 overflow-hidden pointer-events-none">
-                              <div className="absolute bottom-0 right-0 w-0 h-0 border-solid border-t-transparent border-l-transparent border-b-[#ee4d2d] border-r-[#ee4d2d] border-b-[12px] border-r-[12px]" />
-                              <svg
-                                className="absolute bottom-[0.5px] right-[0.5px] w-2 h-2 text-white"
-                                viewBox="0 0 12 12"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                              >
-                                <path d="M2 6l3 3 5-5" />
-                              </svg>
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
+                        {isSelected && (
+                          <div className="absolute bottom-0 right-0 w-3.5 h-3.5 overflow-hidden pointer-events-none">
+                            <div className="absolute bottom-0 right-0 w-0 h-0 border-solid border-t-transparent border-l-transparent border-b-[#ee4d2d] border-r-[#ee4d2d] border-b-[14px] border-r-[14px]" />
+                            <svg
+                              className="absolute bottom-[1px] right-[1px] w-2 h-2 text-white"
+                              viewBox="0 0 12 12"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.5"
+                            >
+                              <path d="M2 6l3 3 5-5" />
+                            </svg>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
+                <p className="text-[11px] text-gray-500 italic pt-1">
+                  * Tiệm chỉ đóng gói chuẩn theo <strong className="text-gray-800">10 cái</strong> hoặc <strong className="text-gray-800">100 cái</strong>, không bán lẻ từng cái.
+                </p>
               </div>
             </div>
-          )}
+          </div>
 
-          {/* Quantity Selector (SHOPEE STYLE - Clean & Simple) */}
+          {/* Quantity Selector (Số lượng gói) */}
           <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-            <span className="text-xs text-gray-500 font-bold min-w-[70px]">Số Lượng:</span>
+            <span className="text-xs text-gray-500 font-bold min-w-[70px]">Số Lượng Gói:</span>
             <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white shadow-2xs">
               <button
                 type="button"
@@ -476,39 +453,21 @@ export default function ProductDetailPage() {
               <input
                 type="number"
                 min="1"
-                max={maxAvailable > 0 ? maxAvailable : 1}
                 value={quantity}
-                onChange={(e) => {
-                  const parsed = parseInt(e.target.value) || 1;
-                  if (selectedVariant && maxAvailable > 0 && parsed > maxAvailable) {
-                    setQuantity(maxAvailable);
-                    setWarningToast(`Kho chỉ còn ${maxAvailable} cái cho phân loại này.`);
-                    setTimeout(() => setWarningToast(null), 2500);
-                  } else {
-                    setQuantity(Math.max(1, parsed));
-                  }
-                }}
+                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
                 className="w-14 h-8 text-center text-xs font-black text-gray-800 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <button
                 type="button"
-                disabled={selectedVariant !== undefined && quantity >= maxAvailable}
-                onClick={() => {
-                  if (selectedVariant && quantity >= maxAvailable) {
-                    setWarningToast(`Màu này chỉ còn tối đa ${maxAvailable} cái trong kho.`);
-                    setTimeout(() => setWarningToast(null), 2500);
-                    return;
-                  }
-                  setQuantity(quantity + 1);
-                }}
-                className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:text-[#ee4d2d] border-l border-gray-200 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                onClick={() => setQuantity(quantity + 1)}
+                className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:text-[#ee4d2d] border-l border-gray-200 transition"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            <span className="text-xs text-gray-500">
-              <strong className="text-gray-800 font-bold">{maxAvailable.toLocaleString('vi-VN')}</strong> sản phẩm có sẵn
+            <span className="text-xs font-bold text-gray-700 bg-gray-100 px-2.5 py-1 rounded-lg">
+              = Tổng cộng: <strong className="text-[#ee4d2d] font-black">{totalItemCount.toLocaleString('vi-VN')}</strong> cái
             </span>
           </div>
 
@@ -661,7 +620,7 @@ export default function ProductDetailPage() {
         </button>
       </div>
 
-      {/* SHOPEE MOBILE BOTTOM SHEET DRAWER (EXACT MATCH TO REFERENCE SCREENSHOTS) */}
+      {/* SHOPEE MOBILE BOTTOM SHEET DRAWER (CHỈ 2 OPTION: 10 VÀ 100 - KHÔNG CHO CHỌN LẺ) */}
       {isMobileSheetOpen && (
         <div className="md:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end animate-fade-in">
           <div className="absolute inset-0" onClick={() => setIsMobileSheetOpen(false)} />
@@ -673,18 +632,16 @@ export default function ProductDetailPage() {
                 <img src={selectedImage} alt={product.name} className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 min-w-0 pr-8 pt-0.5">
-                <p className="text-xl font-black text-[#ee4d2d] leading-tight">{priceDisplay}</p>
+                <p className="text-xl font-black text-[#ee4d2d] leading-tight">{formatVND(unitPrice)}</p>
                 <p className="text-xs text-gray-500 mt-1">
                   Kho: <strong className="text-gray-800 font-bold">{maxAvailable.toLocaleString('vi-VN')}</strong>
                 </p>
-                {(selectedVariant || selectedPackage) && (
-                  <p className="text-xs text-gray-600 mt-1 truncate">
-                    Đã chọn:{' '}
-                    <span className="font-bold text-[#ee4d2d]">
-                      {[selectedVariant?.name, selectedPackage?.name].filter(Boolean).join(' • ')}
-                    </span>
-                  </p>
-                )}
+                <p className="text-xs text-gray-600 mt-1 truncate">
+                  Đã chọn:{' '}
+                  <span className="font-bold text-[#ee4d2d]">
+                    {[selectedVariant?.name, selectedPackage.name].filter(Boolean).join(' • ')}
+                  </span>
+                </p>
               </div>
               <button
                 type="button"
@@ -732,7 +689,6 @@ export default function ProductDetailPage() {
                               setSelectedVariant(v);
                               setVariantError(false);
                               if (v.image || v.imageUrl) setSelectedImage(v.image || v.imageUrl || selectedImage);
-                              if (quantity > vStock && vStock > 0) setQuantity(vStock);
                             }
                           }}
                           className={`relative px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 select-none overflow-hidden transition ${
@@ -772,57 +728,60 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* Group 2: Kích cỡ / Quy cách */}
-              {product.packageOptions && product.packageOptions.length > 0 && (
-                <div className="space-y-2 pt-2 border-t border-gray-100">
-                  <h4 className="text-xs font-bold text-gray-700">Kích cỡ / Quy cách:</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {product.packageOptions.map((pkg) => {
-                      const isSelected = selectedPackage?.id === pkg.id;
-                      return (
-                        <button
-                          key={pkg.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedPackage(isSelected ? undefined : pkg);
-                            setPackageError(false);
-                          }}
-                          className={`relative px-3.5 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 select-none overflow-hidden transition ${
-                            isSelected
-                              ? 'border-2 border-[#ee4d2d] text-[#ee4d2d] bg-white font-black'
-                              : 'border-transparent bg-[#f5f5f5] text-gray-700 active:bg-gray-200'
-                          }`}
-                        >
-                          <span>{pkg.name}</span>
-                          {pkg.price && (
-                            <span className="text-[10px] text-gray-400 font-normal">({formatVND(pkg.price)})</span>
-                          )}
-
-                          {isSelected && (
-                            <div className="absolute bottom-0 right-0 w-3 h-3 overflow-hidden pointer-events-none">
-                              <div className="absolute bottom-0 right-0 w-0 h-0 border-solid border-t-transparent border-l-transparent border-b-[#ee4d2d] border-r-[#ee4d2d] border-b-[12px] border-r-[12px]" />
-                              <svg
-                                className="absolute bottom-[0.5px] right-[0.5px] w-2 h-2 text-white"
-                                viewBox="0 0 12 12"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                              >
-                                <path d="M2 6l3 3 5-5" />
-                              </svg>
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Group 3: Số lượng */}
+              {/* Group 2: Quy cách - ĐÚNG 2 OPTION: 10 VÀ 100 */}
               <div className="space-y-2 pt-2 border-t border-gray-100">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-gray-700">Số lượng:</span>
+                  <h4 className="text-xs font-bold text-gray-700">Quy cách đóng gói:</h4>
+                  <span className="text-[10px] text-gray-400">Không bán lẻ từng cái</span>
+                </div>
+                <div className="flex flex-wrap gap-2.5">
+                  {packageOptions.map((pkg) => {
+                    const isSelected = selectedPackage?.id === pkg.id;
+                    return (
+                      <button
+                        key={pkg.id}
+                        type="button"
+                        onClick={() => setSelectedPackage(pkg)}
+                        className={`relative px-4 py-2 rounded-xl border text-xs font-bold flex items-center gap-2 select-none overflow-hidden transition ${
+                          isSelected
+                            ? 'border-2 border-[#ee4d2d] text-[#ee4d2d] bg-white font-black ring-2 ring-rose-100'
+                            : 'border-transparent bg-[#f5f5f5] text-gray-700 active:bg-gray-200'
+                        }`}
+                      >
+                        <span className="text-sm">{pkg.name}</span>
+                        <span className={`text-[11px] font-semibold ${isSelected ? 'text-[#ee4d2d]' : 'text-gray-400'}`}>
+                          ({formatVND(pkg.price || 0)})
+                        </span>
+
+                        {isSelected && (
+                          <div className="absolute bottom-0 right-0 w-3.5 h-3.5 overflow-hidden pointer-events-none">
+                            <div className="absolute bottom-0 right-0 w-0 h-0 border-solid border-t-transparent border-l-transparent border-b-[#ee4d2d] border-r-[#ee4d2d] border-b-[14px] border-r-[14px]" />
+                            <svg
+                              className="absolute bottom-[1px] right-[1px] w-2 h-2 text-white"
+                              viewBox="0 0 12 12"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.5"
+                            >
+                              <path d="M2 6l3 3 5-5" />
+                            </svg>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Group 3: Số lượng gói */}
+              <div className="space-y-2 pt-2 border-t border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-gray-700 block">Số lượng gói:</span>
+                    <span className="text-[10px] text-gray-400">
+                      Tổng = <strong className="text-[#ee4d2d]">{totalItemCount.toLocaleString('vi-VN')}</strong> cái
+                    </span>
+                  </div>
                   <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
                     <button
                       type="button"
@@ -835,14 +794,12 @@ export default function ProductDetailPage() {
                     <input
                       type="number"
                       min="1"
-                      max={maxAvailable > 0 ? maxAvailable : 1}
                       value={quantity}
                       onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
                       className="w-14 h-8 text-center text-xs font-black text-gray-800 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                     <button
                       type="button"
-                      disabled={selectedVariant !== undefined && quantity >= maxAvailable}
                       onClick={() => setQuantity(quantity + 1)}
                       className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-40"
                     >

@@ -27,9 +27,8 @@ export let productsStore: Product[] = [
       { id: 'v5', name: '#15 Vàng Kem 🧈', colorHex: '#FDE68A', imageUrl: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=200&auto=format&fit=crop&q=80' },
     ],
     packageOptions: [
-      { id: 'pkg-50', name: '50 chiếc', price: 15000 },
-      { id: 'pkg-100', name: '100 chiếc', price: 28000 },
-      { id: 'pkg-200', name: '200 chiếc', price: 50000 },
+      { id: 'pkg-10', name: '10 cái', price: 20000 },
+      { id: 'pkg-100', name: '100 cái', price: 120000 },
     ],
   },
   {
@@ -57,8 +56,8 @@ export let productsStore: Product[] = [
       { id: 'k4', name: 'Hoa Vàng Bơ 🧈', colorHex: '#FDE047' },
     ],
     packageOptions: [
-      { id: 'p-1', name: '1 chiếc', price: 18000 },
-      { id: 'p-pair', name: '1 đôi (2 chiếc)', price: 32000 },
+      { id: 'pkg-10', name: '10 cái', price: 150000 },
+      { id: 'pkg-100', name: '100 cái', price: 1200000 },
     ],
   },
   {
@@ -87,8 +86,8 @@ export let productsStore: Product[] = [
       { id: 'v-mint', name: 'Xanh Bơ Thanh Mát', colorHex: '#34D399' },
     ],
     packageOptions: [
-      { id: 'v-1', name: '1 chiếc', price: 45000 },
-      { id: 'v-pair', name: '1 đôi bạn thân', price: 85000 },
+      { id: 'pkg-10', name: '10 cái', price: 380000 },
+      { id: 'pkg-100', name: '100 cái', price: 3200000 },
     ],
   },
   {
@@ -114,8 +113,8 @@ export let productsStore: Product[] = [
       { id: 'p2', name: 'Móc Charm Cầm Tay (15cm)', colorHex: '#FB7185' },
     ],
     packageOptions: [
-      { id: 'c-1', name: '1 sợi', price: 35000 },
-      { id: 'c-combo', name: 'Combo 2 sợi', price: 65000 },
+      { id: 'pkg-10', name: '10 cái', price: 280000 },
+      { id: 'pkg-100', name: '100 cái', price: 2200000 },
     ],
   },
   {
@@ -142,8 +141,8 @@ export let productsStore: Product[] = [
       { id: 'dh-silver', name: 'Mặt Vuông Bạc + Cườm Xanh Băng', colorHex: '#06B6D4' },
     ],
     packageOptions: [
-      { id: 'dh-1', name: '1 chiếc', price: 129000 },
-      { id: 'dh-box', name: 'Set 1 chiếc + Hộp quà nhung', price: 149000 },
+      { id: 'pkg-10', name: '10 cái', price: 990000 },
+      { id: 'pkg-100', name: '100 cái', price: 8500000 },
     ],
   },
   {
@@ -169,9 +168,8 @@ export let productsStore: Product[] = [
       { id: 'tm-2', name: 'Túi Mù Kẹp Tóc & Nơ 🎀', colorHex: '#EC4899' },
     ],
     packageOptions: [
-      { id: 'tm-single', name: '1 túi lẻ', price: 15000 },
-      { id: 'tm-set5', name: 'Gói 5 túi mù', price: 65000 },
-      { id: 'tm-set10', name: 'Gói 10 túi mù (Tặng charm VIP)', price: 120000 },
+      { id: 'pkg-10', name: '10 cái', price: 120000 },
+      { id: 'pkg-100', name: '100 cái', price: 1000000 },
     ],
   }
 ];
@@ -200,11 +198,4 @@ export function updateProduct(id: string, updatedData: Partial<Product>): Produc
     ...updatedData,
   };
   return productsStore[index];
-}
-
-export function deleteProduct(id: string): boolean {
-  const index = productsStore.findIndex((p) => p.id === id);
-  if (index === -1) return false;
-  productsStore.splice(index, 1);
-  return true;
 }
