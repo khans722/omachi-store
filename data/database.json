@@ -1,6 +1,6 @@
 {
   "version": "2.0.0",
-  "lastBackup": "2026-09-16T00:45:25.779Z",
+  "lastBackup": "2026-09-16T02:46:23.799Z",
   "categories": [
     {
       "id": "cat-1",
@@ -648,6 +648,56 @@
     }
   ],
   "orders": [
+    {
+      "id": "ord-1789526783799",
+      "code": "OM-2260",
+      "customer": {
+        "fullName": "Dương Quốc Khánh",
+        "phone": "0375408255",
+        "address": "Thon Noi, Thong noi, Thị xã Việt Yên, Bắc Giang",
+        "city": "Bắc Giang",
+        "note": "1"
+      },
+      "items": [
+        {
+          "id": "item-1789526783799-0",
+          "productId": "prod-1",
+          "productName": "Set Hạt Cườm Hoa & Nơ Pastel Tự Xâu (Beads Haul)",
+          "productSku": "OM-BEAD-01",
+          "variantId": "v1",
+          "variantName": "Mix Hồng Pastel 🌸",
+          "quantity": 1,
+          "originalUnitPrice": 2000,
+          "appliedUnitPrice": 20000,
+          "totalPrice": 20000,
+          "savingsAmount": 0,
+          "discountPercent": 0,
+          "customHandmadeNote": ""
+        }
+      ],
+      "subtotal": 20000,
+      "subtotalAmount": 2000,
+      "comboDiscountAmount": 0,
+      "itemsTotalAmount": 20000,
+      "shippingFee": 0,
+      "finalTotalAmount": 20000,
+      "totalAmount": 20000,
+      "paymentMethod": "COD",
+      "paymentStatus": "UNPAID",
+      "orderStatus": "PENDING_CONFIRM",
+      "carrierName": "SPX Express",
+      "logs": [
+        {
+          "id": "log-1789526783799",
+          "action": "ORDER_CREATED",
+          "performedBy": "CUSTOMER",
+          "newValue": "Khách hàng đặt 1 sản phẩm",
+          "timestamp": "2026-09-16T02:46:23.799Z"
+        }
+      ],
+      "createdAt": "2026-09-16T02:46:23.799Z",
+      "updatedAt": "2026-09-16T02:46:23.799Z"
+    },
     {
       "id": "ord-1789519434477",
       "code": "OM-2049",
@@ -1330,8 +1380,8 @@
     "shopName": "Omachi 🌸 Phụ Kiện Handmade & Charm",
     "brandTitle": "OMACHI HANDMADE STORE",
     "slogan": "Vòng cườm, kẹp tóc pastel, charm hoa xinh lấp lánh custom theo yêu cầu ✨",
-    "hotline": "0375.408.256",
-    "zaloPhone": "0375408256",
+    "hotline": "0398445122",
+    "zaloPhone": "0398445122",
     "zaloOfficialUrl": "https://zalo.me/0375408256",
     "instagramUrl": "https://instagram.com/omachii18",
     "instagramHandle": "@omachii18",
@@ -1376,6 +1426,8 @@
       "/uploads/charm_1789442857200_1789435799294_1528911961217344.jpg",
       "/uploads/charm_1789442857210_1789435799313_1528911961217344.jpg",
       "/uploads/charm_1789442857219_1789435799334_1528911961217344.jpg"
-    ]
+    ],
+    "telegramChatId": "8941847464",
+    "telegramBotToken": "8643883325:AAFtYvON3zYNH6D8K1Mf8bTtHclR1ha92SQ"
   }
 }

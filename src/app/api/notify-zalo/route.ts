@@ -28,10 +28,34 @@ export async function POST(req: NextRequest) {
       createdAt: new Date().toISOString(),
     };
 
-    const settings = db.settings.get();
+    const body = await req.json().catch(() => ({}));
+    const currentSettings = db.settings.get();
+    const settings = {
+      ...currentSettings,
+      ...(body.telegramBotToken ? { telegramBotToken: body.telegramBotToken } : {}),
+      ...(body.telegramChatId ? { telegramChatId: body.telegramChatId } : {}),
+      ...(body.websiteUrl ? { websiteUrl: body.websiteUrl } : {}),
+      ...(body.enableTelegramNotify !== undefined ? { enableTelegramNotify: body.enableTelegramNotify } : {}),
+    };
+
     const result = await sendOrderNotification(latest as any, settings, 'NEW_ORDER');
+    
+    if (result.telegram && result.telegram.success === false) {
+      return NextResponse.json({ 
+        success: false, 
+        error: result.telegram.error || 'Lỗi gửi tin nhắn Telegram' 
+      }, { status: 400 });
+    }
+
+    if (!settings.telegramBotToken || !settings.telegramChatId) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Chưa cấu hình Telegram Bot Token hoặc Chat ID.' 
+      }, { status: 400 });
+    }
+
     return NextResponse.json({ success: true, message: 'Notification triggered', result });
-  } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error?.message || String(error) }, { status: 500 });
   }
 }

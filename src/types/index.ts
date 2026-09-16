@@ -220,6 +220,7 @@ export interface ShopSettings {
   telegramBotToken?: string;
   telegramChatId?: string;
   enableTelegramNotify?: boolean;
+  websiteUrl?: string;
   warehouseProvince?: string;
   heroImage?: string;
   heroImages?: string[];

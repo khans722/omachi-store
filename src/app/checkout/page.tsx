@@ -29,6 +29,243 @@ const formatVND = (amount: number) => {
   }).format(amount);
 };
 
+
+function SearchableDropdown({
+  label,
+  required,
+  placeholder,
+  value,
+  onChange,
+  options,
+  error,
+  disabled,
+  disabledText,
+  buttonRef,
+  curr,
+  searchPlaceholder,
+  onSelectOption,
+}: {
+  label: string;
+  required?: boolean;
+  placeholder: string;
+  value: string;
+  onChange: (val: string) => void;
+  options: string[];
+  error?: string;
+  disabled?: boolean;
+  disabledText?: string;
+  buttonRef?: React.RefObject<any>;
+  curr: any;
+  searchPlaceholder?: string;
+  onSelectOption?: (val: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [isManualInput, setIsManualInput] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+        setSearch('');
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen && searchInputRef.current) {
+      setTimeout(() => searchInputRef.current?.focus(), 60);
+    }
+  }, [isOpen]);
+
+  const filteredOptions = useMemo(() => {
+    if (!search.trim()) return options;
+    const q = search.toLowerCase().trim();
+    return options.filter((opt) => opt.toLowerCase().includes(q));
+  }, [options, search]);
+
+  if (isManualInput) {
+    return (
+      <div className="space-y-1">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-bold text-gray-700 block">
+            {label} {required && <span className="text-rose-500">*</span>}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setIsManualInput(false);
+              setSearch('');
+            }}
+            className="text-[10px] text-pink-600 hover:text-pink-700 font-bold hover:underline"
+          >
+            📋 Chọn từ danh sách
+          </button>
+        </div>
+        <input
+          ref={buttonRef}
+          type="text"
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={`w-full px-3.5 py-2.5 text-xs ${curr.inputBg} border ${
+            error ? 'border-rose-400 ring-2 ring-rose-100 bg-rose-50/20' : ''
+          } rounded-xl font-bold text-gray-800 focus:outline-none focus:ring-2 focus:bg-white transition`}
+        />
+        {error && (
+          <p className="text-[10px] text-rose-500 font-semibold mt-1">⚠️ {error}</p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div ref={containerRef} className="relative space-y-1">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-bold text-gray-700 block">
+          {label} {required && <span className="text-rose-500">*</span>}
+        </span>
+        <button
+          type="button"
+          onClick={() => setIsManualInput(true)}
+          className="text-[10px] text-gray-400 hover:text-pink-600 font-medium"
+        >
+          ✍️ Tự gõ
+        </button>
+      </div>
+
+      <button
+        ref={buttonRef}
+        type="button"
+        disabled={disabled}
+        onClick={() => {
+          if (!disabled) {
+            setIsOpen(!isOpen);
+            setSearch('');
+          }
+        }}
+        className={`w-full px-3.5 py-2.5 text-xs text-left ${curr.inputBg} border ${
+          error ? 'border-rose-400 ring-2 ring-rose-100 bg-rose-50/20' : ''
+        } rounded-xl font-bold transition flex items-center justify-between gap-2 shadow-2xs ${
+          disabled
+            ? 'opacity-60 cursor-not-allowed bg-gray-100 border-gray-200 text-gray-400'
+            : 'hover:border-pink-300 focus:outline-none focus:ring-2'
+        } ${value ? 'text-gray-800' : 'text-gray-400'}`}
+      >
+        <span className="truncate">
+          {disabled ? disabledText || placeholder : value || placeholder}
+        </span>
+        <div className="flex items-center gap-1.5 shrink-0 text-gray-400">
+          {value && !disabled && (
+            <span
+              onClick={(e) => {
+                e.stopPropagation();
+                onChange('');
+                setSearch('');
+              }}
+              className="p-0.5 hover:text-rose-500 rounded-full cursor-pointer text-xs"
+              title="Xóa lựa chọn"
+            >
+              ✕
+            </span>
+          )}
+          <svg
+            className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180 text-pink-600' : ''}`}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
+      </button>
+
+      {error && (
+        <p className="text-[10px] text-rose-500 font-semibold mt-1">⚠️ {error}</p>
+      )}
+
+      {/* DROPDOWN POPUP ATTACHED DIRECTLY UNDERNEATH */}
+      {isOpen && !disabled && (
+        <div className="absolute top-full left-0 right-0 z-50 mt-1.5 bg-white rounded-2xl shadow-2xl border border-pink-200 p-2 space-y-2 animate-fade-in">
+          {/* Quick Search */}
+          <div className="relative">
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder={searchPlaceholder || '🔍 Gõ để tìm kiếm nhanh...'}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-8 pr-7 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:bg-white focus:border-pink-400 font-medium text-gray-800"
+            />
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">
+              🔍
+            </span>
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* List items */}
+          <div className="max-h-52 overflow-y-auto divide-y divide-gray-50 pr-1 space-y-0.5 scrollbar-thin">
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((opt) => {
+                const isSelected = opt.toLowerCase() === value.toLowerCase().trim();
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => {
+                      onChange(opt);
+                      setIsOpen(false);
+                      setSearch('');
+                      onSelectOption?.(opt);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition ${
+                      isSelected
+                        ? 'bg-pink-100 text-pink-900 font-black'
+                        : 'hover:bg-pink-50 hover:text-pink-700 text-gray-700'
+                    }`}
+                  >
+                    <span>{opt}</span>
+                    {isSelected && <span className="text-pink-600 font-black">✓</span>}
+                  </button>
+                );
+              })
+            ) : (
+              <div className="py-4 text-center text-xs text-gray-400 space-y-2">
+                <p>Không tìm thấy &quot;{search}&quot;</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(search);
+                    setIsOpen(false);
+                    setSearch('');
+                  }}
+                  className="px-3 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 rounded-lg font-bold text-[11px]"
+                >
+                  Sử dụng &quot;{search}&quot;
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 export default function CheckoutPage() {
   const router = useRouter();
   const {
@@ -101,8 +338,8 @@ export default function CheckoutPage() {
   // Refs để tự động trỏ focus đến đúng ô bị lỗi
   const fullNameRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
-  const provinceRef = useRef<HTMLInputElement>(null);
-  const districtRef = useRef<HTMLInputElement>(null);
+  const provinceRef = useRef<any>(null);
+  const districtRef = useRef<any>(null);
   const addressRef = useRef<HTMLInputElement>(null);
 
   // Quản lý lỗi chi tiết từng trường
@@ -621,81 +858,44 @@ export default function CheckoutPage() {
                     <span className="text-[10px] text-gray-400 font-medium">Tự do gõ hoặc chọn</span>
                   </div>
 
-                  {/* Hàng 1: Tỉnh / Thành phố (50%) + Quận / Huyện / Thị xã (50%) - RỘNG RÃI KHÔNG BỊ CẮT CHỮ */}
+                  {/* Hàng 1: Tỉnh / Thành phố (50%) + Quận / Huyện / Thị xã (50%) - CHUẨN DROPDOWN GẮN LIỀN Ô NHẬP */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* 1. Tỉnh / Thành phố */}
-                    <div>
-                      <span className="text-[11px] font-bold text-gray-700 block mb-1">
-                        Tỉnh / Thành phố <span className="text-rose-500">*</span>
-                      </span>
-                      <div className="relative">
-                        <input
-                          ref={provinceRef}
-                          type="text"
-                          list="province-datalist"
-                          placeholder="Chọn hoặc nhập Tỉnh/Thành..."
-                          value={selectedProvince}
-                          onChange={(e) => {
-                            const prov = e.target.value;
-                            setSelectedProvince(prov);
-                            if (fieldErrors.province) setFieldErrors((prev) => ({ ...prev, province: undefined }));
-                            const found = VIETNAM_PROVINCES.find((p) => p.name.toLowerCase() === prov.trim().toLowerCase());
-                            if (found && found.districts.length > 0) {
-                              setSelectedDistrict(found.districts[0]);
-                            } else {
-                              setSelectedDistrict('');
-                            }
-                          }}
-                          className={`w-full px-3 py-2.5 text-xs ${curr.inputBg} border ${
-                            fieldErrors.province ? 'border-rose-400 ring-2 ring-rose-100 bg-rose-50/20' : ''
-                          } rounded-xl font-bold text-gray-800 focus:outline-none focus:ring-2 focus:bg-white transition`}
-                        />
-                        {/* Datalist hiển thị đúng 1 dòng duy nhất, không thêm chữ Miền */}
-                        <datalist id="province-datalist">
-                          {VIETNAM_PROVINCES.map((p) => (
-                            <option key={p.id} value={p.name} />
-                          ))}
-                        </datalist>
-                      </div>
-                      {fieldErrors.province && (
-                        <p className="text-[10px] text-rose-500 font-semibold mt-1">
-                          ⚠️ {fieldErrors.province}
-                        </p>
-                      )}
-                    </div>
+                    <SearchableDropdown
+                      label="Tỉnh / Thành phố"
+                      required
+                      placeholder="Chọn Tỉnh / Thành phố..."
+                      searchPlaceholder="🔍 Gõ tên tỉnh (VD: Hà Nội, Hà Nam, TP.HCM)..."
+                      value={selectedProvince}
+                      onChange={(prov) => {
+                        setSelectedProvince(prov);
+                        setSelectedDistrict(''); // TUYỆT ĐỐI KHÔNG CHỌN BỪA HUYỆN
+                        if (fieldErrors.province) setFieldErrors((prev) => ({ ...prev, province: undefined }));
+                      }}
+                      options={VIETNAM_PROVINCES.map((p) => p.name)}
+                      error={fieldErrors.province}
+                      buttonRef={provinceRef}
+                      curr={curr}
+                    />
 
                     {/* 2. Quận / Huyện / Thị xã */}
-                    <div>
-                      <span className="text-[11px] font-bold text-gray-700 block mb-1">
-                        Quận / Huyện / Thị xã <span className="text-rose-500">*</span>
-                      </span>
-                      <div className="relative">
-                        <input
-                          ref={districtRef}
-                          type="text"
-                          list="district-datalist"
-                          placeholder="Chọn hoặc nhập Huyện/Quận..."
-                          value={selectedDistrict}
-                          onChange={(e) => {
-                            setSelectedDistrict(e.target.value);
-                            if (fieldErrors.district) setFieldErrors((prev) => ({ ...prev, district: undefined }));
-                          }}
-                          className={`w-full px-3 py-2.5 text-xs ${curr.inputBg} border ${
-                            fieldErrors.district ? 'border-rose-400 ring-2 ring-rose-100 bg-rose-50/20' : ''
-                          } rounded-xl font-bold text-gray-800 focus:outline-none focus:ring-2 focus:bg-white transition`}
-                        />
-                        <datalist id="district-datalist">
-                          {currentDistricts.map((d) => (
-                            <option key={d} value={d} />
-                          ))}
-                        </datalist>
-                      </div>
-                      {fieldErrors.district && (
-                        <p className="text-[10px] text-rose-500 font-semibold mt-1">
-                          ⚠️ {fieldErrors.district}
-                        </p>
-                      )}
-                    </div>
+                    <SearchableDropdown
+                      label="Quận / Huyện / Thị xã"
+                      required
+                      placeholder={selectedProvince ? "Chọn Quận / Huyện / Thị xã..." : "Vui lòng chọn Tỉnh/Thành trước"}
+                      searchPlaceholder="🔍 Gõ tên quận/huyện..."
+                      disabled={!selectedProvince}
+                      disabledText="⚠️ Vui lòng chọn Tỉnh/Thành trước"
+                      value={selectedDistrict}
+                      onChange={(dist) => {
+                        setSelectedDistrict(dist);
+                        if (fieldErrors.district) setFieldErrors((prev) => ({ ...prev, district: undefined }));
+                      }}
+                      options={currentDistricts}
+                      error={fieldErrors.district}
+                      buttonRef={districtRef}
+                      curr={curr}
+                    />
                   </div>
 
                   {/* Hàng 2: Phường / Xã / Thị trấn (100% full width) */}
