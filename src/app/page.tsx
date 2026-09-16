@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import HeroBanner from '@/components/HeroBanner';
 import CategoryFilter from '@/components/CategoryFilter';
 import ProductCard from '@/components/ProductCard';
@@ -9,6 +9,7 @@ import { INITIAL_CATEGORIES } from '@/data/categories';
 import { INITIAL_SETTINGS } from '@/data/settings';
 import { Product, ShopSettings } from '@/types';
 import { useTheme } from '@/context/ThemeContext';
+import { createProductSearchIndex, smartFilterProducts } from '@/lib/search';
 import { Sparkles, ShieldCheck, RefreshCw, Camera, Truck } from 'lucide-react';
 
 export default function HomePage() {
@@ -59,38 +60,39 @@ export default function HomePage() {
     }
   }, []);
 
-  const filteredProducts = products.filter((p) => {
-    // 1. Lọc theo danh mục
-    let matchCat = selectedCategory === 'all';
-    if (!matchCat) {
-      if (p.categoryId === selectedCategory || p.category === selectedCategory) {
-        matchCat = true;
-      } else {
-        const matchedCat = categories.find((c) => c.id === selectedCategory || c.slug === selectedCategory);
-        if (matchedCat) {
-          matchCat = Boolean(
-            p.categoryId === matchedCat.id ||
-            p.categoryId === matchedCat.slug ||
-            p.category === matchedCat.id ||
-            p.category === matchedCat.slug ||
-            (p.categoryName && matchedCat.name && p.categoryName.trim().toLowerCase() === matchedCat.name.trim().toLowerCase())
-          );
-        }
-      }
-    }
-    if (!matchCat) return false;
+  // 1. Tạo Search Index hiệu năng cao (O(1), chỉ tính toán lại khi mảng products thay đổi)
+  const indexedProducts = useMemo(() => {
+    return createProductSearchIndex(products);
+  }, [products]);
 
-    // 2. Lọc theo từ khóa tìm kiếm
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.trim().toLowerCase();
-    return Boolean(
-      p.name?.toLowerCase().includes(q) ||
-      p.categoryName?.toLowerCase().includes(q) ||
-      p.description?.toLowerCase().includes(q) ||
-      p.sku?.toLowerCase().includes(q) ||
-      (p.variants && p.variants.some((v: any) => v.name?.toLowerCase().includes(q)))
-    );
-  });
+  // 2. Lọc thông minh theo từ khóa (hỗ trợ gõ tiếng Việt không dấu, đa từ khóa, tìm kiếm biến thể/danh mục)
+  // và kết hợp lọc theo danh mục được chọn
+  const filteredProducts = useMemo(() => {
+    // A. Lọc tìm kiếm thông minh có tính điểm độ liên quan (Relevance Ranking)
+    const searchMatched = smartFilterProducts(indexedProducts, searchQuery);
+
+    // B. Lọc tiếp theo danh mục (nếu có chọn danh mục cụ thể)
+    if (selectedCategory === 'all') {
+      return searchMatched;
+    }
+
+    return searchMatched.filter((p) => {
+      if (p.categoryId === selectedCategory || p.category === selectedCategory) {
+        return true;
+      }
+      const matchedCat = categories.find((c) => c.id === selectedCategory || c.slug === selectedCategory);
+      if (matchedCat) {
+        return Boolean(
+          p.categoryId === matchedCat.id ||
+          p.categoryId === matchedCat.slug ||
+          p.category === matchedCat.id ||
+          p.category === matchedCat.slug ||
+          (p.categoryName && matchedCat.name && p.categoryName.trim().toLowerCase() === matchedCat.name.trim().toLowerCase())
+        );
+      }
+      return false;
+    });
+  }, [indexedProducts, searchQuery, selectedCategory, categories]);
 
   const themeConfig = {
     green: {

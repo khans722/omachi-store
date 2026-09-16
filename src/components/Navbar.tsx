@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShoppingBag, Search, Package, Sparkles, User, LogOut, ChevronDown } from 'lucide-react';
@@ -18,6 +18,7 @@ export default function Navbar() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [bannerText, setBannerText] = useState('Tiệm Phụ Kiện Handmade Omachi • Nhận xâu vòng tay, kẹp tóc & charm pastel theo yêu cầu ✨');
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -39,15 +40,30 @@ export default function Navbar() {
   const handleSearchChange = (val: string) => {
     setSearchTerm(val);
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('omachi-search', { detail: val }));
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+      // Khi xóa sạch từ khóa, phát tín hiệu ngay 0ms để hiện lại banner trang chủ tức thì
+      if (!val.trim()) {
+        window.dispatchEvent(new CustomEvent('omachi-search', { detail: '' }));
+        return;
+      }
+      // Debounce 120ms khi đang gõ nhanh để đạt 60fps mượt mà, không giật lag
+      searchDebounceRef.current = setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('omachi-search', { detail: val }));
+      }, 120);
     }
   };
 
   const handleSearchSubmit = () => {
-    if (typeof window !== 'undefined' && window.location.pathname !== '/') {
-      router.push(`/?q=${encodeURIComponent(searchTerm)}`);
-    } else {
-      if (typeof window !== 'undefined') {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('omachi-search', { detail: searchTerm }));
+      if (window.location.pathname !== '/') {
+        router.push(`/?q=${encodeURIComponent(searchTerm)}`);
+      } else {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }

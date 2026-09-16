@@ -154,6 +154,7 @@ export default function HeroBanner({ settings }: HeroBannerProps) {
                 key={activeImgIndex}
                 src={imagesList[activeImgIndex] || '/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg'}
                 alt="Omachi Handmade Charm"
+                decoding="async"
                 onError={(e) => {
                   e.currentTarget.onerror = null;
                   e.currentTarget.src = '/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg';
@@ -232,6 +233,8 @@ export default function HeroBanner({ settings }: HeroBannerProps) {
                     <img
                       src={thumbUrl}
                       alt={`Thumb ${tIdx}`}
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         e.currentTarget.onerror = null;
                         e.currentTarget.src = '/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg';

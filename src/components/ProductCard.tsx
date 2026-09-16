@@ -12,7 +12,7 @@ interface ProductCardProps {
   product: Product;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+const ProductCard = React.memo(function ProductCard({ product }: ProductCardProps) {
   const { theme } = useTheme();
   const [isQuickSelectOpen, setIsQuickSelectOpen] = useState(false);
 
@@ -55,6 +55,8 @@ export default function ProductCard({ product }: ProductCardProps) {
           <img
             src={primaryImage}
             alt={product.name}
+            loading="lazy"
+            decoding="async"
             onError={(e) => {
               e.currentTarget.onerror = null;
               e.currentTarget.src = '/uploads/charm_1789432914386_1789371730804_1528911961217344.jpg';
@@ -67,6 +69,8 @@ export default function ProductCard({ product }: ProductCardProps) {
             <img
               src={secondaryImage}
               alt={product.name}
+              loading="lazy"
+              decoding="async"
               className="absolute inset-0 w-full h-full object-cover object-center opacity-0 group-hover:opacity-100 transition-opacity duration-500"
             />
           )}
@@ -161,4 +165,6 @@ export default function ProductCard({ product }: ProductCardProps) {
       />
     </>
   );
-}
+});
+
+export default ProductCard;
