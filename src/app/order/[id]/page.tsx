@@ -237,15 +237,22 @@ export default function OrderTrackingPage() {
                   <span className="font-bold text-gray-800">
                     {shippingFee > 0 ? (
                       <span className="text-rose-600">+{formatVND(shippingFee)}</span>
-                    ) : order.shippingFee === 0 ? (
-                      <span className="text-emerald-600 font-bold">Miễn phí (0đ)</span>
                     ) : (
-                      <span className="text-amber-600 font-semibold">Báo sau khi cân</span>
+                      <span className="text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 text-xs font-semibold">
+                        Shop báo cước sau khi cân
+                      </span>
                     )}
                   </span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-pink-100 font-black text-base text-pink-600">
-                  <span>Tổng thanh toán:</span>
+                  <div>
+                    <span>Tổng thanh toán:</span>
+                    {shippingFee === 0 && (
+                      <span className="text-[10px] text-gray-400 font-normal block">
+                        (Tiền hàng • Cước ship báo sau khi cân)
+                      </span>
+                    )}
+                  </div>
                   <span>{formatVND(order.totalAmount)}</span>
                 </div>
               </div>

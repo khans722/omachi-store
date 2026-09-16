@@ -697,6 +697,18 @@ export default function AdminPage() {
 
   // Order Status Handler
   const handleUpdateStatus = async (orderId: string, newStatus?: OrderStatus, paymentStatus?: 'UNPAID' | 'PAID') => {
+    // Optimistic update
+    setOrders(prev => prev.map(o => {
+      if (o.id === orderId || o.code === orderId) {
+        return {
+          ...o,
+          ...(newStatus ? { orderStatus: newStatus } : {}),
+          ...(paymentStatus ? { paymentStatus } : {}),
+        };
+      }
+      return o;
+    }));
+
     try {
       const payload: any = {};
       if (newStatus) payload.orderStatus = newStatus;
@@ -708,13 +720,16 @@ export default function AdminPage() {
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.data) {
         setActionSuccessMsg(`Đã cập nhật đơn #${data.data.code} thành công! ✨`);
         setTimeout(() => setActionSuccessMsg(''), 3000);
+        setOrders(prev => prev.map(o => (o.id === orderId || o.code === orderId) ? { ...o, ...data.data } : o));
+      } else {
         fetchOrders();
       }
     } catch (err) {
       console.error(err);
+      fetchOrders();
     }
   };
 
@@ -723,6 +738,21 @@ export default function AdminPage() {
     if (rawVal === undefined || rawVal === '') return;
     const numVal = Math.max(0, Number(rawVal) || 0);
 
+    // Optimistic state update immediately
+    setOrders(prev => prev.map(o => {
+      if (o.id === orderId || o.code === orderId) {
+        const itemsTotal = o.itemsTotalAmount || o.subtotal || 0;
+        return {
+          ...o,
+          shippingFee: numVal,
+          itemsTotalAmount: itemsTotal,
+          totalAmount: itemsTotal + numVal,
+          finalTotalAmount: itemsTotal + numVal,
+        };
+      }
+      return o;
+    }));
+
     try {
       const res = await fetch(`/api/orders/${orderId}`, {
         method: 'PATCH',
@@ -730,13 +760,18 @@ export default function AdminPage() {
         body: JSON.stringify({ shippingFee: numVal }),
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.data) {
         setActionSuccessMsg(`Đã cập nhật phí ship ${formatVND(numVal)} cho đơn #${data.data.code}! ✨`);
         setTimeout(() => setActionSuccessMsg(''), 3000);
+        setOrders(prev => prev.map(o => (o.id === orderId || o.code === orderId) ? { ...o, ...data.data } : o));
+      } else {
+        alert(data.message || 'Không thể lưu phí ship!');
         fetchOrders();
       }
     } catch (err) {
       console.error(err);
+      alert('Lỗi mạng khi cập nhật phí ship!');
+      fetchOrders();
     }
   };
 

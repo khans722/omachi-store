@@ -423,13 +423,9 @@ export default function OrderLookupPage() {
                               <span className="font-black text-rose-600">
                                 +{formatVND(shippingFee)}
                               </span>
-                            ) : order.shippingFee === 0 ? (
-                              <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                                Miễn phí (Freeship 0đ)
-                              </span>
                             ) : (
-                              <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 font-semibold">
-                                Báo sau khi cân thực tế
+                              <span className="text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 text-xs font-semibold">
+                                Shop báo cước sau khi cân
                               </span>
                             )}
                           </div>
@@ -438,7 +434,9 @@ export default function OrderLookupPage() {
                             <div>
                               <span className="text-stone-800 text-xs sm:text-sm">Tổng thanh toán:</span>
                               <span className="text-[10px] sm:text-xs text-stone-400 block font-normal">
-                                {order.paymentMethod === 'COD' ? '(Thu tiền mặt khi nhận hàng COD)' : '(Chốt đơn qua Zalo)'}
+                                {shippingFee > 0
+                                  ? (order.paymentMethod === 'COD' ? '(Đã gồm cước ship • Thu tiền mặt COD)' : '(Đã gồm cước ship • Chốt qua Zalo)')
+                                  : '(Tiền hàng • Cước ship báo sau khi cân)'}
                               </span>
                             </div>
                             <span className="text-base sm:text-lg font-black text-rose-600">

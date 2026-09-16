@@ -1,7 +1,9 @@
 import fs from 'fs';
 import path from 'path';
+const READONLY_DB_FILE = path.join(process.cwd(), 'data', 'database.json');
+const IS_SERVERLESS = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
+const WRITABLE_DB_FILE = IS_SERVERLESS ? path.join('/tmp', 'database.json') : READONLY_DB_FILE;
 
-const DB_FILE = path.join(process.cwd(), 'data', 'database.json');
 
 // ==========================================
 // DETAILED ENTERPRISE E-COMMERCE DATABASE SCHEMA
@@ -1665,18 +1667,38 @@ const INITIAL_DATABASE: DetailedDatabaseSchema = {
   }
 };
 
+declare global {
+  var __omachi_db: DetailedDatabaseSchema | undefined;
+}
+
 function readDb(): DetailedDatabaseSchema {
   try {
-    if (!fs.existsSync(DB_FILE)) {
-      const dir = path.dirname(DB_FILE);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+    const targetFile = WRITABLE_DB_FILE;
+    if (!fs.existsSync(targetFile)) {
+      let initialData: DetailedDatabaseSchema = INITIAL_DATABASE;
+      if (fs.existsSync(READONLY_DB_FILE)) {
+        try {
+          const raw = fs.readFileSync(READONLY_DB_FILE, 'utf-8');
+          initialData = JSON.parse(raw);
+        } catch (e) {
+          console.error('[DB] Error reading READONLY_DB_FILE:', e);
+        }
       }
-      fs.writeFileSync(DB_FILE, JSON.stringify(INITIAL_DATABASE, null, 2), 'utf-8');
-      return INITIAL_DATABASE;
+      try {
+        const dir = path.dirname(targetFile);
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
+        }
+        fs.writeFileSync(targetFile, JSON.stringify(initialData, null, 2), 'utf-8');
+      } catch (writeErr) {
+        console.error('[DB] Error initializing target DB file:', writeErr);
+      }
+      globalThis.__omachi_db = initialData;
+      return initialData;
     }
-    const raw = fs.readFileSync(DB_FILE, 'utf-8');
-    const parsed = JSON.parse(raw);
+
+    const raw = fs.readFileSync(targetFile, 'utf-8');
+    const parsed: DetailedDatabaseSchema = JSON.parse(raw);
     let needResave = false;
     if (!parsed.products || parsed.products.length === 0) {
       parsed.products = INITIAL_DATABASE.products;
@@ -1693,23 +1715,37 @@ function readDb(): DetailedDatabaseSchema {
     if (needResave) {
       writeDb(parsed);
     }
+    globalThis.__omachi_db = parsed;
     return parsed;
   } catch (error) {
-    console.error('Error reading DB, using initial:', error);
+    console.error('[DB] Error reading DB, using memory or initial:', error);
+    if (globalThis.__omachi_db) {
+      return globalThis.__omachi_db;
+    }
     return INITIAL_DATABASE;
   }
 }
 
 function writeDb(data: DetailedDatabaseSchema) {
+  globalThis.__omachi_db = data;
+  data.lastBackup = new Date().toISOString();
   try {
-    const dir = path.dirname(DB_FILE);
+    const targetFile = WRITABLE_DB_FILE;
+    const dir = path.dirname(targetFile);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    data.lastBackup = new Date().toISOString();
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
+    fs.writeFileSync(targetFile, JSON.stringify(data, null, 2), 'utf-8');
   } catch (error) {
-    console.error('Error writing DB:', error);
+    console.error('[DB] Error writing DB to targetFile:', error);
+    if (!IS_SERVERLESS) {
+      try {
+        const fallback = path.join('/tmp', 'database.json');
+        const fdir = path.dirname(fallback);
+        if (!fs.existsSync(fdir)) fs.mkdirSync(fdir, { recursive: true });
+        fs.writeFileSync(fallback, JSON.stringify(data, null, 2), 'utf-8');
+      } catch (e2) {}
+    }
   }
 }
 
@@ -2196,15 +2232,19 @@ export const db = {
       if (carrierName) dbData.orders[index].carrierName = carrierName;
       if (trackingNumber) dbData.orders[index].trackingNumber = trackingNumber;
       if (shippingFee !== undefined) {
-        const newShip = Number(shippingFee) || 0;
+        const newShip = Math.max(0, Number(shippingFee) || 0);
         dbData.orders[index].shippingFee = newShip;
-        const itemsTotal = (dbData.orders[index].items || []).reduce((sum: number, it: any) => sum + Number(it.totalPrice || 0), 0);
+        let itemsTotal = (dbData.orders[index].items || []).reduce((sum: number, it: any) => sum + Number(it.totalPrice || 0), 0);
+        if (!itemsTotal || itemsTotal === 0) {
+          itemsTotal = Number(dbData.orders[index].itemsTotalAmount || dbData.orders[index].subtotal || 0);
+        }
         dbData.orders[index].itemsTotalAmount = itemsTotal;
         dbData.orders[index].totalAmount = itemsTotal + newShip;
         dbData.orders[index].finalTotalAmount = itemsTotal + newShip;
       }
 
       dbData.orders[index].updatedAt = new Date().toISOString();
+      if (!dbData.orders[index].logs) dbData.orders[index].logs = [];
       dbData.orders[index].logs.push({
         id: `log-${Date.now()}`,
         action: 'STATUS_UPDATED',
