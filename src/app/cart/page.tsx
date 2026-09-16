@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
@@ -11,13 +11,11 @@ import {
   Trash2, 
   Plus, 
   Minus, 
-  ArrowRight, 
   ArrowLeft, 
   Sparkles, 
-  ShieldCheck, 
   Truck, 
-  Check, 
-  AlertCircle 
+  Tag,
+  ChevronRight
 } from 'lucide-react';
 
 export default function CartPage() {
@@ -29,8 +27,6 @@ export default function CartPage() {
     clearCart,
     toggleSelectItem,
     toggleSelectAll,
-    toggleSelectProductGroup,
-    subtotal,
     totalItems,
     selectedItems,
     selectedTotalItems,
@@ -39,88 +35,6 @@ export default function CartPage() {
   } = useCart();
   const { theme } = useTheme();
 
-  // Gom nhóm sản phẩm theo mẫu để hiển thị chuyên nghiệp chuẩn Shopee
-  const groupedProducts = useMemo(() => {
-    const map = new Map<string, {
-      product: (typeof items)[0]['product'];
-      items: typeof items;
-      totalQuantity: number;
-      totalPrice: number;
-      isAllSelected: boolean;
-    }>();
-
-    for (const item of items) {
-      const pId = item.product.id;
-      if (!map.has(pId)) {
-        map.set(pId, {
-          product: item.product,
-          items: [],
-          totalQuantity: 0,
-          totalPrice: 0,
-          isAllSelected: true,
-        });
-      }
-      const group = map.get(pId)!;
-      group.items.push(item);
-      group.totalQuantity += item.quantity;
-      group.totalPrice += item.totalPrice;
-      if (item.selected === false) {
-        group.isAllSelected = false;
-      }
-    }
-
-    return Array.from(map.values());
-  }, [items]);
-
-  const themeConfig = {
-    green: {
-      btnPrimary: 'bg-[#569440] hover:bg-[#467E33] text-white shadow-emerald-200',
-      btnSecondary: 'border-[#D1EAC7] text-[#3E6B28] hover:bg-[#F2FAF0]',
-      priceColor: 'text-[#4A8537]',
-      cardBorder: 'border-[#DDEFD7]',
-      activeBadge: 'bg-[#F2FAF0] text-[#3E6B28] border-[#D1EAC7]',
-      checkboxAccent: 'accent-[#569440]',
-      stepperBorder: 'border-[#D1EAC7]',
-      headerPill: 'bg-[#F2FAF0] text-[#3E6B28] border-[#D1EAC7]',
-      stickyBarBg: 'bg-white/95 border-emerald-100',
-    },
-    pink: {
-      btnPrimary: 'bg-[#FF6B8B] hover:bg-[#E84878] text-white shadow-pink-200',
-      btnSecondary: 'border-[#FFD0DE] text-[#D84A74] hover:bg-[#FFF0F5]',
-      priceColor: 'text-[#E04573]',
-      cardBorder: 'border-[#FFD6E4]',
-      activeBadge: 'bg-[#FFF0F5] text-[#D84A74] border-[#FFD0DE]',
-      checkboxAccent: 'accent-[#FF6B8B]',
-      stepperBorder: 'border-[#FFD0DE]',
-      headerPill: 'bg-[#FFF0F5] text-[#D84A74] border-[#FFD0DE]',
-      stickyBarBg: 'bg-white/95 border-pink-100',
-    },
-    purple: {
-      btnPrimary: 'bg-[#8E6ADF] hover:bg-[#7952C4] text-white shadow-purple-200',
-      btnSecondary: 'border-[#E0D4FA] text-[#7952C4] hover:bg-[#F8F4FF]',
-      priceColor: 'text-[#7952C4]',
-      cardBorder: 'border-[#E6DCFA]',
-      activeBadge: 'bg-[#F8F4FF] text-[#7952C4] border-[#E0D4FA]',
-      checkboxAccent: 'accent-[#8E6ADF]',
-      stepperBorder: 'border-[#E0D4FA]',
-      headerPill: 'bg-[#F8F4FF] text-[#7952C4] border-[#E0D4FA]',
-      stickyBarBg: 'bg-white/95 border-purple-100',
-    },
-    cream: {
-      btnPrimary: 'bg-[#E59530] hover:bg-[#C97B1A] text-white shadow-amber-200',
-      btnSecondary: 'border-[#FCE1B4] text-[#B56E16] hover:bg-[#FFFBF2]',
-      priceColor: 'text-[#BA6C0D]',
-      cardBorder: 'border-[#FCE5BF]',
-      activeBadge: 'bg-[#FFFBF2] text-[#B56E16] border-[#FCE1B4]',
-      checkboxAccent: 'accent-[#E59530]',
-      stepperBorder: 'border-[#FCE1B4]',
-      headerPill: 'bg-[#FFFBF2] text-[#B56E16] border-[#FCE1B4]',
-      stickyBarBg: 'bg-white/95 border-amber-100',
-    },
-  };
-
-  const curr = themeConfig[theme] || themeConfig.green;
-
   // Xóa các món đang được chọn
   const handleRemoveSelected = () => {
     const selectedIds = items.filter((i) => i.selected !== false).map((i) => i.id);
@@ -128,92 +42,70 @@ export default function CartPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto py-4 sm:py-8 px-3 sm:px-6 lg:px-8 space-y-6 pb-28 sm:pb-32 animate-fade-in">
+    <div className="max-w-4xl mx-auto py-3 sm:py-6 px-2 sm:px-4 lg:px-6 space-y-3 pb-28 font-sans animate-fade-in">
       
-      {/* Top Header: Breadcrumb & Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs text-stone-500 font-medium">
-            <Link href="/" className="hover:text-stone-800 transition flex items-center gap-1">
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Tiếp tục mua hàng</span>
-            </Link>
-            <span>/</span>
-            <span className="text-stone-800 font-bold">Giỏ hàng của bạn</span>
-          </div>
-          <div className="flex items-center gap-3 pt-1">
-            <div className="relative w-11 h-11 rounded-2xl bg-white border border-stone-200 shadow-xs flex items-center justify-center p-1.5 shrink-0 overflow-hidden">
-              <img
-                src="/images/omachi_bear_hd.png"
-                alt="Omachi Bear"
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-black text-stone-900 flex items-center gap-2">
-                <span>Giỏ Hàng Omachi</span>
-                <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-              </h1>
-              <p className="text-xs text-stone-500 font-medium">
-                {totalItems > 0 
-                  ? `Bạn đang có ${totalItems} sản phẩm (${groupedProducts.length} mẫu charm) trong giỏ`
-                  : 'Giỏ hàng đang trống'}
-              </p>
-            </div>
+      {/* 1. TOP APP BAR / BREADCRUMB */}
+      <div className="flex items-center justify-between pb-1">
+        <div className="flex items-center gap-2">
+          <Link
+            href="/"
+            className="p-1 -ml-1 text-stone-600 hover:text-[#ee4d2d] transition rounded-lg"
+            title="Quay lại"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <div className="flex items-baseline gap-1.5">
+            <h1 className="text-base sm:text-xl font-black text-stone-900">Giỏ hàng</h1>
+            <span className="text-xs text-stone-400 font-medium">({totalItems})</span>
           </div>
         </div>
 
         {items.length > 0 && (
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="flex items-center gap-2">
+            {selectedTotalItems > 0 && (
+              <button
+                type="button"
+                onClick={handleRemoveSelected}
+                className="text-xs text-stone-500 hover:text-rose-600 transition font-medium flex items-center gap-1"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Xóa đã chọn</span> ({selectedTotalItems})
+              </button>
+            )}
             <button
+              type="button"
               onClick={clearCart}
-              className="px-3 py-1.5 rounded-xl border border-stone-200 text-stone-500 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              className="text-xs text-stone-400 hover:text-rose-600 transition"
             >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Xóa tất cả</span>
+              Xóa tất cả
             </button>
           </div>
         )}
       </div>
 
-      {/* Notice Banner: Giao hàng SPX cân thực tế */}
-      {items.length > 0 && (
-        <div className="p-3 sm:p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/80 flex items-center justify-between gap-3 text-xs text-amber-900">
-          <div className="flex items-center gap-2.5">
-            <Truck className="w-4 h-4 text-amber-600 shrink-0" />
-            <span className="font-medium">
-              Đơn hàng charm &amp; phụ kiện sẽ được shop đóng hộp cẩn thận, cân trọng lượng thực tế để áp mức phí ship SPX rẻ nhất!
-            </span>
-          </div>
-          <span className="hidden md:inline font-bold text-[11px] bg-white px-2.5 py-1 rounded-full border border-amber-300 text-amber-800 shrink-0">
-            Thanh toán COD khi nhận
-          </span>
-        </div>
-      )}
-
-      {/* Main Content Area */}
+      {/* 2. MAIN CONTENT AREA */}
       {items.length === 0 ? (
         /* Empty State */
-        <div className="bg-white rounded-3xl border border-stone-200/80 p-8 sm:p-16 text-center space-y-5 shadow-xs">
-          <div className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-3xl bg-pink-50/80 border border-pink-100 flex items-center justify-center p-3 shadow-2xs">
+        <div className="bg-white rounded-2xl border border-stone-200/80 p-8 sm:p-14 text-center space-y-4 shadow-xs">
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center p-2.5 shadow-2xs">
             <img
               src="/images/omachi_bear_hd.png"
-              alt="Empty Cart"
-              className="w-full h-full object-contain drop-shadow-sm"
+              alt="Giỏ hàng trống"
+              className="w-full h-full object-contain drop-shadow-xs"
             />
           </div>
-          <div className="space-y-1.5 max-w-sm mx-auto">
-            <h3 className="text-lg sm:text-xl font-black text-stone-800">
-              Giỏ hàng của bạn đang trống trơn!
+          <div className="space-y-1 max-w-sm mx-auto">
+            <h3 className="text-base sm:text-lg font-black text-stone-800">
+              Giỏ hàng của bạn đang trống!
             </h3>
-            <p className="text-xs sm:text-sm text-stone-500 leading-relaxed">
-              Bạn chưa chọn món đồ handmade nào. Hãy dạo quanh tiệm để rinh về những mẫu vòng charm, kẹp tóc hay túi mù kẹo ngọt nhé! 💕
+            <p className="text-xs text-stone-500 leading-relaxed">
+              Hãy chọn những mẫu charm hoa, kẹp tóc hay vòng cườm xinh xắn để bắt đầu mua sắm nhé! 💕
             </p>
           </div>
-          <div className="pt-2">
+          <div className="pt-1">
             <Link
               href="/"
-              className={`inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl ${curr.btnPrimary} text-white font-extrabold text-xs sm:text-sm shadow-md transition transform active:scale-95`}
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#ee4d2d] hover:bg-[#d73211] text-white font-bold text-xs sm:text-sm shadow-md transition transform active:scale-95"
             >
               <ShoppingBag className="w-4 h-4" />
               <span>Khám Phá Sản Phẩm Ngay</span>
@@ -221,245 +113,226 @@ export default function CartPage() {
           </div>
         </div>
       ) : (
-        /* Cart Table / Cards View (Chuẩn Shopee) */
-        <div className="space-y-4">
+        /* 3. SHOPEE STYLE COMPACT CART CARD */
+        <div className="bg-white rounded-xl shadow-2xs border border-stone-100 overflow-hidden">
           
-          {/* Table Header Row (Desktop) */}
-          <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3.5 bg-white rounded-2xl border border-stone-200/80 text-xs font-bold text-stone-600 shadow-2xs items-center">
-            <div className="col-span-6 flex items-center gap-3">
+          {/* Shop Header Bar (Chuẩn Shopee) */}
+          <div className="p-3 sm:p-3.5 bg-white border-b border-stone-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
               <input
                 type="checkbox"
                 checked={isAllSelected}
                 onChange={(e) => toggleSelectAll(e.target.checked)}
-                className={`w-4 h-4 rounded text-rose-600 focus:ring-rose-400 cursor-pointer ${curr.checkboxAccent}`}
+                className="w-4 h-4 rounded text-rose-600 focus:ring-rose-400 cursor-pointer accent-[#ee4d2d]"
+                title="Chọn tất cả sản phẩm"
               />
-              <span>Sản Phẩm ({totalItems} món)</span>
+              <span className="bg-[#ee4d2d] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-xs">
+                Yêu thích
+              </span>
+              <span className="text-xs sm:text-sm font-bold text-stone-900 flex items-center gap-0.5">
+                🌸 Omachi Handmade Studio
+                <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
+              </span>
             </div>
-            <div className="col-span-2 text-center">Đơn Giá</div>
-            <div className="col-span-2 text-center">Số Lượng</div>
-            <div className="col-span-2 text-right">Số Tiền</div>
+            <span className="text-[11px] text-stone-400 font-medium">
+              {totalItems} sản phẩm
+            </span>
           </div>
 
-          {/* Product Groups */}
-          <div className="space-y-4">
-            {groupedProducts.map((group) => (
-              <div
-                key={group.product.id}
-                className="bg-white rounded-3xl border border-stone-200/80 overflow-hidden shadow-xs space-y-0"
-              >
-                {/* Group Title Bar */}
-                <div className="p-3.5 sm:p-4 bg-stone-50/70 border-b border-stone-100 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
+          {/* Shopee Cart Items List (1 Hàng Ngang Duy Nhất Mỗi Món) */}
+          <div className="divide-y divide-stone-100">
+            {items.map((item) => {
+              const isChecked = item.selected !== false;
+
+              return (
+                <div
+                  key={item.id}
+                  className={`p-3 sm:p-3.5 flex items-start gap-2.5 sm:gap-3 transition-colors ${
+                    isChecked ? 'bg-white' : 'bg-stone-50/40 opacity-75'
+                  }`}
+                >
+                  {/* 1. Checkbox */}
+                  <div className="pt-7 sm:pt-6 shrink-0">
                     <input
                       type="checkbox"
-                      checked={group.isAllSelected}
-                      onChange={() => toggleSelectProductGroup(group.product.id, !group.isAllSelected)}
-                      className={`w-4 h-4 rounded text-rose-600 focus:ring-rose-400 cursor-pointer ${curr.checkboxAccent}`}
-                      title="Chọn tất cả phân loại của sản phẩm này"
+                      checked={isChecked}
+                      onChange={() => toggleSelectItem(item.id)}
+                      className="w-4 h-4 rounded text-rose-600 focus:ring-rose-400 cursor-pointer accent-[#ee4d2d]"
                     />
-                    <Link
-                      href={`/product/${group.product.id}`}
-                      className="flex items-center gap-2.5 min-w-0 group"
-                    >
-                      <img
-                        src={group.product.images[0] || '/images/charm_feed_1.jpg'}
-                        alt={group.product.name}
-                        className="w-10 h-10 object-cover rounded-xl border border-stone-200 bg-white shrink-0"
-                      />
-                      <div className="min-w-0">
-                        <h3 className="text-xs sm:text-sm font-black text-stone-800 group-hover:text-rose-600 transition truncate">
-                          {group.product.name}
-                        </h3>
-                        <span className="text-[10px] text-stone-500 font-medium">
-                          {group.items.length} phân loại • Tổng {group.totalQuantity} sản phẩm
-                        </span>
-                      </div>
-                    </Link>
                   </div>
 
+                  {/* 2. Product Thumbnail */}
                   <Link
-                    href={`/product/${group.product.id}`}
-                    className="text-[11px] font-bold text-stone-500 hover:text-stone-800 transition shrink-0 hidden sm:inline"
+                    href={`/product/${item.product?.id || ''}`}
+                    className="shrink-0 group"
                   >
-                    Xem chi tiết →
+                    <img
+                      src={item.product?.images?.[0] || '/images/charm_feed_1.jpg'}
+                      alt={item.product?.name || 'Sản phẩm'}
+                      className="w-20 h-20 sm:w-22 sm:h-22 object-cover rounded-lg border border-stone-100 bg-stone-50 group-hover:opacity-90 transition"
+                    />
                   </Link>
-                </div>
 
-                {/* Variation Items */}
-                <div className="divide-y divide-stone-100">
-                  {group.items.map((item) => {
-                    const isChecked = item.selected !== false;
-
-                    return (
-                      <div
-                        key={item.id}
-                        className={`p-3.5 sm:p-4 transition-colors ${
-                          isChecked ? 'bg-white' : 'bg-stone-50/40 opacity-70'
-                        }`}
+                  {/* 3. Info Column: Title + Variant Pill + Price & Stepper */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-between min-h-[80px]">
+                    <div>
+                      {/* Product Name */}
+                      <Link
+                        href={`/product/${item.product?.id || ''}`}
+                        className="block group"
                       >
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 items-center">
-                          
-                          {/* Col 1: Checkbox & Variant info */}
-                          <div className="md:col-span-6 flex items-start sm:items-center gap-3 min-w-0">
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => toggleSelectItem(item.id)}
-                              className={`w-4 h-4 rounded text-rose-600 focus:ring-rose-400 cursor-pointer mt-1 sm:mt-0 shrink-0 ${curr.checkboxAccent}`}
+                        <h3 className="text-xs sm:text-sm font-normal text-stone-900 group-hover:text-[#ee4d2d] transition line-clamp-1 sm:line-clamp-2 leading-snug">
+                          {item.product?.name}
+                        </h3>
+                      </Link>
+
+                      {/* Shopee Variant Pill */}
+                      <div className="mt-1 flex items-center">
+                        <span className="inline-flex items-center gap-1 bg-stone-100 text-stone-600 text-[11px] px-2 py-0.5 rounded-xs font-medium max-w-full truncate">
+                          {item.selectedVariant?.colorHex && (
+                            <span
+                              className="w-2.5 h-2.5 rounded-full border border-black/15 shrink-0"
+                              style={{ backgroundColor: item.selectedVariant.colorHex }}
                             />
-
-                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                              {item.selectedVariant?.colorHex && (
-                                <span
-                                  className="w-3.5 h-3.5 rounded-full border border-black/15 shrink-0 shadow-2xs"
-                                  style={{ backgroundColor: item.selectedVariant.colorHex }}
-                                />
-                              )}
-                              <div className="min-w-0">
-                                <p className={`text-xs sm:text-sm font-extrabold ${isChecked ? 'text-stone-900' : 'text-stone-500'}`}>
-                                  {item.selectedVariant ? item.selectedVariant.name : 'Phân loại mặc định'}
-                                  {item.selectedPackage ? ` • ${item.selectedPackage.name}` : ''}
-                                </p>
-                                {item.customNote && (
-                                  <p className="text-[11px] text-stone-400 italic mt-0.5">
-                                    Ghi chú: &quot;{item.customNote}&quot;
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Col 2: Đơn giá */}
-                          <div className="md:col-span-2 flex items-center justify-between md:justify-center text-xs">
-                            <span className="md:hidden text-stone-500">Đơn giá:</span>
-                            <span className="font-semibold text-stone-700">
-                              {formatVND(item.unitPrice)}
-                            </span>
-                          </div>
-
-                          {/* Col 3: Stepper Tăng giảm */}
-                          <div className="md:col-span-2 flex items-center justify-between md:justify-center">
-                            <span className="md:hidden text-xs text-stone-500">Số lượng:</span>
-                            <div className={`flex items-center border ${curr.stepperBorder} rounded-xl bg-white shadow-2xs overflow-hidden`}>
-                              <button
-                                type="button"
-                                onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
-                                className="w-8 h-8 flex items-center justify-center text-stone-600 hover:bg-stone-100 transition active:scale-95 cursor-pointer"
-                                title="Giảm 1"
-                              >
-                                <Minus className="w-3.5 h-3.5" />
-                              </button>
-                              <input
-                                type="number"
-                                min={1}
-                                value={item.quantity}
-                                onChange={(e) => {
-                                  const val = parseInt(e.target.value);
-                                  if (!isNaN(val) && val >= 1) updateQuantity(item.id, val);
-                                }}
-                                className="w-12 h-8 text-center text-xs font-black text-stone-900 bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                className="w-8 h-8 flex items-center justify-center text-stone-600 hover:bg-stone-100 transition active:scale-95 cursor-pointer"
-                                title="Tăng 1"
-                              >
-                                <Plus className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Col 4: Thành tiền & Xóa */}
-                          <div className="md:col-span-2 flex items-center justify-between md:justify-end gap-3">
-                            <div className="text-right">
-                              <span className="md:hidden text-xs text-stone-500 block">Thành tiền:</span>
-                              <span className={`text-sm sm:text-base font-black ${curr.priceColor}`}>
-                                {formatVND(item.totalPrice)}
-                              </span>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => removeItem(item.id)}
-                              className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-                              title="Xóa món này"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-
-                        </div>
+                          )}
+                          <span className="truncate">
+                            Phân loại: {item.selectedVariant ? item.selectedVariant.name : 'Tiêu chuẩn'}
+                            {item.selectedPackage ? ` • ${item.selectedPackage.name}` : ''}
+                          </span>
+                          <span className="text-[8px] text-stone-400 ml-0.5">▼</span>
+                        </span>
                       </div>
-                    );
-                  })}
+                    </div>
+
+                    {/* Bottom Row: Price on left, Stepper & Delete on right */}
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      {/* Unit Price */}
+                      <div className="flex items-baseline gap-1.5 min-w-0">
+                        <span className="text-sm sm:text-base font-black text-[#ee4d2d]">
+                          {formatVND(item.unitPrice)}
+                        </span>
+                        {item.product?.originalPrice && item.product.originalPrice > item.unitPrice && (
+                          <span className="text-[10px] text-stone-400 line-through truncate hidden sm:inline">
+                            {formatVND(item.product.originalPrice)}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Stepper & Trash Button */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center border border-stone-200 rounded-sm bg-white overflow-hidden h-6 sm:h-7 shadow-2xs">
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                            className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center text-stone-600 hover:bg-stone-100 active:scale-95 transition cursor-pointer"
+                            title="Giảm 1"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <input
+                            type="number"
+                            min={1}
+                            value={item.quantity}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value);
+                              if (!isNaN(val) && val >= 1) updateQuantity(item.id, val);
+                            }}
+                            className="w-8 sm:w-10 text-center text-xs font-black text-stone-900 bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center text-stone-600 hover:bg-stone-100 active:scale-95 transition cursor-pointer"
+                            title="Tăng 1"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => removeItem(item.id)}
+                          className="p-1 text-stone-300 hover:text-rose-600 transition cursor-pointer"
+                          title="Xóa món này"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
+          </div>
+
+          {/* Shop Voucher Row */}
+          <div className="p-3 bg-stone-50/70 border-t border-stone-100 flex items-center justify-between text-xs text-stone-700">
+            <div className="flex items-center gap-2">
+              <Tag className="w-4 h-4 text-[#ee4d2d]" />
+              <span className="font-medium text-xs">Voucher &amp; Chiết khấu mua sỉ Omachi</span>
+            </div>
+            <span className="text-[11px] text-[#ee4d2d] font-semibold flex items-center gap-1">
+              Áp dụng tại bước thanh toán <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
+            </span>
+          </div>
+
+          {/* SPX Delivery Row */}
+          <div className="p-2.5 bg-amber-50/50 border-t border-amber-100/60 flex items-center gap-2 text-xs text-amber-900">
+            <Truck className="w-4 h-4 text-amber-600 shrink-0" />
+            <span className="text-[11px] text-amber-800">
+              Giao hàng SPX Express • Shop đóng gói cân thực tế để tính cước rẻ nhất
+            </span>
           </div>
 
         </div>
       )}
 
-      {/* Sticky Bottom Shopee-style Checkout Bar */}
+      {/* 4. SHOPEE STICKY BOTTOM CHECKOUT BAR */}
       {items.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-stone-200/90 shadow-2xl py-3 sm:py-4 px-3 sm:px-6 lg:px-8">
-          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/98 backdrop-blur-md border-t border-stone-200 shadow-2xl safe-area-bottom">
+          <div className="max-w-4xl mx-auto px-3 sm:px-6 py-2.5 flex items-center justify-between gap-3">
             
-            {/* Left: Select all & Delete selected */}
-            <div className="flex items-center justify-between w-full sm:w-auto gap-4">
-              <label className="flex items-center gap-2 cursor-pointer select-none text-xs sm:text-sm font-bold text-stone-700">
-                <input
-                  type="checkbox"
-                  checked={isAllSelected}
-                  onChange={(e) => toggleSelectAll(e.target.checked)}
-                  className={`w-4 h-4 rounded text-rose-600 focus:ring-rose-400 cursor-pointer ${curr.checkboxAccent}`}
-                />
-                <span>Chọn tất cả ({totalItems})</span>
-              </label>
+            {/* Left: Select all checkbox */}
+            <label className="flex items-center gap-2 cursor-pointer select-none text-xs sm:text-sm font-bold text-stone-800 shrink-0">
+              <input
+                type="checkbox"
+                checked={isAllSelected}
+                onChange={(e) => toggleSelectAll(e.target.checked)}
+                className="w-4 h-4 rounded text-rose-600 focus:ring-rose-400 cursor-pointer accent-[#ee4d2d]"
+              />
+              <span>Tất cả</span>
+              <span className="text-stone-400 text-xs font-normal">({totalItems})</span>
+            </label>
 
-              <button
-                type="button"
-                onClick={handleRemoveSelected}
-                disabled={selectedTotalItems === 0}
-                className="text-xs text-stone-500 hover:text-rose-600 disabled:opacity-40 disabled:hover:text-stone-500 transition font-semibold flex items-center gap-1 cursor-pointer"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Xóa đã chọn ({selectedTotalItems})</span>
-              </button>
-            </div>
-
-            {/* Right: Subtotal & Checkout button */}
-            <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 sm:gap-5">
-              <div className="text-left sm:text-right">
-                <div className="flex items-baseline gap-1.5 sm:justify-end">
-                  <span className="text-xs text-stone-500 font-medium">
-                    Tổng thanh toán ({selectedTotalItems} món):
-                  </span>
-                  <span className={`text-lg sm:text-2xl font-black ${curr.priceColor}`}>
+            {/* Right: Total price & Buy button */}
+            <div className="flex items-center gap-2.5 sm:gap-4">
+              <div className="text-right">
+                <div className="flex items-baseline gap-1 sm:justify-end">
+                  <span className="text-xs text-stone-600 hidden sm:inline">Tổng thanh toán:</span>
+                  <span className="text-base sm:text-lg font-black text-[#ee4d2d]">
                     {formatVND(selectedSubtotal)}
                   </span>
                 </div>
-                <span className="text-[10px] text-stone-400 block font-normal">
-                  Chưa bao gồm phí ship SPX (báo sau khi cân)
+                <span className="text-[10px] text-stone-400 block sm:hidden">
+                  (Chưa tính ship)
                 </span>
               </div>
 
               {selectedTotalItems > 0 ? (
                 <Link
                   href="/checkout"
-                  className={`py-3 sm:py-3.5 px-6 sm:px-8 rounded-2xl ${curr.btnPrimary} font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition transform active:scale-98 shrink-0`}
+                  className="bg-[#ee4d2d] hover:bg-[#d73211] active:bg-[#c2280a] text-white font-bold px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm shadow-md transition transform active:scale-98 flex items-center justify-center min-w-[120px]"
                 >
-                  <span>Mua Hàng ({selectedTotalItems})</span>
-                  <ArrowRight className="w-4 h-4" />
+                  Mua hàng ({selectedTotalItems})
                 </Link>
               ) : (
                 <button
                   type="button"
                   disabled
-                  className="py-3 sm:py-3.5 px-6 sm:px-8 rounded-2xl bg-stone-200 text-stone-400 font-bold text-xs sm:text-sm cursor-not-allowed shrink-0"
+                  className="bg-stone-300 text-stone-500 font-bold px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm cursor-not-allowed min-w-[120px]"
                 >
-                  Mua Hàng (0)
+                  Mua hàng (0)
                 </button>
               )}
             </div>
