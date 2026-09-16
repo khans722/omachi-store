@@ -46,8 +46,9 @@ export default function MobileBottomNav() {
   const curr = themeConfig[theme] || themeConfig.green;
 
   // Ẩn thanh điều hướng chung khi ở trang Chi tiết sản phẩm (đã có thanh mua hàng Shopee riêng),
-  // trang Đặt hàng (checkout), trang Admin và trang Đơn hàng chi tiết
+  // trang Giỏ hàng (/cart có thanh thanh toán riêng), trang Đặt hàng (checkout), trang Admin và trang Đơn hàng chi tiết
   if (
+    pathname.startsWith('/cart') ||
     pathname.startsWith('/product/') ||
     pathname.startsWith('/checkout') ||
     pathname.startsWith('/admin') ||
@@ -81,10 +82,9 @@ export default function MobileBottomNav() {
         </Link>
 
         {/* 3. Cart with Badge & Fly Target ID */}
-        <button
+        <Link
+          href="/cart"
           id="bottom-cart-btn"
-          type="button"
-          onClick={() => setIsCartOpen(true)}
           className={`relative flex flex-col items-center gap-1 p-1 ${curr.cartText} font-extrabold group`}
         >
           <div className="relative">
@@ -98,7 +98,7 @@ export default function MobileBottomNav() {
             )}
           </div>
           <span className={`text-[10px] font-black ${curr.cartText}`}>Giỏ hàng</span>
-        </button>
+        </Link>
 
         {/* 4. Chat Zalo with Shop */}
         <a

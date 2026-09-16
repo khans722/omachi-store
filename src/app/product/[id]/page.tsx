@@ -669,10 +669,10 @@ export default function ProductDetailPage() {
           <span>Chat Zalo</span>
         </a>
 
-        {/* Giỏ Hàng Icon */}
-        <button
-          type="button"
-          onClick={() => setIsCartOpen(true)}
+        {/* Giỏ Hàng Icon - Dẫn tới trang /cart */}
+        <Link
+          href="/cart"
+          id="product-sticky-cart-btn"
           className={`relative flex flex-col items-center justify-center px-3.5 text-[10px] text-gray-600 hover:${curr.highlightText} border-r border-gray-100 shrink-0`}
         >
           <div className="relative">
@@ -684,7 +684,7 @@ export default function ProductDetailPage() {
             )}
           </div>
           <span className="mt-0.5">Giỏ hàng</span>
-        </button>
+        </Link>
 
         {/* Thêm Vào Giỏ (MỞ BOTTOM SHEET SHOPEE - THEME COLOR) */}
         <button
