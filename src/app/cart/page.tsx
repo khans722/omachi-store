@@ -34,6 +34,41 @@ export default function CartPage() {
     isAllSelected,
   } = useCart();
   const { theme } = useTheme();
+  const themeConfig = {
+    green: {
+      btnPrimary: 'bg-gradient-to-r from-[#6EA64E] to-[#78B159] hover:from-[#629744] hover:to-[#6EA64E] text-white shadow-md shadow-[#DCEDCE]',
+      priceText: 'text-[#3E6B28]',
+      accentText: 'text-[#456F2F]',
+      badgeBg: 'bg-[#78B159]',
+      accentCheckbox: 'accent-[#78B159]',
+      hoverText: 'group-hover:text-[#3E6B28] hover:text-[#3E6B28]',
+    },
+    pink: {
+      btnPrimary: 'bg-gradient-to-r from-[#E0688E] to-[#F0789E] hover:from-[#CF587E] hover:to-[#E0688E] text-white shadow-md shadow-[#FAD1DE]',
+      priceText: 'text-[#9E2B54]',
+      accentText: 'text-[#9E2B54]',
+      badgeBg: 'bg-[#F0789E]',
+      accentCheckbox: 'accent-[#F0789E]',
+      hoverText: 'group-hover:text-[#9E2B54] hover:text-[#9E2B54]',
+    },
+    purple: {
+      btnPrimary: 'bg-gradient-to-r from-[#8C6EC8] to-[#9C80D8] hover:from-[#7C5EB8] hover:to-[#8C6EC8] text-white shadow-md shadow-[#E0D4FA]',
+      priceText: 'text-[#613CA8]',
+      accentText: 'text-[#613CA8]',
+      badgeBg: 'bg-[#9C80D8]',
+      accentCheckbox: 'accent-[#9C80D8]',
+      hoverText: 'group-hover:text-[#613CA8] hover:text-[#613CA8]',
+    },
+    cream: {
+      btnPrimary: 'bg-gradient-to-r from-[#D6973A] to-[#E5A84B] hover:from-[#C7882C] hover:to-[#D6973A] text-white shadow-md shadow-[#F7E4BE]',
+      priceText: 'text-[#8E5A13]',
+      accentText: 'text-[#8E5A13]',
+      badgeBg: 'bg-[#E5A84B]',
+      accentCheckbox: 'accent-[#E5A84B]',
+      hoverText: 'group-hover:text-[#8E5A13] hover:text-[#8E5A13]',
+    },
+  };
+  const curr = themeConfig[theme] || themeConfig.green;
 
   // Xóa các món đang được chọn
   const handleRemoveSelected = () => {
@@ -49,7 +84,7 @@ export default function CartPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/"
-            className="p-1 -ml-1 text-stone-600 hover:text-[#ee4d2d] transition rounded-lg"
+            className={`p-1 -ml-1 text-stone-600 ${curr.hoverText} transition rounded-lg`}
             title="Quay lại"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -105,7 +140,7 @@ export default function CartPage() {
           <div className="pt-1">
             <Link
               href="/"
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#ee4d2d] hover:bg-[#d73211] text-white font-bold text-xs sm:text-sm shadow-md transition transform active:scale-95"
+              className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl ${curr.btnPrimary} font-bold text-xs sm:text-sm shadow-md transition transform active:scale-95`}
             >
               <ShoppingBag className="w-4 h-4" />
               <span>Khám Phá Sản Phẩm Ngay</span>
@@ -123,10 +158,10 @@ export default function CartPage() {
                 type="checkbox"
                 checked={isAllSelected}
                 onChange={(e) => toggleSelectAll(e.target.checked)}
-                className="w-4 h-4 rounded text-rose-600 focus:ring-rose-400 cursor-pointer accent-[#ee4d2d]"
+                className="w-4 h-4 rounded text-rose-600 focus:ring-rose-400 cursor-pointer ${curr.accentCheckbox}"
                 title="Chọn tất cả sản phẩm"
               />
-              <span className="bg-[#ee4d2d] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-xs">
+              <span className={`${curr.badgeBg} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-xs`}>
                 Yêu thích
               </span>
               <span className="text-xs sm:text-sm font-bold text-stone-900 flex items-center gap-0.5">
@@ -157,7 +192,7 @@ export default function CartPage() {
                       type="checkbox"
                       checked={isChecked}
                       onChange={() => toggleSelectItem(item.id)}
-                      className="w-4 h-4 rounded text-rose-600 focus:ring-rose-400 cursor-pointer accent-[#ee4d2d]"
+                      className="w-4 h-4 rounded text-rose-600 focus:ring-rose-400 cursor-pointer ${curr.accentCheckbox}"
                     />
                   </div>
 
@@ -181,7 +216,7 @@ export default function CartPage() {
                         href={`/product/${item.product?.id || ''}`}
                         className="block group"
                       >
-                        <h3 className="text-xs sm:text-sm font-normal text-stone-900 group-hover:text-[#ee4d2d] transition line-clamp-1 sm:line-clamp-2 leading-snug">
+                        <h3 className="text-xs sm:text-sm font-normal text-stone-900 ${curr.hoverText} transition line-clamp-1 sm:line-clamp-2 leading-snug">
                           {item.product?.name}
                         </h3>
                       </Link>
@@ -208,7 +243,7 @@ export default function CartPage() {
                     <div className="mt-2 flex items-center justify-between gap-2">
                       {/* Unit Price */}
                       <div className="flex items-baseline gap-1.5 min-w-0">
-                        <span className="text-sm sm:text-base font-black text-[#ee4d2d]">
+                        <span className={`text-sm sm:text-base font-black ${curr.priceText}`}>
                           {formatVND(item.unitPrice)}
                         </span>
                         {item.product?.originalPrice && item.product.originalPrice > item.unitPrice && (
@@ -269,10 +304,10 @@ export default function CartPage() {
           {/* Shop Voucher Row */}
           <div className="p-3 bg-stone-50/70 border-t border-stone-100 flex items-center justify-between text-xs text-stone-700">
             <div className="flex items-center gap-2">
-              <Tag className="w-4 h-4 text-[#ee4d2d]" />
+              <Tag className={`w-4 h-4 ${curr.priceText}`} />
               <span className="font-medium text-xs">Voucher &amp; Chiết khấu mua sỉ Omachi</span>
             </div>
-            <span className="text-[11px] text-[#ee4d2d] font-semibold flex items-center gap-1">
+            <span className={`text-[11px] ${curr.priceText} font-semibold flex items-center gap-1`}>
               Áp dụng tại bước thanh toán <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
             </span>
           </div>
@@ -299,7 +334,7 @@ export default function CartPage() {
                 type="checkbox"
                 checked={isAllSelected}
                 onChange={(e) => toggleSelectAll(e.target.checked)}
-                className="w-4 h-4 rounded text-rose-600 focus:ring-rose-400 cursor-pointer accent-[#ee4d2d]"
+                className="w-4 h-4 rounded text-rose-600 focus:ring-rose-400 cursor-pointer ${curr.accentCheckbox}"
               />
               <span>Tất cả</span>
               <span className="text-stone-400 text-xs font-normal">({totalItems})</span>
@@ -310,7 +345,7 @@ export default function CartPage() {
               <div className="text-right">
                 <div className="flex items-baseline gap-1 sm:justify-end">
                   <span className="text-xs text-stone-600 hidden sm:inline">Tổng thanh toán:</span>
-                  <span className="text-base sm:text-lg font-black text-[#ee4d2d]">
+                  <span className={`text-base sm:text-lg font-black ${curr.priceText}`}>
                     {formatVND(selectedSubtotal)}
                   </span>
                 </div>
@@ -322,7 +357,7 @@ export default function CartPage() {
               {selectedTotalItems > 0 ? (
                 <Link
                   href="/checkout"
-                  className="bg-[#ee4d2d] hover:bg-[#d73211] active:bg-[#c2280a] text-white font-bold px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm shadow-md transition transform active:scale-98 flex items-center justify-center min-w-[120px]"
+                  className={`${curr.btnPrimary} font-bold px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm transition transform active:scale-98 flex items-center justify-center min-w-[120px]`}
                 >
                   Mua hàng ({selectedTotalItems})
                 </Link>

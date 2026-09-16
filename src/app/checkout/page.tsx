@@ -9,8 +9,6 @@ import {
   MapPin,
   Truck,
   ShieldCheck,
-  CreditCard,
-  Banknote,
   ReceiptText,
   MessageSquare,
   AlertCircle,
@@ -242,6 +240,53 @@ export default function CheckoutPage() {
     clearCart,
   } = useCart();
   const { theme } = useTheme();
+  const themeConfig = {
+    green: {
+      btnPrimary: 'bg-gradient-to-r from-[#6EA64E] to-[#78B159] hover:from-[#629744] hover:to-[#6EA64E] text-white shadow-md shadow-[#DCEDCE]',
+      priceText: 'text-[#3E6B28]',
+      accentText: 'text-[#456F2F]',
+      badgeBg: 'bg-[#78B159]',
+      focusBorder: 'focus:border-[#78B159]',
+      hoverText: 'hover:text-[#3E6B28]',
+      borderSubtle: 'border-[#DCEDCE]',
+      bgSubtle: 'bg-[#F4F9EE]',
+      ribbonBg: 'repeating-linear-gradient(45deg, #78B159, #78B159 12px, #fff 12px, #fff 18px, #A0D488 18px, #A0D488 30px, #fff 30px, #fff 36px)',
+    },
+    pink: {
+      btnPrimary: 'bg-gradient-to-r from-[#E0688E] to-[#F0789E] hover:from-[#CF587E] hover:to-[#E0688E] text-white shadow-md shadow-[#FAD1DE]',
+      priceText: 'text-[#9E2B54]',
+      accentText: 'text-[#9E2B54]',
+      badgeBg: 'bg-[#F0789E]',
+      focusBorder: 'focus:border-[#F0789E]',
+      hoverText: 'hover:text-[#9E2B54]',
+      borderSubtle: 'border-[#FAD1DE]',
+      bgSubtle: 'bg-[#FFF2F6]',
+      ribbonBg: 'repeating-linear-gradient(45deg, #F0789E, #F0789E 12px, #fff 12px, #fff 18px, #FAD1DE 18px, #FAD1DE 30px, #fff 30px, #fff 36px)',
+    },
+    purple: {
+      btnPrimary: 'bg-gradient-to-r from-[#8C6EC8] to-[#9C80D8] hover:from-[#7C5EB8] hover:to-[#8C6EC8] text-white shadow-md shadow-[#E0D4FA]',
+      priceText: 'text-[#613CA8]',
+      accentText: 'text-[#613CA8]',
+      badgeBg: 'bg-[#9C80D8]',
+      focusBorder: 'focus:border-[#9C80D8]',
+      hoverText: 'hover:text-[#613CA8]',
+      borderSubtle: 'border-[#E0D4FA]',
+      bgSubtle: 'bg-[#F8F4FF]',
+      ribbonBg: 'repeating-linear-gradient(45deg, #9C80D8, #9C80D8 12px, #fff 12px, #fff 18px, #E0D4FA 18px, #E0D4FA 30px, #fff 30px, #fff 36px)',
+    },
+    cream: {
+      btnPrimary: 'bg-gradient-to-r from-[#D6973A] to-[#E5A84B] hover:from-[#C7882C] hover:to-[#D6973A] text-white shadow-md shadow-[#F7E4BE]',
+      priceText: 'text-[#8E5A13]',
+      accentText: 'text-[#8E5A13]',
+      badgeBg: 'bg-[#E5A84B]',
+      focusBorder: 'focus:border-[#E5A84B]',
+      hoverText: 'hover:text-[#8E5A13]',
+      borderSubtle: 'border-[#F7E4BE]',
+      bgSubtle: 'bg-[#FFF9EE]',
+      ribbonBg: 'repeating-linear-gradient(45deg, #E5A84B, #E5A84B 12px, #fff 12px, #fff 18px, #F7E4BE 18px, #F7E4BE 30px, #fff 30px, #fff 36px)',
+    },
+  };
+  const curr = themeConfig[theme] || themeConfig.green;
   const { customer: loggedInCustomer, updateProfile } = useCustomer();
 
   const checkoutItems = selectedItems.length > 0 ? selectedItems : items;
@@ -587,7 +632,7 @@ export default function CheckoutPage() {
             </div>
             <div className="flex justify-between items-baseline pt-2 border-t border-gray-200">
               <span className="font-bold text-gray-800">Tổng thanh toán:</span>
-              <strong className="text-[#ee4d2d] text-base font-black">
+              <strong className={`${curr.priceText} text-base font-black`}>
                 {formatVND(createdOrder.subtotal || createdOrder.totalAmount)}
               </strong>
             </div>
@@ -618,7 +663,7 @@ export default function CheckoutPage() {
           <div className="space-y-2 pt-1">
             <Link
               href="/"
-              className="w-full py-3 rounded-xl bg-[#ee4d2d] hover:bg-[#d73211] text-white font-bold text-xs sm:text-sm shadow-sm flex items-center justify-center gap-1.5 transition active:scale-98"
+              className={`w-full py-3 rounded-xl ${curr.btnPrimary} font-bold text-xs sm:text-sm shadow-sm flex items-center justify-center gap-1.5 transition active:scale-98`}
             >
               <span>🏠 Về Trang Chủ Tiếp Tục Mua Sắm</span>
             </Link>
@@ -660,7 +705,7 @@ export default function CheckoutPage() {
         </p>
         <Link
           href="/"
-          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#ee4d2d] text-white font-bold text-xs shadow-md"
+          className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-full ${curr.btnPrimary} font-bold text-xs shadow-md`}
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Quay lại mua sắm</span>
@@ -677,7 +722,7 @@ export default function CheckoutPage() {
       <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-stone-200/80 px-3 py-2.5 flex items-center justify-between shadow-2xs">
         <Link
           href="/cart"
-          className="flex items-center gap-1.5 text-gray-700 hover:text-[#ee4d2d] transition"
+          className={`flex items-center gap-1.5 text-gray-700 ${curr.hoverText} transition`}
         >
           <ArrowLeft className="w-5 h-5" />
           <span className="text-sm font-bold">Thanh toán</span>
@@ -704,7 +749,7 @@ export default function CheckoutPage() {
           <div
             className="h-1 w-full"
             style={{
-              background: 'repeating-linear-gradient(45deg, #ff6b6b, #ff6b6b 12px, #fff 12px, #fff 18px, #4dabf7 18px, #4dabf7 30px, #fff 30px, #fff 36px)',
+              background: curr.ribbonBg,
             }}
           />
 
@@ -714,12 +759,12 @@ export default function CheckoutPage() {
               onClick={() => setIsEditingAddress(!isEditingAddress)}
               className="flex items-start gap-2.5 cursor-pointer select-none"
             >
-              <MapPin className="w-4 h-4 text-[#ee4d2d] shrink-0 mt-0.5" />
+              <MapPin className={`w-4 h-4 ${curr.priceText} shrink-0 mt-0.5`} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-gray-900">Địa chỉ nhận hàng</span>
                   <div className="flex items-center gap-1 text-[11px] text-gray-500">
-                    <span className="text-[#ee4d2d] font-semibold">{isEditingAddress ? 'Thu gọn' : 'Thay đổi'}</span>
+                    <span className={`${curr.priceText} font-semibold`}>{isEditingAddress ? 'Thu gọn' : 'Thay đổi'}</span>
                     <ChevronRight className={`w-3.5 h-3.5 text-gray-400 transition-transform ${isEditingAddress ? 'rotate-90' : ''}`} />
                   </div>
                 </div>
@@ -758,7 +803,7 @@ export default function CheckoutPage() {
                       }}
                       className={`w-full px-3 py-2 text-xs bg-gray-50 border ${
                         fieldErrors.fullName ? 'border-rose-400 ring-1 ring-rose-200' : 'border-gray-200'
-                      } rounded-lg font-medium text-gray-900 focus:outline-none focus:bg-white focus:border-[#ee4d2d]`}
+                      } rounded-lg font-medium text-gray-900 focus:outline-none focus:bg-white ${curr.focusBorder}`}
                     />
                     {fieldErrors.fullName && <p className="text-[10px] text-rose-500 font-semibold mt-0.5">⚠️ {fieldErrors.fullName}</p>}
                   </div>
@@ -778,7 +823,7 @@ export default function CheckoutPage() {
                       }}
                       className={`w-full px-3 py-2 text-xs bg-gray-50 border ${
                         fieldErrors.phone ? 'border-rose-400 ring-1 ring-rose-200' : 'border-gray-200'
-                      } rounded-lg font-medium text-gray-900 focus:outline-none focus:bg-white focus:border-[#ee4d2d]`}
+                      } rounded-lg font-medium text-gray-900 focus:outline-none focus:bg-white ${curr.focusBorder}`}
                     />
                     {fieldErrors.phone && <p className="text-[10px] text-rose-500 font-semibold mt-0.5">⚠️ {fieldErrors.phone}</p>}
                   </div>
@@ -829,7 +874,7 @@ export default function CheckoutPage() {
                       placeholder="VD: Phường Bến Nghé / Xã Hồng Quang..."
                       value={selectedWard}
                       onChange={(e) => setSelectedWard(e.target.value)}
-                      className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-lg font-medium text-gray-900 focus:outline-none focus:bg-white focus:border-[#ee4d2d]"
+                      className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-lg font-medium text-gray-900 focus:outline-none focus:bg-white ${curr.focusBorder}"
                     />
                   </div>
 
@@ -848,7 +893,7 @@ export default function CheckoutPage() {
                       }}
                       className={`w-full px-3 py-2 text-xs bg-gray-50 border ${
                         fieldErrors.specificAddress ? 'border-rose-400 ring-1 ring-rose-200' : 'border-gray-200'
-                      } rounded-lg font-medium text-gray-900 focus:outline-none focus:bg-white focus:border-[#ee4d2d]`}
+                      } rounded-lg font-medium text-gray-900 focus:outline-none focus:bg-white ${curr.focusBorder}`}
                     />
                     {fieldErrors.specificAddress && <p className="text-[10px] text-rose-500 font-semibold mt-0.5">⚠️ {fieldErrors.specificAddress}</p>}
                   </div>
@@ -877,7 +922,7 @@ export default function CheckoutPage() {
           {/* Shop Name Header */}
           <div className="flex items-center justify-between pb-2 border-b border-gray-100">
             <div className="flex items-center gap-1.5">
-              <span className="bg-[#ee4d2d] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-xs">
+              <span className={`${curr.badgeBg} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-xs`}>
                 Yêu thích
               </span>
               <span className="text-xs font-bold text-gray-900">🌸 Omachi Handmade Studio</span>
@@ -952,54 +997,12 @@ export default function CheckoutPage() {
         {checkoutTotalSavings > 0 && (
           <div className="bg-white rounded-lg shadow-2xs p-3.5 flex items-center justify-between border border-gray-100">
             <div className="flex items-center gap-2">
-              <Tag className="w-4 h-4 text-[#ee4d2d]" />
+              <Tag className={`w-4 h-4 ${curr.priceText}`} />
               <span className="text-xs font-bold text-gray-900">Chiết khấu Combo / Mua sỉ</span>
             </div>
-            <span className="text-xs font-bold text-[#ee4d2d]">- {formatVND(checkoutTotalSavings)}</span>
+            <span className={`text-xs font-bold ${curr.priceText}`}>- {formatVND(checkoutTotalSavings)}</span>
           </div>
         )}
-
-        {/* 5. PAYMENT METHOD (Phương thức thanh toán) */}
-        <div className="bg-white rounded-lg shadow-2xs p-3.5 space-y-2.5 border border-gray-100">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-900">Phương thức thanh toán</span>
-            <span className="text-[11px] text-gray-500 font-medium">Chọn phương thức</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 pt-1">
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('COD')}
-              className={`p-2.5 rounded-lg border text-left flex items-center gap-2 transition ${
-                paymentMethod === 'COD'
-                  ? 'border-[#ee4d2d] bg-rose-50/20 text-[#ee4d2d]'
-                  : 'border-gray-200 bg-gray-50/50 text-gray-700'
-              }`}
-            >
-              <Banknote className="w-4 h-4 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-xs font-bold truncate">Thanh toán khi nhận hàng (COD)</p>
-                <p className="text-[10px] text-gray-400 truncate">Kiểm tra rồi trả tiền</p>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('BANK')}
-              className={`p-2.5 rounded-lg border text-left flex items-center gap-2 transition ${
-                paymentMethod === 'BANK'
-                  ? 'border-[#ee4d2d] bg-rose-50/20 text-[#ee4d2d]'
-                  : 'border-gray-200 bg-gray-50/50 text-gray-700'
-              }`}
-            >
-              <CreditCard className="w-4 h-4 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-xs font-bold truncate">Chuyển khoản VietQR</p>
-                <p className="text-[10px] text-gray-400 truncate">Quét mã ngân hàng</p>
-              </div>
-            </button>
-          </div>
-        </div>
 
         {/* 6. SHOPEE SUMMARY RECEIPT (Chi tiết thanh toán) */}
         <div className="bg-white rounded-lg shadow-2xs p-3.5 space-y-2 border border-gray-100 text-xs text-gray-600">
@@ -1016,7 +1019,7 @@ export default function CheckoutPage() {
           </div>
 
           {checkoutTotalSavings > 0 && (
-            <div className="flex justify-between text-[#ee4d2d]">
+            <div className={`flex justify-between ${curr.priceText}`}>
               <span>Tổng tiền giảm giá:</span>
               <span className="font-medium">- {formatVND(checkoutTotalSavings)}</span>
             </div>
@@ -1031,7 +1034,7 @@ export default function CheckoutPage() {
 
           <div className="flex justify-between pt-2 border-t border-gray-100 items-baseline">
             <span className="font-bold text-gray-900 text-xs">Tổng thanh toán:</span>
-            <span className="text-base font-black text-[#ee4d2d]">
+            <span className={`text-base font-black ${curr.priceText}`}>
               {formatVND(checkoutSubtotal)}
             </span>
           </div>
@@ -1051,12 +1054,12 @@ export default function CheckoutPage() {
           <div className="flex flex-col items-end sm:items-start flex-1">
             <div className="flex items-baseline gap-1">
               <span className="text-xs text-gray-600">Tổng thanh toán:</span>
-              <span className="text-base sm:text-lg font-black text-[#ee4d2d]">
+              <span className={`text-base sm:text-lg font-black ${curr.priceText}`}>
                 {formatVND(checkoutSubtotal)}
               </span>
             </div>
             {checkoutTotalSavings > 0 && (
-              <span className="text-[10px] text-[#ee4d2d] font-semibold">
+              <span className={`text-[10px] ${curr.priceText} font-semibold`}>
                 Tiết kiệm {formatVND(checkoutTotalSavings)}
               </span>
             )}
@@ -1066,7 +1069,7 @@ export default function CheckoutPage() {
             type="button"
             onClick={() => handleSubmitOrder()}
             disabled={isSubmitting}
-            className="bg-[#ee4d2d] hover:bg-[#d73211] active:bg-[#c2280a] text-white font-bold px-8 py-3 rounded-lg text-sm shadow-md transition transform active:scale-98 flex items-center justify-center min-w-[130px]"
+            className={`${curr.btnPrimary} font-bold px-8 py-3 rounded-lg text-sm transition transform active:scale-98 flex items-center justify-center min-w-[130px]`}
           >
             {isSubmitting ? (
               <span className="flex items-center gap-1 text-xs">

@@ -150,7 +150,7 @@ export default function HomePage() {
             </h2>
             <p className="text-xs text-stone-500 mt-1">
               {searchQuery.trim() ? (
-                <span>Kết quả tìm kiếm cho <strong className="text-[#ee4d2d]">&quot;{searchQuery}&quot;</strong>: {filteredProducts.length} sản phẩm</span>
+                <span>Kết quả tìm kiếm cho <strong className={curr.accentText}>&quot;{searchQuery}&quot;</strong>: {filteredProducts.length} sản phẩm</span>
               ) : (
                 <span>Hiển thị {filteredProducts.length} mẫu charm &amp; phụ kiện pastel đang có sẵn</span>
               )}
