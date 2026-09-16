@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ShoppingBag, Search, Package, Sparkles, User, LogOut, ChevronDown } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -13,11 +14,18 @@ export default function Navbar() {
   const { totalItems, setIsCartOpen } = useCart();
   const { theme } = useTheme();
   const { customer, openAuthModal, logout } = useCustomer();
+  const router = useRouter();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [bannerText, setBannerText] = useState('Tiệm Phụ Kiện Handmade Omachi • Nhận xâu vòng tay, kẹp tóc & charm pastel theo yêu cầu ✨');
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get('q');
+      if (q) setSearchTerm(q);
+    }
+
     fetch('/api/settings')
       .then((r) => r.json())
       .then((res) => {
@@ -27,6 +35,22 @@ export default function Navbar() {
       })
       .catch(() => {});
   }, []);
+
+  const handleSearchChange = (val: string) => {
+    setSearchTerm(val);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('omachi-search', { detail: val }));
+    }
+  };
+
+  const handleSearchSubmit = () => {
+    if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+      router.push(`/?q=${encodeURIComponent(searchTerm)}`);
+    } else {
+      const el = document.getElementById('categories') || document.getElementById('products-section');
+      el?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   const headerAccentMap = {
     green: {
@@ -82,33 +106,48 @@ export default function Navbar() {
             <OmachiLogo size="md" />
           </Link>
 
-          {/* Search Bar */}
+          {/* Desktop Search Bar */}
           <div className="hidden md:flex flex-1 max-w-md mx-4">
-            <div className="relative w-full">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSearchSubmit();
+              }}
+              className="relative w-full"
+            >
               <input
                 type="text"
                 placeholder="Tìm vòng charm, kẹp tóc hoa, combo cườm sỉ..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className={`w-full pl-10 pr-4 py-2 text-xs sm:text-sm ${curr.searchBg} border rounded-full focus:outline-none focus:ring-1 focus:bg-white text-stone-800 transition`}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className={`w-full pl-10 pr-8 py-2 text-xs sm:text-sm ${curr.searchBg} border rounded-full focus:outline-none focus:ring-1 focus:bg-white text-stone-800 transition`}
               />
               <Search className={`w-4 h-4 ${curr.searchIcon} absolute left-3.5 top-1/2 -translate-y-1/2`} />
-            </div>
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => handleSearchChange('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-0.5 text-xs font-bold"
+                >
+                  ✕
+                </button>
+              )}
+            </form>
           </div>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <ThemeSwitcher />
-
-            {/* Order Lookup Link */}
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            {/* Order Lookup Link - Luôn hiển thị trên cả điện thoại và máy tính */}
             <Link
               href="/tra-cuu-don-hang"
-              className={`hidden sm:flex items-center gap-1.5 px-3 sm:px-3.5 py-2 text-xs font-medium ${curr.orderBtn} rounded-full border transition shadow-2xs`}
-              title="Tra cứu hành trình đơn hàng bằng Số điện thoại hoặc Mã đơn"
+              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold sm:font-medium ${curr.orderBtn} rounded-full border transition shadow-2xs shrink-0`}
+              title="Tra cứu hành trình đơn hàng"
             >
-              <Package className="w-3.5 h-3.5" />
-              <span>Tra cứu đơn</span>
+              <Package className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span className="text-[11px] sm:text-xs">Tra cứu</span>
             </Link>
+
+            <ThemeSwitcher />
 
             {/* Customer Account Button / Dropdown */}
             {!customer ? (
@@ -183,6 +222,35 @@ export default function Navbar() {
             </Link>
           </div>
 
+        </div>
+
+        {/* Mobile Search Bar - Tìm kiếm mặt hàng trên điện thoại */}
+        <div className="md:hidden pb-2.5 pt-0.5">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSearchSubmit();
+            }}
+            className="relative w-full"
+          >
+            <input
+              type="text"
+              placeholder="🔍 Tìm vòng charm, kẹp tóc hoa, phụ kiện..."
+              value={searchTerm}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className={`w-full pl-9 pr-8 py-2 text-xs ${curr.searchBg} border rounded-full focus:outline-none focus:ring-1 focus:bg-white text-stone-800 transition shadow-2xs font-medium`}
+            />
+            <Search className={`w-3.5 h-3.5 ${curr.searchIcon} absolute left-3 top-1/2 -translate-y-1/2`} />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => handleSearchChange('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-0.5 text-xs font-bold"
+              >
+                ✕
+              </button>
+            )}
+          </form>
         </div>
       </div>
     </header>

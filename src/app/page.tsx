@@ -43,29 +43,54 @@ export default function HomePage() {
     loadData();
   }, []);
 
-    const filteredProducts = selectedCategory === 'all'
-    ? products
-    : products.filter((p) => {
-        // Direct match with categoryId, category, or slug
-        if (p.categoryId === selectedCategory || p.category === selectedCategory) return true;
-        
-        // Find matching category definition
-        const matchedCat = categories.find(
-          (c) => c.id === selectedCategory || c.slug === selectedCategory
-        );
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get('q');
+      if (q) setSearchQuery(q);
+
+      const handleSearchEvent = (e: any) => {
+        setSearchQuery(e.detail || '');
+      };
+      window.addEventListener('omachi-search', handleSearchEvent);
+      return () => window.removeEventListener('omachi-search', handleSearchEvent);
+    }
+  }, []);
+
+  const filteredProducts = products.filter((p) => {
+    // 1. Lọc theo danh mục
+    let matchCat = selectedCategory === 'all';
+    if (!matchCat) {
+      if (p.categoryId === selectedCategory || p.category === selectedCategory) {
+        matchCat = true;
+      } else {
+        const matchedCat = categories.find((c) => c.id === selectedCategory || c.slug === selectedCategory);
         if (matchedCat) {
-          if (p.categoryId === matchedCat.id || p.categoryId === matchedCat.slug) return true;
-          if (p.category === matchedCat.id || p.category === matchedCat.slug) return true;
-          if (
-            p.categoryName &&
-            matchedCat.name &&
-            p.categoryName.trim().toLowerCase() === matchedCat.name.trim().toLowerCase()
-          ) {
-            return true;
-          }
+          matchCat = Boolean(
+            p.categoryId === matchedCat.id ||
+            p.categoryId === matchedCat.slug ||
+            p.category === matchedCat.id ||
+            p.category === matchedCat.slug ||
+            (p.categoryName && matchedCat.name && p.categoryName.trim().toLowerCase() === matchedCat.name.trim().toLowerCase())
+          );
         }
-        return false;
-      });
+      }
+    }
+    if (!matchCat) return false;
+
+    // 2. Lọc theo từ khóa tìm kiếm
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.trim().toLowerCase();
+    return Boolean(
+      p.name?.toLowerCase().includes(q) ||
+      p.categoryName?.toLowerCase().includes(q) ||
+      p.description?.toLowerCase().includes(q) ||
+      p.sku?.toLowerCase().includes(q) ||
+      (p.variants && p.variants.some((v: any) => v.name?.toLowerCase().includes(q)))
+    );
+  });
 
   const themeConfig = {
     green: {
@@ -116,24 +141,64 @@ export default function HomePage() {
       />
 
       {/* Product Grid */}
-      <section>
-        <div className="flex items-center justify-between mb-5">
+      <section id="products-section" className="scroll-mt-24">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-stone-800 tracking-tight flex items-center gap-2 font-sans">
               <span>Sản phẩm tuyển chọn tại xưởng</span>
               <Sparkles className="w-4 h-4 text-amber-500" />
             </h2>
             <p className="text-xs text-stone-500 mt-1">
-              Hiển thị {filteredProducts.length} mẫu charm &amp; phụ kiện pastel đang có sẵn
+              {searchQuery.trim() ? (
+                <span>Kết quả tìm kiếm cho <strong className="text-[#ee4d2d]">&quot;{searchQuery}&quot;</strong>: {filteredProducts.length} sản phẩm</span>
+              ) : (
+                <span>Hiển thị {filteredProducts.length} mẫu charm &amp; phụ kiện pastel đang có sẵn</span>
+              )}
             </p>
           </div>
+
+          {searchQuery.trim() && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                window.dispatchEvent(new CustomEvent('omachi-search', { detail: '' }));
+              }}
+              className="text-xs text-stone-500 hover:text-rose-600 bg-stone-100 hover:bg-rose-50 px-3 py-1.5 rounded-full font-bold flex items-center gap-1 transition w-fit"
+            >
+              ✕ Xóa tìm kiếm
+            </button>
+          )}
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-6">
-          {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {filteredProducts.length === 0 ? (
+          <div className="py-14 text-center space-y-3 bg-white rounded-3xl border border-stone-200/80 p-8 shadow-xs">
+            <div className="text-4xl">🔍</div>
+            <h3 className="text-base font-bold text-stone-800">
+              Không tìm thấy sản phẩm nào khớp với &quot;{searchQuery}&quot;
+            </h3>
+            <p className="text-xs text-stone-500 max-w-sm mx-auto">
+              Thử tìm kiếm với các từ khóa ngắn hơn như: <strong>charm</strong>, <strong>kẹp tóc</strong>, <strong>vòng</strong>, <strong>hạt cườm</strong>...
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedCategory('all');
+                window.dispatchEvent(new CustomEvent('omachi-search', { detail: '' }));
+              }}
+              className="px-5 py-2 rounded-full bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold transition cursor-pointer"
+            >
+              Xem tất cả sản phẩm
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-6">
+            {filteredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Shop Purchase Policies */}
