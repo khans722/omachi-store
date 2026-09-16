@@ -976,27 +976,35 @@ export default function CheckoutPage() {
                   />
                 </div>
 
-                {/* Hàng 3: Phường / Xã (Dropdown có sẵn danh sách xã theo huyện hoặc tự do gõ tay) */}
+                {/* Hàng 3: Phường / Xã / Thị trấn (Tự do điền tay hoặc chọn gợi ý, hoàn toàn không sợ bị thiếu do sáp nhập) */}
                 <div>
-                  <SearchableDropdown
-                    label="Phường / Xã"
-                    placeholder={
-                      !selectedDistrict
-                        ? 'Chọn Quận / Huyện trước'
-                        : isLoadingWards
-                        ? '⏳ Đang tải danh sách xã/phường...'
-                        : currentWards.length > 0
-                        ? 'Chọn Phường / Xã / Thị trấn...'
-                        : 'Nhập Phường / Xã của bạn...'
-                    }
-                    searchPlaceholder="🔍 Tìm kiếm xã, phường, thị trấn..."
-                    disabled={!selectedDistrict}
-                    disabledText="Chọn Quận / Huyện trước"
-                    value={selectedWard}
-                    onChange={(w) => setSelectedWard(w)}
-                    options={currentWards}
-                    buttonRef={wardRef}
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-gray-700 block">
+                      Phường / Xã / Thị trấn
+                    </label>
+                    <span className="text-[10px] text-gray-400 font-medium">Tự do điền xã cũ hoặc mới</span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      list="ward-datalist-suggestions"
+                      placeholder={
+                        !selectedDistrict
+                          ? 'Nhập Phường / Xã của bạn...'
+                          : 'VD: Xã Nội Hoàng / Phường Bến Nghé (tự do điền tay)...'
+                      }
+                      value={selectedWard}
+                      onChange={(e) => setSelectedWard(e.target.value)}
+                      className={`w-full px-3 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-lg font-medium text-gray-900 focus:outline-none focus:bg-white ${curr.focusBorder}`}
+                    />
+                    {currentWards.length > 0 && (
+                      <datalist id="ward-datalist-suggestions">
+                        {currentWards.map((w, idx) => (
+                          <option key={`${w}-${idx}`} value={w} />
+                        ))}
+                      </datalist>
+                    )}
+                  </div>
                 </div>
 
                 {/* Hàng 4: 1 DÒNG ĐỂ ĐIỀN TAY ĐỊA CHỈ CHI TIẾT (100% full width rộng rãi) */}
