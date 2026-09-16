@@ -47,8 +47,9 @@ export default function Navbar() {
     if (typeof window !== 'undefined' && window.location.pathname !== '/') {
       router.push(`/?q=${encodeURIComponent(searchTerm)}`);
     } else {
-      const el = document.getElementById('categories') || document.getElementById('products-section');
-      el?.scrollIntoView({ behavior: 'smooth' });
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
   };
 

@@ -128,10 +128,53 @@ export default function HomePage() {
     <Truck key="p4" className="w-5 h-5 text-amber-600" />,
   ];
 
+  const isSearching = Boolean(searchQuery.trim());
+
   return (
-    <div className="space-y-10 pb-16 max-w-7xl mx-auto">
-      {/* Hero Banner */}
-      <HeroBanner settings={settings || undefined} />
+    <div className="space-y-6 sm:space-y-8 pb-16 max-w-7xl mx-auto">
+      {/* Hero Banner - Tự động ẩn khi tìm kiếm để hàng hóa hiển thị ngay trên đầu trang */}
+      {!isSearching && (
+        <HeroBanner settings={settings || undefined} />
+      )}
+
+      {/* Thanh thông báo kết quả tìm kiếm gọn gàng khi đang tìm kiếm */}
+      {isSearching && (
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl p-3.5 sm:p-4 border border-stone-200/80 shadow-2xs flex items-center justify-between gap-3 animate-fade-in my-2">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-base shrink-0 ${curr.iconBox}`}>
+              🔍
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-stone-500 font-medium">Đang tìm kiếm phụ kiện:</span>
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${curr.tagBg}`}>
+                  {filteredProducts.length} sản phẩm khớp
+                </span>
+              </div>
+              <h2 className="text-sm sm:text-base font-bold text-stone-900 truncate">
+                &ldquo;{searchQuery}&rdquo;
+              </h2>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSearchQuery('');
+              window.dispatchEvent(new CustomEvent('omachi-search', { detail: '' }));
+              if (typeof window !== 'undefined') {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-bold text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 rounded-full transition shrink-0 cursor-pointer"
+            title="Xóa tìm kiếm và quay lại trang chủ"
+          >
+            <span>✕</span>
+            <span className="hidden sm:inline">Hiện lại giới thiệu</span>
+            <span className="sm:hidden">Xóa tìm</span>
+          </button>
+        </div>
+      )}
 
       {/* Category Filter */}
       <CategoryFilter
