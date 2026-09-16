@@ -144,7 +144,7 @@ export interface Order {
   shippingFee: number;
   totalAmount: number;
   finalTotalAmount?: number;
-  paymentMethod: 'ZALO_CONFIRM' | 'COD';
+  paymentMethod: 'ZALO_CONFIRM' | 'COD' | 'BANK';
   paymentStatus: PaymentStatus | 'UNPAID' | 'PAID';
   orderStatus: OrderStatus;
   trackingNumber?: string;

@@ -720,8 +720,8 @@ export default function ProductDetailPage() {
           <div className="relative w-full bg-white rounded-t-2xl max-h-[85vh] flex flex-col z-10 shadow-2xl animate-slide-up pb-safe">
             {/* Header: Product Preview & Close Button */}
             <div className="p-3.5 border-b border-gray-100 flex items-start gap-3 relative">
-              <div className="relative w-22 h-22 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 shrink-0">
-                <img src={selectedImage} alt={product.name} className="w-full h-full object-cover" />
+              <div className="relative w-20 h-20 sm:w-24 sm:h-24 aspect-square rounded-xl overflow-hidden border border-gray-200 bg-gray-50 shrink-0 shadow-xs">
+                <img src={selectedImage} alt={product.name} className="w-full h-full object-cover object-center" />
               </div>
               <div className="flex-1 min-w-0 pr-8 pt-0.5">
                 <p className={`text-xl font-black leading-tight ${curr.priceText}`}>{formatVND(unitPrice)}</p>

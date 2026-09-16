@@ -47,7 +47,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <>
-      <div className="group bg-white rounded-2xl border border-stone-200/80 hover:border-stone-300 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.08)] transition-all duration-300 flex flex-col overflow-hidden hover:-translate-y-1">
+      <div className="group bg-white rounded-2xl border border-stone-200/80 hover:border-stone-300 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.08)] transition-all duration-300 flex flex-col h-full overflow-hidden hover:-translate-y-1">
         
         {/* Product Image Box with smooth hover */}
         <Link href={`/product/${product.id}`} className="relative aspect-[4/5] overflow-hidden bg-stone-100 block">
@@ -101,9 +101,9 @@ export default function ProductCard({ product }: ProductCardProps) {
               </div>
             </div>
 
-            {/* Product Name */}
-            <Link href={`/product/${product.id}`}>
-              <h3 className="text-xs sm:text-sm font-semibold text-stone-900 group-hover:text-stone-600 transition-colors duration-200 line-clamp-2 leading-relaxed min-h-[36px]">
+            {/* Product Name - Guaranteed 2-line uniform height */}
+            <Link href={`/product/${product.id}`} className="block">
+              <h3 className="text-xs sm:text-sm font-semibold text-stone-900 group-hover:text-stone-600 transition-colors duration-200 line-clamp-2 leading-snug h-9 sm:h-10">
                 {product.name}
               </h3>
             </Link>
@@ -127,18 +127,18 @@ export default function ProductCard({ product }: ProductCardProps) {
             </div>
           </div>
 
-          {/* Price & Quick Add Action */}
-          <div className="pt-2.5 border-t border-stone-100 flex items-center justify-between gap-1">
-            <div>
-              <div className="text-sm sm:text-base font-extrabold text-stone-900">
+          {/* Price & Quick Add Action - Anchored and Aligned */}
+          <div className="pt-2.5 border-t border-stone-100 flex items-center justify-between gap-1 mt-auto">
+            <div className="flex flex-col justify-center min-h-[36px]">
+              <div className="text-sm sm:text-base font-extrabold text-stone-900 leading-tight">
                 {formatVND(product.basePrice)}
                 <span className="text-[10px] text-stone-400 font-normal ml-0.5">/cái</span>
               </div>
-              {product.originalPrice && product.originalPrice > product.basePrice && (
-                <div className="text-[10px] text-stone-400 line-through">
+              {product.originalPrice && product.originalPrice > product.basePrice ? (
+                <div className="text-[10px] text-stone-400 line-through leading-tight">
                   {formatVND(product.originalPrice)}
                 </div>
-              )}
+              ) : null}
             </div>
 
             <button

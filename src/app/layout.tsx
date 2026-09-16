@@ -40,13 +40,6 @@ export default function RootLayout({
         <ThemeProvider>
           <CustomerProvider>
             <CartProvider>
-              {/* 🌈 Ambient Multi-Hue Silk Mesh Wave Glow Backgrounds - Rõ nét, bồng bềnh, ngọt ngào */}
-              <div className="silk-mesh-blob-1" />
-              <div className="silk-mesh-blob-2" />
-              <div className="silk-mesh-blob-3" />
-              <div className="silk-mesh-blob-4" />
-              <div className="silk-acrylic-sheen" />
-
               <div className="relative z-10 flex flex-col min-h-screen">
                 <Navbar />
 
