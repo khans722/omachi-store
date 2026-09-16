@@ -19,9 +19,12 @@ export async function POST(req: NextRequest) {
 
     const newOrder = db.orders.create(body);
 
-    // Trigger Notification to Zalo / Log
+    // Gửi thông báo về Telegram ngầm (Bất đồng bộ không chặn đơn của khách)
+    // Giúp tốc độ đặt hàng cực nhanh < 0.1s thay vì phải đợi máy chủ Telegram phản hồi
     const settings = db.settings.get();
-    await sendOrderNotification(newOrder, settings, 'NEW_ORDER');
+    sendOrderNotification(newOrder, settings, 'NEW_ORDER').catch((err) => {
+      console.error('[ASYNC ORDER TELEGRAM NOTIFICATION ERROR]:', err);
+    });
 
     return NextResponse.json({ success: true, data: newOrder });
   } catch (error) {

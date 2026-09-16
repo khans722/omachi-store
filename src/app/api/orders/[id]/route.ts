@@ -32,10 +32,12 @@ export async function PATCH(
       return NextResponse.json({ success: false, message: 'Order not found' }, { status: 404 });
     }
 
-    // Send notification update
+    // Send notification update in background
     const trigger = body.paymentStatus === 'PAID' ? 'PAYMENT_SUCCESS' : 'CONFIRMED';
     const settings = db.settings.get();
-    await sendOrderNotification(updated, settings, trigger);
+    sendOrderNotification(updated, settings, trigger).catch((err) => {
+      console.error('[ASYNC ORDER UPDATE NOTIFICATION ERROR]:', err);
+    });
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
