@@ -1,0 +1,8 @@
+.vs
+.vscode
+.next
+node_modules
+*.sln*
+*.suo
+*.user
+.git
