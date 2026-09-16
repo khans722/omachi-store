@@ -358,7 +358,74 @@ export default function CheckoutPage() {
     specificAddress?: string;
   }>({});
 
+  const [errorMessage, setErrorMessage] = useState('');
   const [saveAsDefault, setSaveAsDefault] = useState(true);
+
+  // Restore guest checkout shipping info from localStorage if available
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem('omachi_checkout_shipping_info');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.fullName) setCustomer((prev) => ({ ...prev, fullName: prev.fullName || parsed.fullName }));
+        if (parsed.phone) setCustomer((prev) => ({ ...prev, phone: prev.phone || parsed.phone }));
+        if (parsed.selectedProvince) setSelectedProvince((prev) => prev || parsed.selectedProvince);
+        if (parsed.selectedDistrict) setSelectedDistrict((prev) => prev || parsed.selectedDistrict);
+        if (parsed.selectedWard) setSelectedWard((prev) => prev || parsed.selectedWard);
+        if (parsed.specificAddress) setSpecificAddress((prev) => prev || parsed.specificAddress);
+      }
+    } catch (e) {}
+  }, []);
+
+  // Auto save shipping info to localStorage for guest convenience
+  useEffect(() => {
+    try {
+      if (customer.fullName || customer.phone || specificAddress || selectedProvince) {
+        localStorage.setItem(
+          'omachi_checkout_shipping_info',
+          JSON.stringify({
+            fullName: customer.fullName,
+            phone: customer.phone,
+            selectedProvince,
+            selectedDistrict,
+            selectedWard,
+            specificAddress,
+          })
+        );
+      }
+    } catch (e) {}
+  }, [customer.fullName, customer.phone, selectedProvince, selectedDistrict, selectedWard, specificAddress]);
+
+  // Reactive auto-clear error banner when customer fixes corresponding field
+  useEffect(() => {
+    if (customer.fullName.trim() && errorMessage.includes('họ và tên')) {
+      setErrorMessage('');
+    }
+  }, [customer.fullName, errorMessage]);
+
+  useEffect(() => {
+    if (customer.phone.trim() && (errorMessage.includes('số điện thoại') || errorMessage.includes('10 số'))) {
+      setErrorMessage('');
+    }
+  }, [customer.phone, errorMessage]);
+
+  useEffect(() => {
+    if (selectedProvince.trim() && errorMessage.includes('Tỉnh / Thành phố')) {
+      setErrorMessage('');
+    }
+  }, [selectedProvince, errorMessage]);
+
+  useEffect(() => {
+    if (selectedDistrict.trim() && errorMessage.includes('Quận / Huyện')) {
+      setErrorMessage('');
+    }
+  }, [selectedDistrict, errorMessage]);
+
+  useEffect(() => {
+    if (specificAddress.trim() && errorMessage.includes('số nhà')) {
+      setErrorMessage('');
+    }
+  }, [specificAddress, errorMessage]);
 
   const savedAddresses = useMemo(() => {
     if (!loggedInCustomer) return [];
@@ -423,7 +490,6 @@ export default function CheckoutPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
-  const [errorMessage, setErrorMessage] = useState('');
 
   const validateForm = (): boolean => {
     const errors: typeof fieldErrors = {};
@@ -732,10 +798,20 @@ export default function CheckoutPage() {
 
       {/* Error alert if any */}
       {errorMessage && (
-        <div className="max-w-2xl mx-auto px-3 pt-3">
-          <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs font-bold text-rose-600 flex items-center gap-2 animate-shake">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
-            <span>{errorMessage}</span>
+        <div className="max-w-2xl mx-auto px-3 pt-3 animate-fade-in">
+          <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs font-bold text-rose-600 flex items-center justify-between gap-2 shadow-xs animate-shake">
+            <div className="flex items-center gap-2 min-w-0">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+              <span className="truncate">{errorMessage}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setErrorMessage('')}
+              className="text-rose-400 hover:text-rose-700 p-1 rounded-md text-xs font-black transition"
+              title="Đóng thông báo"
+            >
+              ✕
+            </button>
           </div>
         </div>
       )}
@@ -798,8 +874,10 @@ export default function CheckoutPage() {
                       placeholder="VD: Nguyễn Lan Anh"
                       value={customer.fullName}
                       onChange={(e) => {
-                        setCustomer({ ...customer, fullName: e.target.value });
+                        const val = e.target.value;
+                        setCustomer((prev) => ({ ...prev, fullName: val }));
                         if (fieldErrors.fullName) setFieldErrors((p) => ({ ...p, fullName: undefined }));
+                        if (errorMessage && errorMessage.includes('họ và tên')) setErrorMessage('');
                       }}
                       className={`w-full px-3 py-2 text-xs bg-gray-50 border ${
                         fieldErrors.fullName ? 'border-rose-400 ring-1 ring-rose-200' : 'border-gray-200'
@@ -818,8 +896,10 @@ export default function CheckoutPage() {
                       placeholder="VD: 0988123456"
                       value={customer.phone}
                       onChange={(e) => {
-                        setCustomer({ ...customer, phone: e.target.value });
+                        const val = e.target.value;
+                        setCustomer((prev) => ({ ...prev, phone: val }));
                         if (fieldErrors.phone) setFieldErrors((p) => ({ ...p, phone: undefined }));
+                        if (errorMessage && (errorMessage.includes('số điện thoại') || errorMessage.includes('10 số'))) setErrorMessage('');
                       }}
                       className={`w-full px-3 py-2 text-xs bg-gray-50 border ${
                         fieldErrors.phone ? 'border-rose-400 ring-1 ring-rose-200' : 'border-gray-200'
@@ -840,6 +920,7 @@ export default function CheckoutPage() {
                       setSelectedProvince(prov);
                       setSelectedDistrict('');
                       if (fieldErrors.province) setFieldErrors((p) => ({ ...p, province: undefined }));
+                      if (errorMessage && errorMessage.includes('Tỉnh')) setErrorMessage('');
                     }}
                     options={VIETNAM_PROVINCES.map((p) => p.name)}
                     error={fieldErrors.province}
@@ -857,6 +938,7 @@ export default function CheckoutPage() {
                     onChange={(dist) => {
                       setSelectedDistrict(dist);
                       if (fieldErrors.district) setFieldErrors((p) => ({ ...p, district: undefined }));
+                      if (errorMessage && errorMessage.includes('Quận')) setErrorMessage('');
                     }}
                     options={currentDistricts}
                     error={fieldErrors.district}
@@ -888,8 +970,10 @@ export default function CheckoutPage() {
                       placeholder="VD: Số 12, ngõ 85, phố Chùa Láng..."
                       value={specificAddress}
                       onChange={(e) => {
-                        setSpecificAddress(e.target.value);
+                        const val = e.target.value;
+                        setSpecificAddress(val);
                         if (fieldErrors.specificAddress) setFieldErrors((p) => ({ ...p, specificAddress: undefined }));
+                        if (errorMessage && errorMessage.includes('số nhà')) setErrorMessage('');
                       }}
                       className={`w-full px-3 py-2 text-xs bg-gray-50 border ${
                         fieldErrors.specificAddress ? 'border-rose-400 ring-1 ring-rose-200' : 'border-gray-200'
@@ -903,8 +987,10 @@ export default function CheckoutPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (customer.fullName && customer.phone && selectedProvince && selectedDistrict && specificAddress) {
+                      if (customer.fullName.trim() && customer.phone.trim() && selectedProvince.trim() && selectedDistrict.trim() && specificAddress.trim()) {
                         setIsEditingAddress(false);
+                        setErrorMessage('');
+                        setFieldErrors({});
                       }
                     }}
                     className="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-xs font-bold transition"
