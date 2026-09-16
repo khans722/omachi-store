@@ -84,12 +84,40 @@ export async function GET(req: NextRequest) {
         normDist.includes(d.name.toLowerCase())
     );
 
-    if (!matchedDist) {
+    let finalDist = matchedDist;
+    if (!finalDist) {
+      for (const otherProv of cachedProvinces) {
+        if (otherProv.id === matchedProv.id) continue;
+        let otherDistricts = districtCache.get(otherProv.id);
+        if (!otherDistricts) {
+          try {
+            const distRes = await fetchJson(`https://esgoo.net/api-tinhthanh/2/${otherProv.id}.htm`);
+            if (distRes && distRes.error === 0 && Array.isArray(distRes.data)) {
+              otherDistricts = distRes.data;
+              districtCache.set(otherProv.id, otherDistricts);
+            }
+          } catch {}
+        }
+        if (otherDistricts) {
+          const found = otherDistricts.find(
+            (d) =>
+              d.name.toLowerCase().includes(normDist) ||
+              normDist.includes(d.name.toLowerCase())
+          );
+          if (found) {
+            finalDist = found;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!finalDist) {
       return NextResponse.json({ success: true, data: [] });
     }
 
     // 3. Get wards for matched district
-    const wardRes = await fetchJson(`https://esgoo.net/api-tinhthanh/3/${matchedDist.id}.htm`);
+    const wardRes = await fetchJson(`https://esgoo.net/api-tinhthanh/3/${finalDist.id}.htm`);
     if (wardRes && wardRes.error === 0 && Array.isArray(wardRes.data)) {
       const wards: string[] = wardRes.data.map((w: any) => w.name);
       wardCache.set(cacheKey, wards);

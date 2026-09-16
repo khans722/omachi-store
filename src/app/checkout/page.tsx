@@ -32,6 +32,8 @@ const formatVND = (amount: number) => {
   }).format(amount);
 };
 
+export type DropdownItem = string | { value: string; label?: string; subLabel?: string; aliases?: string[] };
+
 function SearchableDropdown({
   label,
   required,
@@ -51,7 +53,7 @@ function SearchableDropdown({
   placeholder: string;
   value: string;
   onChange: (val: string) => void;
-  options: string[];
+  options: DropdownItem[];
   error?: string;
   disabled?: boolean;
   disabledText?: string;
@@ -82,11 +84,22 @@ function SearchableDropdown({
     }
   }, [isOpen]);
 
+  const normalizedOptions = useMemo(() => {
+    return options.map((opt) => {
+      if (typeof opt === 'string') {
+        return { value: opt, label: opt, subLabel: undefined, searchKey: opt.toLowerCase() };
+      }
+      const searchKey = [opt.label || opt.value, opt.subLabel, ...(opt.aliases || [])].filter(Boolean).join(' ').toLowerCase();
+      return { value: opt.value, label: opt.label || opt.value, subLabel: opt.subLabel, searchKey };
+    });
+  }, [options]);
+
   const filteredOptions = useMemo(() => {
-    if (!search.trim()) return options;
+    if (!search.trim()) return normalizedOptions;
     const q = search.toLowerCase().trim();
-    return options.filter((opt) => opt.toLowerCase().includes(q));
-  }, [options, search]);
+    return normalizedOptions.filter((opt) => opt.searchKey.includes(q));
+  }, [normalizedOptions, search]);
+
 
   if (isManualInput) {
     return (
@@ -181,16 +194,16 @@ function SearchableDropdown({
           <div className="max-h-48 overflow-y-auto divide-y divide-gray-50 pr-0.5 space-y-0.5 scrollbar-thin">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((opt) => {
-                const isSelected = opt.toLowerCase() === value.toLowerCase().trim();
+                const isSelected = opt.value.toLowerCase() === value.toLowerCase().trim();
                 return (
                   <button
-                    key={opt}
+                    key={opt.value}
                     type="button"
                     onClick={() => {
-                      onChange(opt);
+                      onChange(opt.value);
                       setIsOpen(false);
                       setSearch('');
-                      onSelectOption?.(opt);
+                      onSelectOption?.(opt.value);
                     }}
                     className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between transition ${
                       isSelected
@@ -198,8 +211,15 @@ function SearchableDropdown({
                         : 'hover:bg-gray-50 text-gray-700'
                     }`}
                   >
-                    <span className="truncate">{opt}</span>
-                    {isSelected && <span className="text-rose-600 font-bold text-xs">✓</span>}
+                    <div className="truncate pr-1">
+                      <span className="truncate block font-bold text-gray-900">{opt.label}</span>
+                      {opt.subLabel && (
+                        <span className="text-[10px] text-gray-400 font-normal block truncate">
+                          {opt.subLabel}
+                        </span>
+                      )}
+                    </div>
+                    {isSelected && <span className="text-rose-600 font-bold text-xs shrink-0 ml-1">✓</span>}
                   </button>
                 );
               })
@@ -508,10 +528,22 @@ export default function CheckoutPage() {
     }
   }, [loggedInCustomer, savedAddresses]);
 
+  const provinceOptions = useMemo(() => {
+    return VIETNAM_PROVINCES.map((p) => ({
+      value: p.name,
+      label: p.name,
+      subLabel: p.subLabel,
+      aliases: p.formerProvinces,
+    }));
+  }, []);
+
   const currentProvinceData = useMemo(() => {
     if (!selectedProvince) return null;
+    const clean = selectedProvince.trim().toLowerCase();
     return VIETNAM_PROVINCES.find(
-      (p) => p.name.toLowerCase() === selectedProvince.trim().toLowerCase()
+      (p) =>
+        p.name.toLowerCase() === clean ||
+        (p.formerProvinces && p.formerProvinces.some((fp) => fp.toLowerCase() === clean))
     );
   }, [selectedProvince]);
 
@@ -951,7 +983,7 @@ export default function CheckoutPage() {
                       if (fieldErrors.province) setFieldErrors((p) => ({ ...p, province: undefined }));
                       if (errorMessage && errorMessage.includes('Tỉnh')) setErrorMessage('');
                     }}
-                    options={VIETNAM_PROVINCES.map((p) => p.name)}
+                    options={provinceOptions}
                     error={fieldErrors.province}
                     buttonRef={provinceRef}
                   />
