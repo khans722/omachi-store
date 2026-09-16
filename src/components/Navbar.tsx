@@ -102,15 +102,13 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
           
-          {/* Logo - Chiều rộng cố định chuẩn xác để cân đối tuyệt đối với dòng Bộ sưu tập */}
-          <div className="w-[220px] lg:w-[240px] shrink-0 flex items-center">
-            <Link href="/" className="flex items-center group transform group-hover:scale-102 transition">
-              <OmachiLogo size="md" />
-            </Link>
-          </div>
+          {/* Logo */}
+          <Link href="/" className="flex items-center group shrink-0 transform group-hover:scale-102 transition">
+            <OmachiLogo size="md" />
+          </Link>
 
           {/* Desktop Search Bar - Cùng độ rộng và căn chỉnh đồng trục với ô tìm kiếm bộ sưu tập */}
-          <div className="hidden md:flex flex-1 max-w-[380px] lg:max-w-md mx-3 lg:mx-4">
+          <div className="hidden md:flex flex-1 max-w-md mx-4">
             <form
               onSubmit={(e) => {
                 e.preventDefault();

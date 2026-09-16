@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Search, X } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 
 interface CategoryFilterProps {
@@ -25,32 +25,9 @@ export default function CategoryFilter({
   selectedCategory,
   onSelectCategory,
   categories,
-  searchQuery,
-  onSearchChange,
 }: CategoryFilterProps) {
   const { theme } = useTheme();
   const [catList, setCatList] = useState<any[]>(DEFAULT_CATEGORIES);
-  const [internalSearch, setInternalSearch] = useState(searchQuery || '');
-
-  useEffect(() => {
-    if (searchQuery !== undefined) {
-      setInternalSearch(searchQuery);
-    }
-  }, [searchQuery]);
-
-  useEffect(() => {
-    const handleSearchEvent = (e: any) => {
-      setInternalSearch(e.detail || '');
-    };
-    window.addEventListener('omachi-search', handleSearchEvent);
-    return () => window.removeEventListener('omachi-search', handleSearchEvent);
-  }, []);
-
-  const handleSearchInput = (val: string) => {
-    setInternalSearch(val);
-    if (onSearchChange) onSearchChange(val);
-    window.dispatchEvent(new CustomEvent('omachi-search', { detail: val }));
-  };
 
   useEffect(() => {
     if (categories && categories.length > 0) {
@@ -78,26 +55,18 @@ export default function CategoryFilter({
     green: {
       active: 'bg-gradient-to-r from-[#6EA64E] to-[#78B159] text-white shadow-md shadow-[#D3E7C6]',
       inactive: 'bg-white/85 text-stone-700 hover:text-[#456F2F] hover:bg-[#F4F9EE] border-[#DCEDCE]',
-      searchBorder: 'border-[#DCEDCE]',
-      focusRing: 'focus:ring-[#78B159] focus:border-[#78B159]',
     },
     pink: {
       active: 'bg-gradient-to-r from-[#FF7597] to-[#FFA0B4] text-white shadow-md shadow-[#FFE0EA]',
       inactive: 'bg-white/85 text-stone-700 hover:text-[#D84A74] hover:bg-[#FFF0F5] border-[#FFE0EA]',
-      searchBorder: 'border-[#FAD1DE]',
-      focusRing: 'focus:ring-[#F0789E] focus:border-[#F0789E]',
     },
     purple: {
       active: 'bg-gradient-to-r from-[#8C6EC8] to-[#9C80D8] text-white shadow-md shadow-[#E0D4FA]',
       inactive: 'bg-white/85 text-stone-700 hover:text-[#7952C4] hover:bg-[#F8F4FF] border-[#E0D4FA]',
-      searchBorder: 'border-[#E0D4FA]',
-      focusRing: 'focus:ring-[#9C80D8] focus:border-[#9C80D8]',
     },
     cream: {
       active: 'bg-gradient-to-r from-[#D6973A] to-[#E5A84B] text-white shadow-md shadow-[#F7E4BE]',
       inactive: 'bg-white/85 text-stone-700 hover:text-[#B56E16] hover:bg-[#FFFBF2] border-[#F7E4BE]',
-      searchBorder: 'border-[#F7E4BE]',
-      focusRing: 'focus:ring-[#E5A84B] focus:border-[#E5A84B]',
     },
   };
 
@@ -105,74 +74,17 @@ export default function CategoryFilter({
 
   return (
     <div className="my-5">
-      {/* Mobile Layout (< sm): Title first, then full-width search input */}
-      <div className="flex flex-col gap-2.5 mb-3 sm:hidden px-1">
+      {/* Header Row with Title and Subtitle */}
+      <div className="flex items-center justify-between mb-3.5 px-1">
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
-          <h2 className="text-base font-bold text-stone-800 tracking-tight font-sans">
+          <h2 className="text-base sm:text-lg font-bold text-stone-800 tracking-tight font-sans">
             Bộ sưu tập phụ kiện
           </h2>
         </div>
-        <div className="relative flex items-center w-full">
-          <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Tìm theo tên charm, kẹp nơ, hạt cườm..."
-            value={internalSearch}
-            onChange={(e) => handleSearchInput(e.target.value)}
-            className={`w-full h-10 pl-10 pr-9 text-xs bg-white/95 backdrop-blur-xs border ${curr.searchBorder} rounded-full shadow-2xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 ${curr.focusRing} focus:bg-white transition`}
-          />
-          {internalSearch && (
-            <button
-              type="button"
-              onClick={() => handleSearchInput('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-0.5 text-xs font-bold transition cursor-pointer"
-              title="Xóa tìm kiếm"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Desktop / Tablet Header Row (>= sm): Cân đối tuyệt đối, thẳng trục với ô tìm kiếm trên Header */}
-      <div className="hidden sm:flex items-center justify-between mb-3.5">
-        {/* Cột Trái: Chiều rộng cố định 220px/240px khớp 100% với Logo ở Header */}
-        <div className="w-[220px] lg:w-[240px] shrink-0 flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
-          <h2 className="text-base sm:text-lg font-bold text-stone-800 tracking-tight font-sans whitespace-nowrap">
-            Bộ sưu tập phụ kiện
-          </h2>
-        </div>
-
-        {/* Ô Tìm Kiếm Ở Giữa: Độ rộng và lề lùi khớp 100% với ô tìm kiếm trên Header */}
-        <div className="flex-1 max-w-[380px] lg:max-w-md mx-3 lg:mx-4">
-          <div className="relative flex items-center w-full">
-            <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Tìm theo tên charm, kẹp nơ, hạt cườm..."
-              value={internalSearch}
-              onChange={(e) => handleSearchInput(e.target.value)}
-              className={`w-full h-10 pl-10 pr-9 text-xs sm:text-sm bg-white/95 backdrop-blur-xs border ${curr.searchBorder} rounded-full shadow-2xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 ${curr.focusRing} focus:bg-white transition`}
-            />
-            {internalSearch && (
-              <button
-                type="button"
-                onClick={() => handleSearchInput('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-0.5 text-xs font-bold transition cursor-pointer"
-                title="Xóa tìm kiếm"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Cột Phải: Phụ đề căn sát lề phải đồng bộ với các nút hành động của Header */}
-        <div className="flex-1 flex justify-end items-center text-xs font-semibold text-stone-400 shrink-0">
-          <span>Lọc nhanh theo danh mục</span>
-        </div>
+        <span className="text-xs font-semibold text-stone-400">
+          Lọc nhanh theo danh mục
+        </span>
       </div>
 
       {/* Categories Scrollbar */}
