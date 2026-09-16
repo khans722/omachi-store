@@ -320,6 +320,35 @@ export default function CheckoutPage() {
   const [selectedProvince, setSelectedProvince] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [selectedWard, setSelectedWard] = useState('');
+  const [currentWards, setCurrentWards] = useState<string[]>([]);
+  const [isLoadingWards, setIsLoadingWards] = useState(false);
+  const wardRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!selectedProvince.trim() || !selectedDistrict.trim()) {
+      setCurrentWards([]);
+      return;
+    }
+
+    let isMounted = true;
+    setIsLoadingWards(true);
+
+    fetch(`/api/address/wards?province=${encodeURIComponent(selectedProvince)}&district=${encodeURIComponent(selectedDistrict)}`)
+      .then((r) => r.json())
+      .then((res) => {
+        if (isMounted && res.success && Array.isArray(res.data)) {
+          setCurrentWards(res.data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setIsLoadingWards(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedProvince, selectedDistrict]);
   const [specificAddress, setSpecificAddress] = useState('');
 
   // Payment method selection (Shopee style)
@@ -937,6 +966,7 @@ export default function CheckoutPage() {
                     value={selectedDistrict}
                     onChange={(dist) => {
                       setSelectedDistrict(dist);
+                      setSelectedWard('');
                       if (fieldErrors.district) setFieldErrors((p) => ({ ...p, district: undefined }));
                       if (errorMessage && errorMessage.includes('Quận')) setErrorMessage('');
                     }}
@@ -946,43 +976,68 @@ export default function CheckoutPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[11px] font-bold text-gray-700 block mb-1">
-                      Phường / Xã (tùy chọn)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="VD: Phường Bến Nghé / Xã Hồng Quang..."
-                      value={selectedWard}
-                      onChange={(e) => setSelectedWard(e.target.value)}
-                      className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-lg font-medium text-gray-900 focus:outline-none focus:bg-white ${curr.focusBorder}"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-gray-700 block mb-1">
-                      Số nhà, tên ngõ đường <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      ref={addressRef}
-                      type="text"
-                      placeholder="VD: Số 12, ngõ 85, phố Chùa Láng..."
-                      value={specificAddress}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setSpecificAddress(val);
-                        if (fieldErrors.specificAddress) setFieldErrors((p) => ({ ...p, specificAddress: undefined }));
-                        if (errorMessage && errorMessage.includes('số nhà')) setErrorMessage('');
-                      }}
-                      className={`w-full px-3 py-2 text-xs bg-gray-50 border ${
-                        fieldErrors.specificAddress ? 'border-rose-400 ring-1 ring-rose-200' : 'border-gray-200'
-                      } rounded-lg font-medium text-gray-900 focus:outline-none focus:bg-white ${curr.focusBorder}`}
-                    />
-                    {fieldErrors.specificAddress && <p className="text-[10px] text-rose-500 font-semibold mt-0.5">⚠️ {fieldErrors.specificAddress}</p>}
-                  </div>
+                {/* Hàng 3: Phường / Xã (Dropdown có sẵn danh sách xã theo huyện hoặc tự do gõ tay) */}
+                <div>
+                  <SearchableDropdown
+                    label="Phường / Xã"
+                    placeholder={
+                      !selectedDistrict
+                        ? 'Chọn Quận / Huyện trước'
+                        : isLoadingWards
+                        ? '⏳ Đang tải danh sách xã/phường...'
+                        : currentWards.length > 0
+                        ? 'Chọn Phường / Xã / Thị trấn...'
+                        : 'Nhập Phường / Xã của bạn...'
+                    }
+                    searchPlaceholder="🔍 Tìm kiếm xã, phường, thị trấn..."
+                    disabled={!selectedDistrict}
+                    disabledText="Chọn Quận / Huyện trước"
+                    value={selectedWard}
+                    onChange={(w) => setSelectedWard(w)}
+                    options={currentWards}
+                    buttonRef={wardRef}
+                  />
                 </div>
 
+                {/* Hàng 4: 1 DÒNG ĐỂ ĐIỀN TAY ĐỊA CHỈ CHI TIẾT (100% full width rộng rãi) */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-gray-700 block">
+                      Số nhà, tên ngõ, đường hoặc thôn/xóm <span className="text-rose-500">*</span>
+                    </label>
+                    <span className="text-[10px] text-gray-400 font-medium">Điền tay chi tiết</span>
+                  </div>
+                  <input
+                    ref={addressRef}
+                    type="text"
+                    placeholder="VD: Thôn Giá, Xóm Đình (hoặc Số 12, ngõ 85, phố Chùa Láng...)"
+                    value={specificAddress}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSpecificAddress(val);
+                      if (fieldErrors.specificAddress) setFieldErrors((p) => ({ ...p, specificAddress: undefined }));
+                      if (errorMessage && errorMessage.includes('số nhà')) setErrorMessage('');
+                    }}
+                    className={`w-full px-3 py-2.5 text-xs bg-gray-50 border ${
+                      fieldErrors.specificAddress ? 'border-rose-400 ring-1 ring-rose-200 bg-rose-50/20' : 'border-gray-200'
+                    } rounded-lg font-medium text-gray-900 focus:outline-none focus:bg-white ${curr.focusBorder}`}
+                  />
+                  {fieldErrors.specificAddress && (
+                    <p className="text-[10px] text-rose-500 font-semibold mt-1">⚠️ {fieldErrors.specificAddress}</p>
+                  )}
+                </div>
+
+                {/* Xem trước địa chỉ vận đơn đầy đủ */}
+                {(specificAddress || selectedWard || selectedDistrict || selectedProvince) && (
+                  <div className="p-2.5 bg-pink-50/50 rounded-lg border border-pink-100 text-xs text-gray-700 flex items-start gap-2">
+                    <span className="font-bold text-rose-600 shrink-0">📍 Vận đơn:</span>
+                    <span className="font-medium text-gray-900">
+                      {[specificAddress.trim(), selectedWard.trim(), selectedDistrict.trim(), selectedProvince.trim()].filter(Boolean).join(', ')}
+                    </span>
+                  </div>
+                )}
+
+                {/* Nút Xong xác nhận địa chỉ */}
                 <div className="flex justify-end pt-1">
                   <button
                     type="button"
@@ -993,7 +1048,7 @@ export default function CheckoutPage() {
                         setFieldErrors({});
                       }
                     }}
-                    className="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-xs font-bold transition"
+                    className="px-5 py-2 bg-stone-900 hover:bg-black text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer"
                   >
                     Xong
                   </button>
