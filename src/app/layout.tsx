@@ -40,6 +40,10 @@ export default function RootLayout({
         <ThemeProvider>
           <CustomerProvider>
             <CartProvider>
+              {/* 🌸 Ambient Multi-Hue Pastel Aura Mesh - Bồng bềnh, mượt mà, không giật lag, không nhấp nháy trên điện thoại */}
+              <div className="ambient-pastel-mesh" aria-hidden="true" />
+              <div className="ambient-acrylic-sheen" aria-hidden="true" />
+
               <div className="relative z-10 flex flex-col min-h-screen">
                 <Navbar />
 

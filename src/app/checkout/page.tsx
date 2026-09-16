@@ -671,10 +671,10 @@ export default function CheckoutPage() {
 
   // MÀN HÌNH THANH TOÁN CHUẨN SHOPEE MOBILE
   return (
-    <div className="min-h-screen bg-[#f5f5f5] -mx-4 sm:-mx-6 lg:-mx-8 pb-24 font-sans">
+    <div className="min-h-screen bg-transparent -mx-4 sm:-mx-6 lg:-mx-8 pb-24 font-sans">
       
       {/* 1. SHOPEE TOP APP BAR */}
-      <div className="sticky top-0 z-30 bg-white border-b border-gray-200 px-3 py-2.5 flex items-center justify-between shadow-2xs">
+      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-stone-200/80 px-3 py-2.5 flex items-center justify-between shadow-2xs">
         <Link
           href="/cart"
           className="flex items-center gap-1.5 text-gray-700 hover:text-[#ee4d2d] transition"

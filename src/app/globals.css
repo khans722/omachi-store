@@ -109,6 +109,47 @@
   }
 }
 
+/* ===================================================
+   🌸 AMBIENT MULTI-HUE PASTEL AURA MESH BACKGROUND
+   Tái hiện dải màu pastel mềm mại, bồng bềnh, ngọt ngào của Omachi Store
+   Tối ưu 100% GPU Native: Dùng radial-gradient thuần túy (Không blur filter),
+   Đạt 60fps-120fps siêu mượt và TUYỆT ĐỐI KHÔNG NHẤP NHÁY trên điện thoại
+   =================================================== */
+
+.ambient-pastel-mesh {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(ellipse 75vw 55vh at 5% 8%, var(--silk-1) 0%, transparent 68%),
+    radial-gradient(ellipse 70vw 50vh at 95% 10%, var(--silk-2) 0%, transparent 68%),
+    radial-gradient(ellipse 75vw 60vh at 5% 92%, var(--silk-4) 0%, transparent 68%),
+    radial-gradient(ellipse 70vw 55vh at 95% 90%, var(--silk-3) 0%, transparent 68%),
+    radial-gradient(circle 55vw at 50% 50%, var(--silk-5) 0%, transparent 72%);
+  opacity: 0.50;
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+}
+
+.ambient-acrylic-sheen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    1100px circle at 50% 25%,
+    rgba(255, 255, 255, 0.42) 0%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+}
+
 /* Glass Card & Iridescent Mesh Classes */
 .glass-panel {
   background: rgba(255, 255, 255, 0.82);
