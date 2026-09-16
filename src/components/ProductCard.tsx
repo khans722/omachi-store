@@ -24,19 +24,19 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   const themeConfig = {
     green: {
-      btnHover: 'hover:bg-[#3A6B29] hover:text-white',
+      btnAction: 'bg-[#F2FAF0] hover:bg-[#569440] text-[#3E6B28] hover:text-white border-[#D1EAC7]',
       accentText: 'text-[#3A6B29]',
     },
     pink: {
-      btnHover: 'hover:bg-[#9E2B54] hover:text-white',
+      btnAction: 'bg-[#FFF0F5] hover:bg-[#FF6B8B] text-[#D84A74] hover:text-white border-[#FFD0DE]',
       accentText: 'text-[#9E2B54]',
     },
     purple: {
-      btnHover: 'hover:bg-[#613CA8] hover:text-white',
+      btnAction: 'bg-[#F8F4FF] hover:bg-[#8E6ADF] text-[#7952C4] hover:text-white border-[#E0D4FA]',
       accentText: 'text-[#613CA8]',
     },
     cream: {
-      btnHover: 'hover:bg-[#8E5A13] hover:text-white',
+      btnAction: 'bg-[#FFFBF2] hover:bg-[#E59530] text-[#B56E16] hover:text-white border-[#FCE1B4]',
       accentText: 'text-[#8E5A13]',
     },
   };
@@ -143,10 +143,11 @@ export default function ProductCard({ product }: ProductCardProps) {
 
             <button
               onClick={handleOpenQuickSelect}
-              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-stone-200 bg-stone-50 text-stone-700 ${style.btnHover} transition-all duration-200 flex items-center justify-center active:scale-95 shadow-2xs shrink-0`}
+              className={`h-8 sm:h-9 px-3 rounded-full border ${style.btnAction || 'bg-rose-50 text-rose-600 border-rose-200'} font-bold text-xs flex items-center gap-1.5 transition-all duration-200 active:scale-95 shadow-2xs shrink-0 cursor-pointer`}
               title="Chọn phân loại & Mua hàng"
             >
-              <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <ShoppingBag className="w-3.5 h-3.5" />
+              <span className="text-[11px] sm:text-xs">Chọn mua</span>
             </button>
           </div>
         </div>

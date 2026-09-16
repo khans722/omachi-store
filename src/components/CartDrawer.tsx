@@ -139,11 +139,18 @@ export default function CartDrawer() {
           {/* Header */}
           <div className={`p-4 sm:p-5 ${curr.headerBg} border-b flex items-center justify-between`}>
             <div className="flex items-center gap-2.5">
-              <div className={`w-8 h-8 rounded-xl ${curr.iconBg} text-white flex items-center justify-center font-bold text-sm shadow-xs`}>
-                🛍️
+              <div className="relative w-10 h-10 rounded-2xl bg-white border border-stone-200/80 shadow-xs flex items-center justify-center p-1 shrink-0 overflow-hidden">
+                <img
+                  src="/images/omachi_bear_hd.png"
+                  alt="Omachi Bear"
+                  className="w-full h-full object-contain"
+                />
               </div>
               <div>
-                <h3 className="text-base font-extrabold text-stone-800">Giỏ Hàng Omachi</h3>
+                <h3 className="text-sm sm:text-base font-extrabold text-stone-800 flex items-center gap-1.5">
+                    <span>Giỏ Hàng Omachi</span>
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  </h3>
                 <p className={`text-xs ${curr.itemCount} font-bold`}>
                   {totalItems} sản phẩm ({groupedProducts.length} mẫu)
                 </p>
