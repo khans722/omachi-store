@@ -5,33 +5,28 @@ import HeroBanner from '@/components/HeroBanner';
 import CategoryFilter from '@/components/CategoryFilter';
 import ProductCard from '@/components/ProductCard';
 import { INITIAL_PRODUCTS } from '@/data/products';
-import { Product, CustomerFeedback, ShopSettings } from '@/types';
+import { Product, ShopSettings } from '@/types';
 import { useTheme } from '@/context/ThemeContext';
-import { Sparkles, ShieldCheck, RefreshCw, Camera, Truck, Star } from 'lucide-react';
+import { Sparkles, ShieldCheck, RefreshCw, Camera, Truck } from 'lucide-react';
 
 export default function HomePage() {
   const { theme } = useTheme();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [categories, setCategories] = useState<any[]>([]);
-  const [feedbacks, setFeedbacks] = useState<CustomerFeedback[]>([]);
   const [settings, setSettings] = useState<ShopSettings | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [prodRes, fbRes, setRes, catRes] = await Promise.all([
+        const [prodRes, setRes, catRes] = await Promise.all([
           fetch('/api/products').then((r) => r.json()).catch(() => null),
-          fetch('/api/feedbacks').then((r) => r.json()).catch(() => null),
           fetch('/api/settings').then((r) => r.json()).catch(() => null),
           fetch('/api/categories').then((r) => r.json()).catch(() => null),
         ]);
 
         if (prodRes && prodRes.success && prodRes.data && prodRes.data.length > 0) {
           setProducts(prodRes.data);
-        }
-        if (fbRes && fbRes.success && fbRes.data) {
-          setFeedbacks(fbRes.data);
         }
         if (setRes && setRes.success && setRes.data) {
           setSettings(setRes.data);
@@ -177,48 +172,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Customer Feedback */}
-      {(settings?.showFeedbacks !== false) && feedbacks.length > 0 && (
-        <section className="space-y-6 pt-4">
-          <div className="text-center space-y-1">
-            <span className={`text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${curr.tagBg}`}>
-              Khách hàng tin chọn
-            </span>
-            <h2 className="text-xl sm:text-2xl font-black text-stone-900 pt-1">Đánh giá từ khách yêu</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {feedbacks.map((fb) => (
-              <div key={fb.id} className="bg-white p-5 rounded-2xl border border-stone-200/80 shadow-2xs hover:shadow-md transition-all space-y-3 flex flex-col justify-between">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-0.5 text-amber-500 text-xs">
-                    {Array.from({ length: fb.rating || 5 }).map((_, i) => (
-                      <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                    ))}
-                  </div>
-                  <p className="text-xs text-stone-700 leading-relaxed">
-                    &quot;{fb.comment}&quot;
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2.5 pt-2.5 border-t border-stone-100">
-                  <div className={`w-8 h-8 rounded-full font-bold text-xs flex items-center justify-center border ${curr.avatarBg}`}>
-                    {fb.avatarText || fb.customerName.slice(0, 2).toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-stone-800">
-                      {fb.customerName} {fb.customerLocation ? `(${fb.customerLocation})` : ''}
-                    </p>
-                    {fb.purchasedProduct && (
-                      <p className="text-[10px] text-stone-400">Đã mua {fb.purchasedProduct}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
     </div>
   );
 }

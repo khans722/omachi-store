@@ -1,6 +1,6 @@
 {
   "version": "2.0.0",
-  "lastBackup": "2026-09-15T03:27:54.432Z",
+  "lastBackup": "2026-09-16T00:45:25.779Z",
   "categories": [
     {
       "id": "cat-1",
@@ -649,6 +649,133 @@
   ],
   "orders": [
     {
+      "id": "ord-1789519434477",
+      "code": "OM-2049",
+      "customer": {
+        "fullName": "Dương Quốc Khánh",
+        "phone": "0375408255",
+        "address": "Thon Gia, Noi Hoang, Huyện Yên Dũng, Bắc Giang",
+        "city": "Bắc Giang",
+        "note": "1"
+      },
+      "items": [
+        {
+          "id": "item-1789519434477-0",
+          "productId": "prod-3",
+          "productName": "Vòng Tay Cườm Hoa & Charm Bướm Dạ Quang (Custom)",
+          "productSku": "OM-BRAC-03",
+          "variantId": "v-pink",
+          "variantName": "Hồng Kẹo Ngọt 🌸",
+          "quantity": 1,
+          "originalUnitPrice": 10000,
+          "appliedUnitPrice": 10000,
+          "totalPrice": 10000,
+          "savingsAmount": 0,
+          "discountPercent": 0,
+          "customHandmadeNote": ""
+        },
+        {
+          "id": "item-1789519434477-1",
+          "productId": "prod-1",
+          "productName": "Set Hạt Cườm Hoa & Nơ Pastel Tự Xâu (Beads Haul)",
+          "productSku": "OM-BEAD-01",
+          "variantId": "v1",
+          "variantName": "Mix Hồng Pastel 🌸",
+          "quantity": 3,
+          "originalUnitPrice": 2000,
+          "appliedUnitPrice": 20000,
+          "totalPrice": 60000,
+          "savingsAmount": 0,
+          "discountPercent": 0,
+          "customHandmadeNote": ""
+        },
+        {
+          "id": "item-1789519434477-2",
+          "productId": "prod-1",
+          "productName": "Set Hạt Cườm Hoa & Nơ Pastel Tự Xâu (Beads Haul)",
+          "productSku": "OM-BEAD-01",
+          "variantId": "v1",
+          "variantName": "Mix Hồng Pastel 🌸",
+          "quantity": 11,
+          "originalUnitPrice": 2000,
+          "appliedUnitPrice": 120000,
+          "totalPrice": 1320000,
+          "savingsAmount": 0,
+          "discountPercent": 0,
+          "customHandmadeNote": ""
+        },
+        {
+          "id": "item-1789519434477-3",
+          "productId": "prod-2",
+          "productName": "Kẹp Tóc Hoa Kem Bơ Pastel Handmade Xinh Xắn",
+          "productSku": "OM-CLIP-02",
+          "variantId": "k1",
+          "variantName": "Hoa Hồng Baby 🌸",
+          "quantity": 1,
+          "originalUnitPrice": 20000,
+          "appliedUnitPrice": 20000,
+          "totalPrice": 20000,
+          "savingsAmount": 0,
+          "discountPercent": 0,
+          "customHandmadeNote": ""
+        }
+      ],
+      "subtotal": 1410000,
+      "subtotalAmount": 58000,
+      "comboDiscountAmount": 0,
+      "itemsTotalAmount": 1410000,
+      "shippingFee": 20000,
+      "finalTotalAmount": 1430000,
+      "totalAmount": 1430000,
+      "paymentMethod": "COD",
+      "paymentStatus": "UNPAID",
+      "orderStatus": "PREPARING",
+      "carrierName": "SPX Express",
+      "logs": [
+        {
+          "id": "log-1789519434477",
+          "action": "ORDER_CREATED",
+          "performedBy": "CUSTOMER",
+          "newValue": "Khách hàng đặt 4 sản phẩm",
+          "timestamp": "2026-09-16T00:43:54.477Z"
+        },
+        {
+          "id": "log-1789519488867",
+          "action": "STATUS_UPDATED",
+          "performedBy": "ADMIN",
+          "oldValue": "PENDING_CONFIRM",
+          "newValue": "PREPARING (Thanh toán: UNPAID, Ship: 0)",
+          "timestamp": "2026-09-16T00:44:48.867Z"
+        },
+        {
+          "id": "log-1789519512684",
+          "action": "STATUS_UPDATED",
+          "performedBy": "ADMIN",
+          "oldValue": "PREPARING",
+          "newValue": "PREPARING (Thanh toán: UNPAID, Ship: 10000)",
+          "timestamp": "2026-09-16T00:45:12.684Z"
+        },
+        {
+          "id": "log-1789519519739",
+          "action": "STATUS_UPDATED",
+          "performedBy": "ADMIN",
+          "oldValue": "PREPARING",
+          "newValue": "PREPARING (Thanh toán: UNPAID, Ship: 199)",
+          "timestamp": "2026-09-16T00:45:19.739Z"
+        },
+        {
+          "id": "log-1789519525778",
+          "action": "STATUS_UPDATED",
+          "performedBy": "ADMIN",
+          "oldValue": "PREPARING",
+          "newValue": "PREPARING (Thanh toán: UNPAID, Ship: 20000)",
+          "timestamp": "2026-09-16T00:45:25.778Z"
+        }
+      ],
+      "createdAt": "2026-09-16T00:43:54.477Z",
+      "updatedAt": "2026-09-16T00:45:25.778Z"
+    },
+    {
       "id": "ord-1789381048721",
       "code": "OM-9698",
       "customer": {
@@ -707,9 +834,9 @@
       "subtotalAmount": 1581000,
       "comboDiscountAmount": 360000,
       "itemsTotalAmount": 1221000,
-      "shippingFee": 0,
-      "finalTotalAmount": 1221000,
-      "totalAmount": 1221000,
+      "shippingFee": 10000,
+      "finalTotalAmount": 1231000,
+      "totalAmount": 1231000,
       "paymentMethod": "ZALO_CONFIRM",
       "paymentStatus": "UNPAID",
       "orderStatus": "COMPLETED",
@@ -1040,10 +1167,18 @@
           "oldValue": "COMPLETED",
           "newValue": "COMPLETED (Thanh toán: UNPAID, Ship: 0)",
           "timestamp": "2026-09-15T01:39:54.045Z"
+        },
+        {
+          "id": "log-1789519321269",
+          "action": "STATUS_UPDATED",
+          "performedBy": "ADMIN",
+          "oldValue": "COMPLETED",
+          "newValue": "COMPLETED (Thanh toán: UNPAID, Ship: 10000)",
+          "timestamp": "2026-09-16T00:42:01.269Z"
         }
       ],
       "createdAt": "2026-09-14T10:17:28.721Z",
-      "updatedAt": "2026-09-15T01:39:54.045Z",
+      "updatedAt": "2026-09-16T00:42:01.269Z",
       "paidAt": "2026-09-15T01:39:53.162Z",
       "shippedAt": "2026-09-14T10:27:57.666Z",
       "completedAt": "2026-09-14T11:00:22.475Z"
