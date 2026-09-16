@@ -554,7 +554,7 @@ export default function AdminPage() {
       costPrice: 800,
       material: 'Acrylic cao cấp pastel',
       dimensions: '8mm - 12mm',
-      images: ['https://images.unsplash.com/photo-1596944924616-7b38e7cfac36?w=800&auto=format&fit=crop&q=80'],
+      images: ['/uploads/charm_1789432914386_1789371730804_1528911961217344.jpg'],
       description: 'Mô tả chi tiết về kích thước, màu sắc và chất liệu sản phẩm...',
       isHot: false,
       isNewArrival: true,
@@ -1876,7 +1876,7 @@ export default function AdminPage() {
                       {/* Left: Product Info */}
                       <div className="flex items-start sm:items-center gap-3.5">
                         <img
-                          src={prod.images?.[0] || 'https://images.unsplash.com/photo-1596944924616-7b38e7cfac36?w=800&auto=format&fit=crop&q=80'}
+                          src={prod.images?.[0] || '/uploads/charm_1789432914386_1789371730804_1528911961217344.jpg'}
                           alt={prod.name}
                           className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl object-cover border border-pink-200 bg-white shrink-0"
                         />

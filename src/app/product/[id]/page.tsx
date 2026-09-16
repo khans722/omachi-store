@@ -52,7 +52,7 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState<number>(1);
   const [customNote, setCustomNote] = useState<string>('');
   const [selectedImage, setSelectedImage] = useState<string>(
-    initialFound?.images?.[0] || 'https://images.unsplash.com/photo-1596944924616-7b38e7cfac36?w=800&auto=format&fit=crop&q=80'
+    initialFound?.images?.[0] || '/uploads/charm_1789432914386_1789371730804_1528911961217344.jpg'
   );
   const [isAddedToast, setIsAddedToast] = useState(false);
 

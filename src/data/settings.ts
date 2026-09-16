@@ -1,11 +1,61 @@
 import { ShopSettings } from '@/types';
 
-export let shopSettingsStore: ShopSettings = {
-  shopName: 'Omachi 🌸 Phụ Kiện Handmade & Charm',
-  slogan: 'Vòng cườm, kẹp tóc pastel, charm hoa xinh lấp lánh custom theo yêu cầu ✨',
-  hotline: '0988.888.888',
-  zaloPhone: '0988888888',
+export const INITIAL_SETTINGS: ShopSettings = {
+  "shopName": "Omachi 🌸 Phụ Kiện Handmade & Charm",
+  "brandTitle": "OMACHI HANDMADE STORE",
+  "slogan": "Vòng cườm, kẹp tóc pastel, charm hoa xinh lấp lánh custom theo yêu cầu ✨",
+  "hotline": "0398445122",
+  "zaloPhone": "0398445122",
+  "zaloOfficialUrl": "https://zalo.me/0375408256",
+  "instagramUrl": "https://instagram.com/omachii18",
+  "instagramHandle": "@omachii18",
+  "tiktokUrl": "https://tiktok.com/@omachi_charm",
+  "tiktokHandle": "@omachi_charm",
+  "heroTitle": "Vòng Charm, Kẹp Tóc & Phụ Kiện Pastel",
+  "heroSubtitle": "Khám phá thế giới charm trong veo, kẹp hoa kem bơ và vòng tay handmade đan thủ công theo phong cách của riêng bạn ✨",
+  "bannerText": "🌸 Tiệm Phụ Kiện Handmade Omachi • Nhận làm vòng tay & charm theo yêu cầu ✨",
+  "showFeedbacks": true,
+  "shopAddress": "Hà Nội, Việt Nam",
+  "workingHours": "08:30 - 22:00 Hàng ngày",
+  "freeShippingThreshold": 200000,
+  "autoReplyTemplate": "Chào bạn, Shop Omachi đã nhận được đơn hàng #{orderCode}. Shop sẽ kiểm tra mẫu và báo lại bạn ngay nhé!",
+  "heroImage": "/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg",
+  "heroBadge": "Ảnh thật tại tiệm 100% ✨",
+  "purchasePolicies": [
+    {
+      "icon": "📦",
+      "title": "Đồng Kiểm Khi Nhận Hàng",
+      "desc": "Được mở gói hàng kiểm tra đúng mẫu, đúng số lượng trước khi thanh toán tiền cho shipper SPX."
+    },
+    {
+      "icon": "🔄",
+      "title": "Đổi Trả 1-1 Trong 48 Giờ",
+      "desc": "Hỗ trợ đổi mới hoàn toàn miễn phí nếu charm bị gãy vỡ, lỗi đứt cước hoặc giao nhầm màu sắc."
+    },
+    {
+      "icon": "🎀",
+      "title": "100% Ảnh Thật Tại Xưởng",
+      "desc": "Mọi hình ảnh charm, vòng tay và kẹp hoa đều do shop tự quay chụp thật, đan thủ công tỉ mỉ."
+    },
+    {
+      "icon": "🚚",
+      "title": "Gói Quà Pastel & Giao Nhanh",
+      "desc": "Đóng gói hộp quà pastel xinh xắn kèm bọc bóng khí chống sốc, giao toàn quốc từ 1 - 3 ngày."
+    }
+  ],
+  "purchasePolicyDetail": "Khách hàng vui lòng quay video khi bóc mở kiện hàng để được hỗ trợ giải quyết nhanh nhất khi có phát sinh lỗi hoặc thiếu mẫu.",
+  "heroImages": [
+    "/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg",
+    "/uploads/charm_1789442857187_1789435799272_1528911961217344.jpg",
+    "/uploads/charm_1789442857200_1789435799294_1528911961217344.jpg",
+    "/uploads/charm_1789442857210_1789435799313_1528911961217344.jpg",
+    "/uploads/charm_1789442857219_1789435799334_1528911961217344.jpg"
+  ],
+  "telegramChatId": "8941847464",
+  "telegramBotToken": "8643883325:AAFtYvON3zYNH6D8K1Mf8bTtHclR1ha92SQ"
 };
+
+export let shopSettingsStore: ShopSettings = { ...INITIAL_SETTINGS };
 
 export function getShopSettings(): ShopSettings {
   return shopSettingsStore;
@@ -18,4 +68,3 @@ export function updateShopSettings(newSettings: Partial<ShopSettings>): ShopSett
   };
   return shopSettingsStore;
 }
-

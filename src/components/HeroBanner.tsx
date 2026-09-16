@@ -17,10 +17,13 @@ export default function HeroBanner({ settings }: HeroBannerProps) {
     if (settings?.heroImages && settings.heroImages.length > 0) {
       return settings.heroImages.filter(Boolean);
     }
-    if (settings?.heroImage) {
-      return [settings.heroImage];
-    }
-    return ['/images/charm_feed_1.jpg'];
+    return [
+      '/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg',
+      '/uploads/charm_1789442857187_1789435799272_1528911961217344.jpg',
+      '/uploads/charm_1789442857200_1789435799294_1528911961217344.jpg',
+      '/uploads/charm_1789442857210_1789435799313_1528911961217344.jpg',
+      '/uploads/charm_1789442857219_1789435799334_1528911961217344.jpg'
+    ];
   }, [settings?.heroImages, settings?.heroImage]);
 
   const [activeImgIndex, setActiveImgIndex] = useState(0);
@@ -149,11 +152,11 @@ export default function HeroBanner({ settings }: HeroBannerProps) {
             <div className="relative aspect-[4/3] rounded-[26px] overflow-hidden shadow-md border-4 border-white bg-white group/banner">
               <img
                 key={activeImgIndex}
-                src={imagesList[activeImgIndex] || '/images/charm_feed_1.jpg'}
+                src={imagesList[activeImgIndex] || '/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg'}
                 alt="Omachi Handmade Charm"
                 onError={(e) => {
                   e.currentTarget.onerror = null;
-                  e.currentTarget.src = '/images/charm_feed_1.jpg';
+                  e.currentTarget.src = '/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg';
                 }}
                 className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover/banner:scale-105"
               />
@@ -231,7 +234,7 @@ export default function HeroBanner({ settings }: HeroBannerProps) {
                       alt={`Thumb ${tIdx}`}
                       onError={(e) => {
                         e.currentTarget.onerror = null;
-                        e.currentTarget.src = '/images/charm_feed_1.jpg';
+                        e.currentTarget.src = '/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg';
                       }}
                       className="w-full h-full object-cover"
                     />

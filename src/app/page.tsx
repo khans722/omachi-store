@@ -5,6 +5,8 @@ import HeroBanner from '@/components/HeroBanner';
 import CategoryFilter from '@/components/CategoryFilter';
 import ProductCard from '@/components/ProductCard';
 import { INITIAL_PRODUCTS } from '@/data/products';
+import { INITIAL_CATEGORIES } from '@/data/categories';
+import { INITIAL_SETTINGS } from '@/data/settings';
 import { Product, ShopSettings } from '@/types';
 import { useTheme } from '@/context/ThemeContext';
 import { Sparkles, ShieldCheck, RefreshCw, Camera, Truck } from 'lucide-react';
@@ -13,8 +15,8 @@ export default function HomePage() {
   const { theme } = useTheme();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [settings, setSettings] = useState<ShopSettings | null>(null);
+  const [categories, setCategories] = useState<any[]>(INITIAL_CATEGORIES);
+  const [settings, setSettings] = useState<ShopSettings | null>(INITIAL_SETTINGS);
 
   useEffect(() => {
     const loadData = async () => {
