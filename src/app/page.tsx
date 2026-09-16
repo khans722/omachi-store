@@ -138,6 +138,8 @@ export default function HomePage() {
         selectedCategory={selectedCategory}
         onSelectCategory={setSelectedCategory}
         categories={categories}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
       />
 
       {/* Product Grid */}
