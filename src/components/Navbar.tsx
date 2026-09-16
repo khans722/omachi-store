@@ -98,16 +98,18 @@ export default function Navbar() {
         <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
           
-          {/* Logo */}
-          <Link href="/" className="flex items-center group shrink-0 transform group-hover:scale-102 transition">
-            <OmachiLogo size="md" />
-          </Link>
+          {/* Logo - Chiều rộng cố định chuẩn xác để cân đối tuyệt đối với dòng Bộ sưu tập */}
+          <div className="w-[220px] lg:w-[240px] shrink-0 flex items-center">
+            <Link href="/" className="flex items-center group transform group-hover:scale-102 transition">
+              <OmachiLogo size="md" />
+            </Link>
+          </div>
 
-          {/* Desktop Search Bar */}
-          <div className="hidden md:flex flex-1 max-w-md mx-4">
+          {/* Desktop Search Bar - Cùng độ rộng và căn chỉnh đồng trục với ô tìm kiếm bộ sưu tập */}
+          <div className="hidden md:flex flex-1 max-w-[380px] lg:max-w-md mx-3 lg:mx-4">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -117,12 +119,12 @@ export default function Navbar() {
             >
               <input
                 type="text"
-                placeholder="Tìm vòng charm, kẹp tóc hoa, combo cườm sỉ..."
+                placeholder="Tìm theo tên charm, kẹp nơ, hạt cườm..."
                 value={searchTerm}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className={`w-full pl-10 pr-8 py-2 text-xs sm:text-sm ${curr.searchBg} border rounded-full focus:outline-none focus:ring-1 focus:bg-white text-stone-800 transition`}
+                className={`w-full h-10 pl-10 pr-8 text-xs sm:text-sm ${curr.searchBg} border rounded-full focus:outline-none focus:ring-1 focus:bg-white text-stone-800 transition`}
               />
-              <Search className={`w-4 h-4 ${curr.searchIcon} absolute left-3.5 top-1/2 -translate-y-1/2`} />
+              <Search className={`w-4 h-4 ${curr.searchIcon} absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none`} />
               {searchTerm && (
                 <button
                   type="button"
@@ -136,7 +138,7 @@ export default function Navbar() {
           </div>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 ml-auto justify-end">
             {/* Order Lookup Link - Luôn hiển thị trên cả điện thoại và máy tính */}
             <Link
               href="/tra-cuu-don-hang"
