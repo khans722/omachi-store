@@ -1282,9 +1282,9 @@ export default function AdminPage() {
                               <div>
                                 <p className="font-extrabold text-gray-800 flex items-center gap-1.5">
                                   <span>🛍️</span>
-                                  <span>Danh Sách Hàng Cần Nhặt &amp; Xâu ({totalItemCount} con):</span>
+                                  <span>Danh Sách Sản Phẩm Cần Soạn &amp; Đóng Gói ({totalItemCount} món):</span>
                                 </p>
-                                <span className="text-[10px] text-gray-400">Phân theo từng loại charm &amp; tích ô khi đã nhặt xong</span>
+                                <span className="text-[10px] text-gray-400">Phân theo từng sản phẩm &amp; tích chọn khi đã chuẩn bị xong</span>
                               </div>
                               <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-lg border border-purple-200">
                                 {groupedOrderItems.length} loại
@@ -1391,7 +1391,7 @@ export default function AdminPage() {
                             className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs transition flex items-center gap-1 shadow-sm"
                           >
                             <Sparkles className="w-3.5 h-3.5" />
-                            <span>Chốt Đơn &amp; Bắt Đầu Làm Hàng</span>
+                            <span>Xác Nhận &amp; Chuẩn Bị Hàng</span>
                           </button>
                         )}
 
@@ -1401,7 +1401,7 @@ export default function AdminPage() {
                             className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs transition flex items-center gap-1 shadow-sm"
                           >
                             <Truck className="w-3.5 h-3.5" />
-                            <span>Đã xâu xong → Gửi Shipper</span>
+                            <span>Đã đóng gói xong → Bàn giao Shipper</span>
                           </button>
                         )}
 

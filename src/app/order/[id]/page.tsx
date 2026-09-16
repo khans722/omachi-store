@@ -71,7 +71,7 @@ export default function OrderTrackingPage() {
   // Steps indicator logic
   const steps: { key: OrderStatus; label: string; desc: string; icon: any }[] = [
     { key: 'PENDING_CONFIRM', label: 'Đặt hàng thành công', desc: 'Đã nhận thông tin', icon: Clock },
-    { key: 'PREPARING', label: 'Shop đang chuẩn bị hàng', desc: 'Đang xâu charm & đóng gói', icon: Sparkles },
+    { key: 'PREPARING', label: 'Shop đang chuẩn bị hàng', desc: 'Đang kiểm tra & đóng gói hàng', icon: Sparkles },
     { key: 'SHIPPING', label: 'Đang giao hàng', desc: 'Đã bàn giao shipper', icon: Truck },
     { key: 'COMPLETED', label: 'Giao thành công', desc: 'Khách đã nhận hàng xinh', icon: PackageCheck },
   ];
@@ -213,26 +213,44 @@ export default function OrderTrackingPage() {
             ))}
           </div>
 
-          <div className="pt-4 border-t border-pink-100 space-y-2 text-xs text-gray-600">
-            <div className="flex justify-between">
-              <span>Tạm tính:</span>
-              <span>{formatVND(order.subtotal)}</span>
-            </div>
-            {order.discount > 0 && (
-              <div className="flex justify-between text-emerald-600 font-bold">
-                <span>Tiết kiệm giá Combo:</span>
-                <span>-{formatVND(order.discount)}</span>
+          {(() => {
+            const itemsTotal = order.subtotal || (order as any).itemsTotalAmount || order.items?.reduce((s, i) => s + (i.totalPrice || 0), 0) || 0;
+            const shippingFee = Number(order.shippingFee || 0);
+
+            return (
+              <div className="pt-4 border-t border-pink-100 space-y-2 text-xs text-gray-600">
+                <div className="flex justify-between">
+                  <span>Tạm tính (Tiền hàng):</span>
+                  <span className="font-semibold text-gray-800">{formatVND(itemsTotal)}</span>
+                </div>
+                {order.discount > 0 && (
+                  <div className="flex justify-between text-emerald-600 font-bold">
+                    <span>Tiết kiệm giá Combo:</span>
+                    <span>-{formatVND(order.discount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center">
+                  <span className="flex items-center gap-1.5">
+                    <Truck className="w-3.5 h-3.5 text-rose-500" />
+                    <span>Phí vận chuyển ({order.carrierName || 'SPX Express'}):</span>
+                  </span>
+                  <span className="font-bold text-gray-800">
+                    {shippingFee > 0 ? (
+                      <span className="text-rose-600">+{formatVND(shippingFee)}</span>
+                    ) : order.shippingFee === 0 ? (
+                      <span className="text-emerald-600 font-bold">Miễn phí (0đ)</span>
+                    ) : (
+                      <span className="text-amber-600 font-semibold">Báo sau khi cân</span>
+                    )}
+                  </span>
+                </div>
+                <div className="flex justify-between pt-2 border-t border-pink-100 font-black text-base text-pink-600">
+                  <span>Tổng thanh toán:</span>
+                  <span>{formatVND(order.totalAmount)}</span>
+                </div>
               </div>
-            )}
-            <div className="flex justify-between">
-              <span>Phí ship:</span>
-              <span>{order.shippingFee === 0 ? 'Miễn phí' : formatVND(order.shippingFee)}</span>
-            </div>
-            <div className="flex justify-between pt-2 border-t border-pink-100 font-black text-base text-pink-600">
-              <span>Tổng thanh toán:</span>
-              <span>{formatVND(order.totalAmount)}</span>
-            </div>
-          </div>
+            );
+          })()}
         </div>
 
         {/* Right: Customer & Payment info */}

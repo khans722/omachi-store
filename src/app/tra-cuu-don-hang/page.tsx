@@ -94,7 +94,7 @@ export default function OrderLookupPage() {
         };
       case 'PREPARING':
         return {
-          label: 'Đang xâu cườm & đóng gói',
+          label: 'Đang chuẩn bị & đóng gói',
           bg: 'bg-purple-50 text-purple-800 border-purple-200',
           dot: 'bg-purple-500',
           step: 2,
@@ -320,7 +320,7 @@ export default function OrderLookupPage() {
                                 2
                               </div>
                               <p className={`text-[10px] sm:text-xs font-bold ${status.step >= 2 ? 'text-gray-800' : 'text-gray-400'}`}>
-                                Làm thủ công
+                                Chuẩn bị hàng
                               </p>
                             </div>
 
@@ -394,24 +394,85 @@ export default function OrderLookupPage() {
                       </div>
                     </div>
 
+                    {/* Bảng chi tiết Tiền Hàng & Phí Ship Vận Chuyển */}
+                    {(() => {
+                      const itemsTotal = order.items?.reduce((s: number, i: any) => s + Number(i.totalPrice || (i.appliedUnitPrice * i.quantity) || 0), 0) || order.subtotal || 0;
+                      const shippingFee = Number(order.shippingFee || 0);
+                      const discount = Number(order.discount || 0);
+
+                      return (
+                        <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-b from-stone-50 to-pink-50/30 border border-pink-100/80 space-y-2 text-xs">
+                          <div className="flex items-center justify-between text-stone-600">
+                            <span>Tiền hàng ({order.items?.length || 0} sản phẩm):</span>
+                            <span className="font-bold text-stone-800">{formatVND(itemsTotal)}</span>
+                          </div>
+
+                          {discount > 0 && (
+                            <div className="flex items-center justify-between text-emerald-600 font-semibold">
+                              <span>Ưu đãi Combo / Giảm giá:</span>
+                              <span>-{formatVND(discount)}</span>
+                            </div>
+                          )}
+
+                          <div className="flex items-center justify-between text-stone-600">
+                            <span className="flex items-center gap-1.5">
+                              <Truck className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                              <span>Phí vận chuyển ({order.carrierName || 'SPX Express'}):</span>
+                            </span>
+                            {shippingFee > 0 ? (
+                              <span className="font-black text-rose-600">
+                                +{formatVND(shippingFee)}
+                              </span>
+                            ) : order.shippingFee === 0 ? (
+                              <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                Miễn phí (Freeship 0đ)
+                              </span>
+                            ) : (
+                              <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 font-semibold">
+                                Báo sau khi cân thực tế
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-between pt-2.5 border-t border-pink-100 font-bold">
+                            <div>
+                              <span className="text-stone-800 text-xs sm:text-sm">Tổng thanh toán:</span>
+                              <span className="text-[10px] sm:text-xs text-stone-400 block font-normal">
+                                {order.paymentMethod === 'COD' ? '(Thu tiền mặt khi nhận hàng COD)' : '(Chốt đơn qua Zalo)'}
+                              </span>
+                            </div>
+                            <span className="text-base sm:text-lg font-black text-rose-600">
+                              {formatVND(order.totalAmount)}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     {/* Bottom Summary & Actions */}
-                    <div className="pt-3 border-t border-pink-100/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
-                        <p className="text-xs text-gray-500">
-                          Người nhận: <strong>{order.customer?.fullName}</strong> ({order.customer?.phone})
+                        <p className="text-xs text-stone-600">
+                          Người nhận: <strong className="text-stone-800">{order.customer?.fullName}</strong> ({order.customer?.phone})
                         </p>
-                        <p className="text-xs text-gray-500 truncate max-w-sm">
+                        <p className="text-xs text-stone-500 truncate max-w-sm sm:max-w-md">
                           Địa chỉ: {order.customer?.address}
                         </p>
+                        {order.customer?.note && (
+                          <p className="text-[11px] text-stone-400 italic mt-0.5">
+                            Ghi chú: &quot;{order.customer.note}&quot;
+                          </p>
+                        )}
                       </div>
 
-                      <div className="flex items-center gap-3 self-end sm:self-center">
-                        <div className="text-right">
-                          <span className="text-[10px] text-gray-400 block">Tổng thanh toán:</span>
-                          <span className="text-base font-black text-rose-600">
-                            {formatVND(order.totalAmount)}
-                          </span>
-                        </div>
+                      <div className="flex items-center gap-2.5 self-end sm:self-center">
+                        <Link
+                          href={`/order/${order.code || order.id}`}
+                          className="px-3.5 py-2 rounded-xl bg-white hover:bg-pink-50 text-rose-600 border border-pink-200 text-xs font-bold transition flex items-center gap-1 shadow-2xs"
+                        >
+                          <span>Chi tiết</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </Link>
 
                         <a
                           href={`${zaloUrl}?text=${encodeURIComponent(`Chào Omachi, mình muốn hỏi về đơn hàng #${order.code}`)}`}
