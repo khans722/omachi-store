@@ -14,7 +14,6 @@ import {
   ArrowLeft, 
   Sparkles, 
   Truck, 
-  Tag,
   ChevronRight
 } from 'lucide-react';
 
@@ -301,16 +300,6 @@ export default function CartPage() {
             })}
           </div>
 
-          {/* Shop Voucher Row */}
-          <div className="p-3 bg-stone-50/70 border-t border-stone-100 flex items-center justify-between text-xs text-stone-700">
-            <div className="flex items-center gap-2">
-              <Tag className={`w-4 h-4 ${curr.priceText}`} />
-              <span className="font-medium text-xs">Voucher &amp; Chiết khấu mua sỉ Omachi</span>
-            </div>
-            <span className={`text-[11px] ${curr.priceText} font-semibold flex items-center gap-1`}>
-              Áp dụng tại bước thanh toán <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
-            </span>
-          </div>
 
           {/* SPX Delivery Row */}
           <div className="p-2.5 bg-amber-50/50 border-t border-amber-100/60 flex items-center gap-2 text-xs text-amber-900">
