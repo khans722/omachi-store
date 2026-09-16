@@ -74,24 +74,25 @@ export default function MobileBottomNav() {
         {/* 2. Categories / Charm */}
         <Link
           href="/#categories"
-          className="flex flex-col items-center gap-1 p-1 `text-gray-400 ${curr.hoverText} transition font-medium`"
+          className={`flex flex-col items-center gap-1 p-1 text-gray-400 ${curr.hoverText} transition font-medium`}
         >
           <Sparkles className="w-5 h-5" />
           <span className="text-[10px]">Bộ sưu tập</span>
         </Link>
 
-        {/* 3. Cart with Badge */}
+        {/* 3. Cart with Badge & Fly Target ID */}
         <button
+          id="bottom-cart-btn"
           type="button"
           onClick={() => setIsCartOpen(true)}
           className={`relative flex flex-col items-center gap-1 p-1 ${curr.cartText} font-extrabold group`}
         >
           <div className="relative">
-            <div className="w-9 h-9 -mt-3 rounded-full ${curr.cartBg} text-white flex items-center justify-center">
+            <div className={`w-9 h-9 -mt-3 rounded-full ${curr.cartBg} text-white flex items-center justify-center`}>
               <ShoppingBag className="w-5 h-5" />
             </div>
             {totalItems > 0 && (
-              <span className="absolute -top-3.5 -right-1.5 ${curr.cartBadge} font-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
+              <span className={`absolute -top-3.5 -right-1.5 ${curr.cartBadge} font-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow-xs`}>
                 {totalItems > 99 ? '99+' : totalItems}
               </span>
             )}

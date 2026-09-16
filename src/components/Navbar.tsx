@@ -169,6 +169,7 @@ export default function Navbar() {
 
             {/* Cart Button */}
             <button
+              id="navbar-cart-btn"
               onClick={() => setIsCartOpen(true)}
               className={`relative flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2.5 ${curr.cartBtn} rounded-full shadow-sm text-xs font-semibold transition transform active:scale-95 cursor-pointer`}
             >

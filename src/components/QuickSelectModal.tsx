@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Product, ProductVariant, ProductPackageOption } from '@/types';
 import { formatVND } from '@/lib/utils';
 import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
+import { flyToCart } from '@/lib/flyToCart';
 import { X, Check, ShoppingBag, Zap, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
@@ -19,6 +20,7 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
   const router = useRouter();
   const { addItem, buyNow, setIsCartOpen } = useCart();
   const { theme } = useTheme();
+  const previewImgRef = useRef<HTMLImageElement>(null);
 
   // Helper to extract package options
   const getPackageOptions = (prod: Product): ProductPackageOption[] => {
@@ -31,22 +33,21 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
   const packageOptions = getPackageOptions(product);
 
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(
-    product.variants?.[0]
+    product.variants && product.variants.length > 0 ? product.variants[0] : undefined
   );
-  const [selectedPackage, setSelectedPackage] = useState<ProductPackageOption>(
-    packageOptions[0] || { id: 'pkg-1', name: '1 cái', price: product.basePrice }
+  const [selectedPackage, setSelectedPackage] = useState<ProductPackageOption | undefined>(
+    packageOptions[0]
   );
-  const [quantity, setQuantity] = useState<number>(1);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  // Sync state when product changes or modal opens
+  // Reset when product changes or modal opens
   useEffect(() => {
     if (isOpen) {
-      setSelectedVariant(product.variants?.[0]);
-      const pkgs = getPackageOptions(product);
-      setSelectedPackage(pkgs[0]);
+      setSelectedVariant(product.variants && product.variants.length > 0 ? product.variants[0] : undefined);
+      setSelectedPackage(packageOptions[0]);
       setQuantity(1);
-      setErrorMsg(null);
+      setErrorMsg('');
     }
   }, [isOpen, product]);
 
@@ -55,12 +56,13 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
   // Extract count per pack
   const getPackQuantity = (pkg?: ProductPackageOption): number => {
     if (!pkg) return 1;
+    if ((pkg as any).quantity) return (pkg as any).quantity;
     const match = pkg.name.match(/\d+/);
     return match ? parseInt(match[0], 10) : 1;
   };
 
   const packQuantity = getPackQuantity(selectedPackage);
-  const unitPrice = selectedPackage?.price ?? product.basePrice;
+  const unitPrice = selectedPackage?.price ?? selectedVariant?.price ?? product.basePrice;
   const totalPrice = unitPrice * quantity;
 
   // Stock calculations
@@ -71,22 +73,22 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
   const displayImage =
     selectedVariant?.imageUrl ||
     selectedVariant?.image ||
-    product.images[0] ||
+    product.images?.[0] ||
     '/images/charm_feed_1.jpg';
 
   const themeStyles = {
     green: {
-      activeRing: 'border-[#78B159] text-[#3E6B28] bg-[#F4F9EE]',
-      activeBadge: 'bg-[#78B159] text-white',
-      btnPrimary: 'bg-gradient-to-r from-[#6EA64E] to-[#78B159] hover:from-[#5E9341] hover:to-[#6EA64E] text-white shadow-[#78B159]/20',
-      btnSecondary: 'border border-[#78B159] text-[#3E6B28] bg-[#F4F9EE] hover:bg-[#E8F3DE]',
-      priceText: 'text-[#3E6B28]',
+      activeRing: 'border-[#569440] text-[#3E6B28] bg-[#F2FAF0]',
+      activeBadge: 'bg-[#569440] text-white',
+      btnPrimary: 'bg-gradient-to-r from-[#569440] to-[#6EA64E] hover:from-[#467E33] hover:to-[#569440] text-white shadow-[#569440]/20',
+      btnSecondary: 'border border-[#569440] text-[#3E6B28] bg-[#F2FAF0] hover:bg-[#E5F5E0]',
+      priceText: 'text-[#4A8537]',
     },
     pink: {
-      activeRing: 'border-[#F472B6] text-[#9E2B54] bg-[#FDF2F8]',
-      activeBadge: 'bg-[#F472B6] text-white',
-      btnPrimary: 'bg-gradient-to-r from-[#E0688E] to-[#F472B6] hover:from-[#C95076] hover:to-[#E0688E] text-white shadow-[#F472B6]/20',
-      btnSecondary: 'border border-[#F472B6] text-[#9E2B54] bg-[#FDF2F8] hover:bg-[#FCE7F3]',
+      activeRing: 'border-[#FF6B8B] text-[#D84A74] bg-[#FFF0F5]',
+      activeBadge: 'bg-[#FF6B8B] text-white',
+      btnPrimary: 'bg-gradient-to-r from-[#FF6B8B] to-[#FF8EAA] hover:from-[#E84878] hover:to-[#FF6B8B] text-white shadow-[#FF6B8B]/20',
+      btnSecondary: 'border border-[#FF6B8B] text-[#D84A74] bg-[#FFF0F5] hover:bg-[#FFE0EB]',
       priceText: 'text-[#9E2B54]',
     },
     purple: {
@@ -107,7 +109,7 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
 
   const style = themeStyles[theme] || themeStyles.green;
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (e?: React.MouseEvent) => {
     if (product.variants && product.variants.length > 0 && !selectedVariant) {
       setErrorMsg('Vui lòng chọn màu sắc/phân loại nhé!');
       return;
@@ -116,6 +118,10 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
       setErrorMsg('Mẫu này tạm thời hết hàng!');
       return;
     }
+
+    // Hiệu ứng ảnh sản phẩm bay uốn lượn vào giỏ hàng
+    flyToCart(previewImgRef.current || (e?.currentTarget as HTMLElement), displayImage);
+
     addItem(product, quantity, selectedVariant, undefined, selectedPackage, false);
     onClose();
   };
@@ -152,6 +158,7 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
         <div className="p-4 border-b border-stone-100 flex items-start gap-3.5 bg-stone-50/50">
           <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border border-stone-200 bg-white shrink-0 shadow-xs">
             <img
+              ref={previewImgRef}
               src={displayImage}
               alt={product.name}
               className="w-full h-full object-cover"
@@ -359,7 +366,7 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
 
           <div className="grid grid-cols-2 gap-2.5 pt-1">
             <button
-              onClick={handleAddToCart}
+              onClick={(e) => handleAddToCart(e)}
               className={`py-3 px-3 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition active:scale-95 ${style.btnSecondary}`}
             >
               <ShoppingBag className="w-4 h-4" />

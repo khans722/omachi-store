@@ -7,6 +7,7 @@ import { Product, ProductVariant, ProductPackageOption } from '@/types';
 import { formatVND } from '@/lib/utils';
 import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
+import { flyToCart } from '@/lib/flyToCart';
 import { ShoppingBag, Star, ArrowLeft, Plus, Minus, MessageCircle, Check, AlertCircle, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 
@@ -239,8 +240,12 @@ export default function ProductDetailPage() {
     return true;
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (e?: React.MouseEvent) => {
     if (!validateSelection()) return;
+
+    // Hiệu ứng ảnh sản phẩm bay vào giỏ hàng
+    const currentImg = selectedImage || selectedVariant?.image || selectedVariant?.imageUrl || product.images?.[0] || '/images/charm_feed_1.jpg';
+    flyToCart(e?.currentTarget, currentImg);
 
     addItem(product, quantity, selectedVariant, customNote, selectedPackage, false);
     setIsMobileSheetOpen(false);
@@ -598,7 +603,7 @@ export default function ProductDetailPage() {
             <div className="flex items-center gap-3 pt-2">
               <button
                 type="button"
-                onClick={handleAddToCart}
+                onClick={(e) => handleAddToCart(e)}
                 className={`min-w-[190px] h-12 px-6 rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-2xs transition transform active:scale-98 ${curr.btnSecondary}`}
               >
                 <ShoppingBag className="w-5 h-5" />
