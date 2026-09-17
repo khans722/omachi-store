@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Order, OrderStatus, ShopSettings } from '@/types';
 import { formatVND } from '@/lib/utils';
-import { CheckCircle2, Clock, PackageCheck, Truck, Sparkles, ArrowLeft, Phone, Check, MessageCircle, Copy, Download } from 'lucide-react';
+import { CheckCircle2, Clock, PackageCheck, Truck, Sparkles, ArrowLeft, Phone, MessageCircle, Download } from 'lucide-react';
 import Link from 'next/link';
 
 export default function OrderTrackingPage() {
@@ -14,17 +14,7 @@ export default function OrderTrackingPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [settings, setSettings] = useState<ShopSettings | null>(null);
   const [loading, setLoading] = useState(true);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isDownloadingQr, setIsDownloadingQr] = useState(false);
-
-  const copyToClipboard = (text: string, field: string) => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(text).then(() => {
-        setCopiedField(field);
-        setTimeout(() => setCopiedField(null), 2000);
-      }).catch(() => {});
-    }
-  };
 
   const downloadQrImage = async (url: string, filename: string) => {
     setIsDownloadingQr(true);
@@ -317,22 +307,12 @@ export default function OrderTrackingPage() {
                     {shippingFee > 0 ? (
                       <span className="text-rose-600 font-bold">+{formatVND(shippingFee)}</span>
                     ) : (
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-gray-400 line-through text-[11px]">15.000đ</span>
-                        <strong className="text-emerald-600 font-bold text-xs">0đ</strong>
-                      </div>
+                      <strong className="text-emerald-600 font-bold text-xs">0đ</strong>
                     )}
                   </span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-pink-100 font-black text-base text-pink-600">
-                  <div>
-                    <span>Tổng thanh toán:</span>
-                    {shippingFee === 0 && (
-                      <span className="text-[10px] text-emerald-600 font-bold block">
-                        (Đã miễn phí vận chuyển 0đ)
-                      </span>
-                    )}
-                  </div>
+                  <span>Tổng thanh toán:</span>
                   <span>{formatVND(order.totalAmount)}</span>
                 </div>
               </div>
@@ -372,8 +352,6 @@ export default function OrderTrackingPage() {
             </div>
           </div>
 
-
-
           {/* VietQR Box if Unpaid and BANK */}
           {order.paymentStatus !== 'PAID' && order.paymentMethod === 'BANK' && (
             <div id="payment-box" className="bg-white p-5 rounded-3xl border-2 border-blue-200 shadow-xs space-y-3 text-xs">
@@ -388,7 +366,9 @@ export default function OrderTrackingPage() {
               </div>
 
               {(() => {
-                const qrUrl = `https://img.vietqr.io/image/${settings?.bankId || 'Vietcombank'}-${settings?.bankAccount || '1013388086'}-compact2.png?amount=${order.finalTotalAmount || order.totalAmount}&addInfo=${encodeURIComponent(`DH ${order.code}`)}&accountName=${encodeURIComponent(settings?.bankOwner || 'DUONG QUOC KHANH')}`;
+                const rawBank = (settings?.bankId || 'VCB').toUpperCase().trim();
+                const qrBank = rawBank.includes('VIETCOM') ? 'VCB' : rawBank.includes('MB') ? 'MB' : rawBank;
+                const qrUrl = `https://img.vietqr.io/image/${qrBank}-${settings?.bankAccount || '1018880066'}-compact2.png?amount=${order.finalTotalAmount || order.totalAmount}&addInfo=${encodeURIComponent(`DH ${order.code}`)}&accountName=${encodeURIComponent(settings?.bankOwner || 'DUONG QUOC KHANH')}`;
                 return (
                   <div className="flex flex-col items-center bg-blue-50/40 p-3 rounded-2xl border border-blue-100 text-center space-y-2">
                     <img
@@ -424,63 +404,6 @@ export default function OrderTrackingPage() {
                   </div>
                 );
               })()}
-
-              <div className="space-y-2 pt-1 text-[11px]">
-                <div className="flex justify-between items-center px-1">
-                  <span className="text-gray-500">Ngân hàng:</span>
-                  <strong className="text-gray-900 font-bold">{settings?.bankId || 'Vietcombank'}</strong>
-                </div>
-
-                <div className="flex justify-between items-center p-2 bg-blue-50/40 rounded-xl">
-                  <div>
-                    <span className="text-gray-500 block text-[10px]">Số tài khoản:</span>
-                    <strong className="font-mono text-gray-900 text-xs">{settings?.bankAccount || '1013388086'}</strong>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(settings?.bankAccount || '1013388086', 'bankAccount')}
-                    className="px-2 py-1 bg-white hover:bg-gray-100 border border-gray-200 rounded text-[10px] font-bold text-gray-700 flex items-center gap-1 cursor-pointer"
-                  >
-                    {copiedField === 'bankAccount' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-gray-500" />}
-                    <span>{copiedField === 'bankAccount' ? 'Đã chép' : 'Sao chép'}</span>
-                  </button>
-                </div>
-
-                <div className="flex justify-between items-center px-1">
-                  <span className="text-gray-500">Chủ tài khoản:</span>
-                  <strong className="text-gray-900 uppercase">{settings?.bankOwner || 'DUONG QUOC KHANH'}</strong>
-                </div>
-
-                <div className="flex justify-between items-center p-2 bg-rose-50/40 rounded-xl">
-                  <div>
-                    <span className="text-gray-500 block text-[10px]">Số tiền cần chuyển:</span>
-                    <strong className="text-rose-600 font-bold text-xs">{formatVND(order.finalTotalAmount || order.totalAmount)}</strong>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(String(order.finalTotalAmount || order.totalAmount), 'amount')}
-                    className="px-2 py-1 bg-white hover:bg-rose-50 border border-rose-200 rounded text-[10px] font-bold text-rose-700 flex items-center gap-1 cursor-pointer"
-                  >
-                    {copiedField === 'amount' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-rose-500" />}
-                    <span>{copiedField === 'amount' ? 'Đã chép' : 'Sao chép'}</span>
-                  </button>
-                </div>
-
-                <div className="flex justify-between items-center p-2 bg-amber-50/60 rounded-xl border border-amber-200">
-                  <div>
-                    <span className="text-amber-800 block text-[10px] font-bold">Nội dung chuyển khoản:</span>
-                    <strong className="text-blue-700 font-mono font-black text-xs">DH {order.code}</strong>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(`DH ${order.code}`, 'memo')}
-                    className="px-2 py-1 bg-white hover:bg-amber-100 border border-amber-300 rounded text-[10px] font-bold text-amber-900 flex items-center gap-1 cursor-pointer"
-                  >
-                    {copiedField === 'memo' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-amber-700" />}
-                    <span>{copiedField === 'memo' ? 'Đã chép' : 'Sao chép'}</span>
-                  </button>
-                </div>
-              </div>
             </div>
           )}
 

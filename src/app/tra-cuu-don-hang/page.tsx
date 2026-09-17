@@ -93,6 +93,9 @@ function OrderCard({
     minute: '2-digit',
   });
 
+  const cleanCode = (order.code || order.id || '').replace(/^#/, '').trim();
+  const detailUrl = `/order/${encodeURIComponent(cleanCode)}`;
+
   return (
     <div className="bg-white rounded-3xl p-5 sm:p-6 border border-pink-100 shadow-md hover:shadow-lg transition space-y-5">
       {/* Top Row: Order code, date, badge */}
@@ -100,7 +103,7 @@ function OrderCard({
         <div>
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-mono font-black text-base sm:text-lg text-rose-600">
-              #{order.code}
+              #{cleanCode}
             </span>
             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${status.bg}`}>
               <span className={`w-2 h-2 rounded-full ${status.dot} animate-pulse`} />
@@ -138,8 +141,13 @@ function OrderCard({
 
         {/* Detail Link */}
         <Link
-          href={`/order/${order.code || order.id}`}
-          className="inline-flex items-center gap-1 text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline self-start sm:self-auto"
+          href={detailUrl}
+          onClick={(e) => {
+            if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+              window.location.href = detailUrl;
+            }
+          }}
+          className="inline-flex items-center gap-1 text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline self-start sm:self-auto cursor-pointer"
         >
           <span>Xem trang chi tiết</span>
           <ChevronRight className="w-4 h-4" />
@@ -278,35 +286,21 @@ function OrderCard({
             <div className="flex items-center justify-between text-stone-600">
               <span className="flex items-center gap-1.5">
                 <Truck className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                <span>
-                  Phí vận chuyển ({order.carrierName || 'SPX Express'}
-                  {order.totalWeight ? ` • ${(Number(order.totalWeight) / 1000).toFixed(2)}kg` : ''}):
-                </span>
+                <span>Phí vận chuyển:</span>
               </span>
               {shippingFee > 0 ? (
-                <span className="font-black text-rose-600">
+                <span className="font-bold text-rose-600">
                   +{formatVND(shippingFee)}
                 </span>
               ) : (
-                <span className="text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 text-xs font-bold">
-                  🎁 Miễn phí ship (0đ)
+                <span className="font-bold text-xs text-emerald-600">
+                  0đ
                 </span>
               )}
             </div>
 
             <div className="flex items-center justify-between pt-2.5 border-t border-pink-100 font-bold">
-              <div>
-                <span className="text-stone-800 text-xs sm:text-sm">Tổng thanh toán:</span>
-                <span className="text-[10px] sm:text-xs text-stone-400 block font-normal">
-                  {shippingFee > 0
-                    ? (order.paymentMethod === 'MOMO'
-                        ? '(Đã gồm cước ship • Ví MoMo)'
-                        : order.paymentMethod === 'BANK'
-                        ? '(Đã gồm cước ship • VietQR)'
-                        : '(Đã gồm cước ship • Thu tiền mặt COD)')
-                    : '(Đã miễn phí vận chuyển 0đ)'}
-                </span>
-              </div>
+              <span className="text-stone-800 text-xs sm:text-sm">Tổng thanh toán:</span>
               <span className="text-base sm:text-lg font-black text-rose-600">
                 {formatVND(order.totalAmount)}
               </span>
@@ -347,8 +341,13 @@ function OrderCard({
           )}
 
           <Link
-            href={`/order/${order.code || order.id}`}
-            className="px-3.5 py-2 rounded-xl bg-white hover:bg-pink-50 text-rose-600 border border-pink-200 text-xs font-bold transition flex items-center gap-1 shadow-2xs"
+            href={detailUrl}
+            onClick={(e) => {
+              if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                window.location.href = detailUrl;
+              }
+            }}
+            className="px-3.5 py-2 rounded-xl bg-white hover:bg-pink-50 text-rose-600 border border-pink-200 text-xs font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer"
           >
             <span>Chi tiết</span>
             <ChevronRight className="w-3.5 h-3.5" />

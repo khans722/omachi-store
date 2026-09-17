@@ -398,7 +398,7 @@ export default function CartPage() {
             <div className="flex items-center gap-2">
               <Truck className="w-4 h-4 text-amber-600 shrink-0" />
               <span className="text-[11px] text-amber-800">
-                Giao hàng SPX Express • Đơn từ 1.000.000₫ <strong className="text-emerald-700 font-bold">MIỄN PHÍ SHIP (0đ)</strong> khi Chuyển Khoản
+                Giao hàng SPX Express • Đơn từ {formatVND(FREESHIP_THRESHOLD)} <strong className="text-emerald-700 font-bold">MIỄN PHÍ SHIP (0đ)</strong> khi Chuyển Khoản
               </span>
             </div>
             {isFreeshipEligible && (

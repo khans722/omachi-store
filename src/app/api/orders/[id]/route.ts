@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { sendOrderNotification } from '@/lib/zalo';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -10,7 +13,16 @@ export async function GET(
   if (!order) {
     return NextResponse.json({ success: false, message: 'Order not found' }, { status: 404 });
   }
-  return NextResponse.json({ success: true, data: order });
+  return NextResponse.json(
+    { success: true, data: order },
+    {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    }
+  );
 }
 
 export async function PATCH(

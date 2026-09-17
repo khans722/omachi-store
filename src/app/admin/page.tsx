@@ -579,9 +579,9 @@ export default function AdminPage() {
         const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
         const merged = {
           ...DEFAULT_SETTINGS,
-          ...data.data,
           ...(localSaved || {}),
-          websiteUrl: (localSaved?.websiteUrl !== undefined ? localSaved.websiteUrl : data.data.websiteUrl) || currentOrigin,
+          ...data.data,
+          websiteUrl: data.data.websiteUrl || localSaved?.websiteUrl || currentOrigin,
         };
         setSettings(merged);
         try {

@@ -1692,8 +1692,8 @@ const INITIAL_DATABASE: DetailedDatabaseSchema = {
     "enablePrepaidFreeShip": true,
     "momoPhone": "0375408256",
     "momoName": "DUONG QUOC KHANH",
-    "bankId": "Vietcombank",
-    "bankAccount": "1013388086",
+    "bankId": "VCB",
+    "bankAccount": "1018880066",
     "bankOwner": "DUONG QUOC KHANH"
   }
 };
@@ -2555,20 +2555,40 @@ export const db = {
 
     async getById(idOrCode: string): Promise<Order | undefined> {
       if (!idOrCode) return undefined;
-      const clean = idOrCode.replace(/^#/, '').trim().toLowerCase();
+      const clean = idOrCode.replace(/^#/, '').trim();
+      const lower = clean.toLowerCase();
       try {
-        const { data, error } = await supabase
+        let { data, error } = await supabase
           .from('orders')
           .select('*')
-          .or(`id.ilike.${clean},code.ilike.${clean}`)
+          .eq('code', clean)
           .maybeSingle();
-        if (!error && data) return mapOrderFromSupabase(data);
+
+        if (!data) {
+          const res = await supabase
+            .from('orders')
+            .select('*')
+            .eq('id', clean)
+            .maybeSingle();
+          if (res.data) data = res.data;
+        }
+
+        if (!data) {
+          const res = await supabase
+            .from('orders')
+            .select('*')
+            .ilike('code', clean)
+            .maybeSingle();
+          if (res.data) data = res.data;
+        }
+
+        if (data) return mapOrderFromSupabase(data);
       } catch (err) {
         console.warn('[Supabase orders.getById fallback]:', err);
       }
       return (readDb().orders || []).find((o) => 
-        (o.id && o.id.toLowerCase() === clean) || 
-        (o.code && o.code.replace(/^#/, '').toLowerCase() === clean)
+        (o.id && o.id.toLowerCase() === lower) || 
+        (o.code && o.code.replace(/^#/, '').toLowerCase() === lower)
       );
     },
 

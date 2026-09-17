@@ -1021,7 +1021,7 @@ export default function CheckoutPage() {
                   {(() => {
                     const rawBank = (settings?.bankId || 'VCB').toUpperCase().trim();
                     const qrBank = rawBank.includes('VIETCOM') ? 'VCB' : rawBank.includes('MB') ? 'MB' : rawBank;
-                    const qrUrl = `https://img.vietqr.io/image/${qrBank}-${settings?.bankAccount || '1013388086'}-compact2.png?amount=${
+                    const qrUrl = `https://img.vietqr.io/image/${qrBank}-${settings?.bankAccount || '1018880066'}-compact2.png?amount=${
                       createdOrder.finalTotalAmount || createdOrder.totalAmount
                     }&addInfo=${encodeURIComponent(`DH ${createdOrder.code}`)}&accountName=${encodeURIComponent(
                       settings?.bankOwner || 'DUONG QUOC KHANH'
@@ -1063,71 +1063,6 @@ export default function CheckoutPage() {
                     <li>Mở App Ngân hàng hoặc MoMo &gt; Bấm <strong>Quét QR</strong>.</li>
                     <li>Chọn biểu tượng <strong>&quot;Ảnh / Thư viện&quot;</strong> để chọn mã vừa tải về là xong!</li>
                   </ol>
-                </div>
-              </div>
-
-              {/* Bank Transfer Details */}
-              <div className="bg-stone-50 rounded-xl p-3 border border-stone-200 space-y-2 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-stone-500">Ngân hàng:</span>
-                  <strong className="text-stone-900 font-bold">
-                    {settings?.bankId || 'Vietcombank'}
-                  </strong>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-stone-500">Số tài khoản:</span>
-                  <div className="flex items-center gap-1.5">
-                    <strong className="text-stone-900 font-mono font-bold text-sm">
-                      {settings?.bankAccount || '1013388086'}
-                    </strong>
-                    <button
-                      type="button"
-                      onClick={() => copyToClipboard(settings?.bankAccount || '1013388086', 'bankAccount')}
-                      className="text-[10px] bg-white border border-stone-300 hover:border-blue-500 text-stone-700 px-2 py-0.5 rounded font-bold transition"
-                    >
-                      {copiedField === 'bankAccount' ? '✓ Đã chép' : 'Sao chép'}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-stone-500">Chủ tài khoản:</span>
-                  <strong className="text-stone-900 font-bold uppercase">
-                    {settings?.bankOwner || 'DUONG QUOC KHANH'}
-                  </strong>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-stone-500">Số tiền:</span>
-                  <div className="flex items-center gap-1.5">
-                    <strong className="text-rose-600 font-black text-sm">
-                      {formatVND(createdOrder.finalTotalAmount || createdOrder.totalAmount)}
-                    </strong>
-                    <button
-                      type="button"
-                      onClick={() => copyToClipboard(String(createdOrder.finalTotalAmount || createdOrder.totalAmount), 'bankAmount')}
-                      className="text-[10px] bg-white border border-stone-300 hover:border-blue-500 text-stone-700 px-2 py-0.5 rounded font-bold transition"
-                    >
-                      {copiedField === 'bankAmount' ? '✓ Đã chép' : 'Sao chép'}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-stone-500">Lời nhắn / Nội dung:</span>
-                  <div className="flex items-center gap-1.5">
-                    <strong className="text-blue-700 font-mono font-black text-sm bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                      DH {createdOrder.code}
-                    </strong>
-                    <button
-                      type="button"
-                      onClick={() => copyToClipboard(`DH ${createdOrder.code}`, 'bankContent')}
-                      className="text-[10px] bg-white border border-stone-300 hover:border-blue-500 text-stone-700 px-2 py-0.5 rounded font-bold transition"
-                    >
-                      {copiedField === 'bankContent' ? '✓ Đã chép' : 'Sao chép'}
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>
