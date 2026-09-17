@@ -103,6 +103,7 @@ export default function AdminPage() {
   const [settings, setSettings] = useState<ShopSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('ALL');
+  const [orderSearch, setOrderSearch] = useState<string>('');
   const [testZaloStatus, setTestZaloStatus] = useState<string>('');
   const [testTelegramStatus, setTestTelegramStatus] = useState<{ type: 'loading' | 'success' | 'error'; message: string } | null>(null);
   const [showTelegramGuide, setShowTelegramGuide] = useState(false);
@@ -1073,11 +1074,23 @@ export default function AdminPage() {
 
   // IF AUTHENTICATED -> DASHBOARD
   const filteredOrders = orders.filter((o) => {
-    if (selectedStatusFilter === 'ALL') return true;
-    if (selectedStatusFilter === 'PENDING_CONFIRM') return o.orderStatus === 'PENDING_CONFIRM';
-    if (selectedStatusFilter === 'PREPARING') return o.orderStatus === 'PREPARING';
-    if (selectedStatusFilter === 'SHIPPING') return o.orderStatus === 'SHIPPING';
-    if (selectedStatusFilter === 'COMPLETED') return o.orderStatus === 'COMPLETED';
+    let statusMatch = true;
+    if (selectedStatusFilter === 'PENDING_CONFIRM') statusMatch = o.orderStatus === 'PENDING_CONFIRM';
+    else if (selectedStatusFilter === 'PREPARING') statusMatch = o.orderStatus === 'PREPARING';
+    else if (selectedStatusFilter === 'SHIPPING') statusMatch = o.orderStatus === 'SHIPPING';
+    else if (selectedStatusFilter === 'COMPLETED') statusMatch = o.orderStatus === 'COMPLETED';
+
+    if (!statusMatch) return false;
+
+    if (orderSearch.trim()) {
+      const q = orderSearch.toLowerCase().trim();
+      const code = (o.code || '').toLowerCase();
+      const name = (o.customer?.fullName || '').toLowerCase();
+      const phone = (o.customer?.phone || '').replace(/[^0-9]/g, '');
+      const addr = (o.customer?.address || '').toLowerCase();
+      return code.includes(q) || name.includes(q) || phone.includes(q) || addr.includes(q);
+    }
+
     return true;
   });
 
@@ -1300,32 +1313,64 @@ export default function AdminPage() {
       {activeTab === 'orders' && (
         <div className="space-y-4">
           
-          {/* Status filter buttons */}
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-            {[
-              { id: 'ALL', label: 'Tất cả đơn', count: orders.length },
-              { id: 'PENDING_CONFIRM', label: 'Chờ xác nhận', count: pendingConfirmCount },
-              { id: 'PREPARING', label: 'Đang làm hàng', count: preparingCount },
-              { id: 'SHIPPING', label: 'Đang giao', count: orders.filter((o) => o.orderStatus === 'SHIPPING').length },
-              { id: 'COMPLETED', label: 'Hoàn thành', count: orders.filter((o) => o.orderStatus === 'COMPLETED').length },
-            ].map((st) => (
-              <button
-                key={st.id}
-                onClick={() => setSelectedStatusFilter(st.id)}
-                className={`px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
-                  selectedStatusFilter === st.id
-                    ? 'bg-stone-800 text-white shadow-xs'
-                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-                }`}
-              >
-                <span>{st.label}</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                  selectedStatusFilter === st.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
-                }`}>
-                  {st.count}
+          {/* Status filter selection box */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-white p-2.5 sm:p-3 rounded-2xl border border-pink-100 shadow-2xs">
+            <div className="flex items-center gap-2 flex-1">
+              <label htmlFor="order-status-select" className="text-xs font-bold text-gray-500 shrink-0 hidden sm:inline">
+                Lọc trạng thái:
+              </label>
+              <div className="relative flex-1 sm:max-w-xs">
+                <select
+                  id="order-status-select"
+                  value={selectedStatusFilter}
+                  onChange={(e) => setSelectedStatusFilter(e.target.value)}
+                  className="w-full appearance-none bg-stone-50 hover:bg-stone-100/80 border border-gray-200 text-stone-800 text-xs sm:text-sm font-extrabold py-2 pl-3 pr-8 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 cursor-pointer transition shadow-2xs"
+                >
+                  <option value="ALL">📦 Tất cả đơn ({orders.length})</option>
+                  <option value="PENDING_CONFIRM">⏳ Chờ xác nhận ({pendingConfirmCount})</option>
+                  <option value="PREPARING">🔨 Đang làm hàng ({preparingCount})</option>
+                  <option value="SHIPPING">🚚 Đang giao ({orders.filter((o) => o.orderStatus === 'SHIPPING').length})</option>
+                  <option value="COMPLETED">✅ Hoàn thành ({orders.filter((o) => o.orderStatus === 'COMPLETED').length})</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-stone-400 text-xs">
+                  ▼
+                </div>
+              </div>
+
+              <div className="sm:hidden shrink-0 px-2.5 py-1.5 bg-rose-50 border border-pink-200 rounded-xl text-rose-600 text-xs font-extrabold">
+                {filteredOrders.length} đơn
+              </div>
+            </div>
+
+            {/* Order search box */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 sm:w-60">
+                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="🔍 Tìm mã đơn, tên, SĐT..."
+                  value={orderSearch}
+                  onChange={(e) => setOrderSearch(e.target.value)}
+                  className="w-full pl-8 pr-7 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:bg-white focus:border-rose-400 font-medium text-gray-800 transition"
+                />
+                {orderSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setOrderSearch('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-bold"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <div className="hidden sm:flex items-center gap-1.5 shrink-0 text-xs font-bold text-gray-500">
+                <span>Hiển thị:</span>
+                <span className="px-2 py-0.5 rounded-lg bg-stone-800 text-white text-[11px] font-extrabold">
+                  {filteredOrders.length} đơn
                 </span>
-              </button>
-            ))}
+              </div>
+            </div>
           </div>
 
           {/* Orders List */}
@@ -1738,23 +1783,25 @@ export default function AdminPage() {
               />
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
-              {[
-                { id: 'ALL', label: 'Tất cả danh mục' },
-                ...categories.map((c) => ({ id: c.id, label: `${c.icon ? c.icon + ' ' : ''}${c.name}`, slug: c.slug }))
-              ].map((cat: any) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setProductCategoryFilter(cat.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-                    productCategoryFilter === cat.id
-                      ? 'bg-rose-500 text-white shadow-xs'
-                      : 'bg-white text-gray-600 border border-pink-200 hover:bg-pink-100/50'
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
+            <div className="relative w-full sm:w-auto">
+              <select
+                value={productCategoryFilter}
+                onChange={(e) => setProductCategoryFilter(e.target.value)}
+                className="w-full sm:w-auto appearance-none bg-white border border-pink-200 text-gray-800 text-xs font-bold py-2 pl-3 pr-8 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 cursor-pointer shadow-2xs"
+              >
+                <option value="ALL">✨ Tất cả danh mục ({products.length})</option>
+                {categories.map((c) => {
+                  const count = products.filter((p) => p.categoryId === c.id || p.category === c.slug).length;
+                  return (
+                    <option key={c.id} value={c.id}>
+                      {c.icon ? c.icon + ' ' : ''}{c.name} ({count})
+                    </option>
+                  );
+                })}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-gray-400 text-xs">
+                ▼
+              </div>
             </div>
           </div>
 

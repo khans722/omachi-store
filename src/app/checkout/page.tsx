@@ -24,6 +24,7 @@ import { useCustomer } from '@/context/CustomerContext';
 import { VIETNAM_PROVINCES } from '@/data/vietnamAddress';
 import { Order, ShopSettings } from '@/types';
 import confetti from 'canvas-confetti';
+import { removeVietnameseTones } from '@/lib/search';
 
 const formatVND = (amount: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -87,17 +88,22 @@ function SearchableDropdown({
   const normalizedOptions = useMemo(() => {
     return options.map((opt) => {
       if (typeof opt === 'string') {
-        return { value: opt, label: opt, subLabel: undefined, searchKey: opt.toLowerCase() };
+        const raw = opt.toLowerCase();
+        const unaccented = removeVietnameseTones(opt);
+        return { value: opt, label: opt, subLabel: undefined, searchKey: `${raw} ${unaccented}` };
       }
-      const searchKey = [opt.label || opt.value, opt.subLabel, ...(opt.aliases || [])].filter(Boolean).join(' ').toLowerCase();
-      return { value: opt.value, label: opt.label || opt.value, subLabel: opt.subLabel, searchKey };
+      const rawText = [opt.label || opt.value, opt.subLabel, ...(opt.aliases || [])].filter(Boolean).join(' ');
+      const raw = rawText.toLowerCase();
+      const unaccented = removeVietnameseTones(rawText);
+      return { value: opt.value, label: opt.label || opt.value, subLabel: opt.subLabel, searchKey: `${raw} ${unaccented}` };
     });
   }, [options]);
 
   const filteredOptions = useMemo(() => {
     if (!search.trim()) return normalizedOptions;
-    const q = search.toLowerCase().trim();
-    return normalizedOptions.filter((opt) => opt.searchKey.includes(q));
+    const qRaw = search.toLowerCase().trim();
+    const qUnaccented = removeVietnameseTones(search);
+    return normalizedOptions.filter((opt) => opt.searchKey.includes(qRaw) || opt.searchKey.includes(qUnaccented));
   }, [normalizedOptions, search]);
 
 
