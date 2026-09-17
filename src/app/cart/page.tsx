@@ -240,23 +240,40 @@ export default function CartPage() {
 
                     {/* Bottom Row: Price on left, Stepper & Delete on right */}
                     <div className="mt-2 flex items-center justify-between gap-2">
-                      {/* Unit Price */}
-                      <div className="flex items-baseline gap-1.5 min-w-0 flex-wrap">
-                        <span className={`text-sm sm:text-base font-black ${curr.priceText}`}>
-                          {formatVND(item.unitPrice)}
-                        </span>
-                        <span className="text-[10px] text-stone-400 font-normal">/cái</span>
-                        {item.appliedTier && (
-                          <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">
-                            ⚡ {item.appliedTier.label}
-                          </span>
-                        )}
-                        {item.product?.originalPrice && item.product.originalPrice > item.unitPrice && (
-                          <span className="text-[10px] text-stone-400 line-through truncate hidden sm:inline">
-                            {formatVND(item.product.originalPrice)}
-                          </span>
-                        )}
-                      </div>
+                      {/* Unit Price & % Discount */}
+                    <div className="flex items-baseline gap-1.5 min-w-0 flex-wrap">
+                      <span className={`text-sm sm:text-base font-black ${curr.priceText}`}>
+                        {formatVND(item.unitPrice)}
+                      </span>
+                      <span className="text-[10px] text-stone-400 font-normal">/cái</span>
+
+                      {(() => {
+                        const base = item.product?.basePrice || item.unitPrice;
+                        const discountPercent = base > item.unitPrice
+                          ? Math.round(((base - item.unitPrice) / base) * 100)
+                          : 0;
+                        if (discountPercent > 0) {
+                          return (
+                            <>
+                              <span className="text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.2 rounded">
+                                -{discountPercent}%
+                              </span>
+                              <span className="text-[10px] text-stone-400 line-through truncate">
+                                {formatVND(base)}
+                              </span>
+                            </>
+                          );
+                        }
+                        if (item.product?.originalPrice && item.product.originalPrice > item.unitPrice) {
+                          return (
+                            <span className="text-[10px] text-stone-400 line-through truncate hidden sm:inline">
+                              {formatVND(item.product.originalPrice)}
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
 
                       {/* Stepper & Trash Button */}
                       <div className="flex items-center gap-2 shrink-0">

@@ -517,26 +517,44 @@ export default function ProductDetailPage() {
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <span className="text-xs text-gray-700 font-bold">Số Lượng Mua:</span>
                 
-                {/* 1688 Quick Preset Quantity Buttons */}
+                {/* Quick Multiplier Buttons (+10, +100) */}
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[10px] text-gray-400 font-semibold">Chọn nhanh:</span>
-                  {[1, 10, 50, 100, 200].map((qtyPreset) => {
-                    const isSelected = quantity === qtyPreset;
-                    return (
-                      <button
-                        key={qtyPreset}
-                        type="button"
-                        onClick={() => setQuantity(qtyPreset)}
-                        className={`px-2.5 py-1 text-xs font-bold rounded-lg transition ${
-                          isSelected
-                            ? curr.chipActive
-                            : 'bg-white border border-stone-200 text-stone-700 hover:border-stone-400'
-                        }`}
-                      >
-                        {qtyPreset} cái
-                      </button>
-                    );
-                  })}
+                  <span className="text-[10px] text-gray-400 font-semibold">Cộng nhanh:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuantity((q) => {
+                        if (q <= 1) return 10;
+                        return Math.min(product.stock || 9999, q + 10);
+                      });
+                    }}
+                    className="px-2.5 py-1 text-xs font-bold rounded-lg bg-white border border-stone-200 text-stone-700 hover:border-stone-400 hover:bg-stone-50 active:scale-95 transition"
+                    title="Bấm để cộng thêm 10 cái"
+                  >
+                    +10 cái
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuantity((q) => {
+                        if (q <= 1) return 100;
+                        return Math.min(product.stock || 9999, q + 100);
+                      });
+                    }}
+                    className="px-2.5 py-1 text-xs font-bold rounded-lg bg-white border border-stone-200 text-stone-700 hover:border-stone-400 hover:bg-stone-50 active:scale-95 transition"
+                    title="Bấm để cộng thêm 100 cái"
+                  >
+                    +100 cái
+                  </button>
+                  {quantity > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setQuantity(1)}
+                      className="text-[10px] text-stone-400 hover:text-stone-600 underline ml-1 cursor-pointer"
+                    >
+                      Về 1
+                    </button>
+                  )}
                 </div>
               </div>
 

@@ -41,6 +41,46 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+/**
+ * 1688 Wholesale Auto-Tier Pricing:
+ * Gom tổng số lượng của TẤT CẢ các phân loại màu / gói phụ kiện của CÙNG 1 MÃ SẢN PHẨM (product.id)
+ * để tính mốc giá sỉ bậc thang tốt nhất cho toàn bộ các màu đó!
+ */
+function applyWholesalePricing(cartItems: CartItem[]): CartItem[] {
+  // 1. Tính tổng số lượng của từng mã sản phẩm trong giỏ (gộp tất cả các màu)
+  const productTotalQuantities: Record<string, number> = {};
+  for (const item of cartItems) {
+    if (item.product.comboTiers && item.product.comboTiers.length > 0) {
+      const pId = item.product.id;
+      productTotalQuantities[pId] = (productTotalQuantities[pId] || 0) + item.quantity;
+    }
+  }
+
+  // 2. Tự động cập nhật đơn giá theo mốc sỉ của tổng số lượng đó
+  return cartItems.map((item) => {
+    if (item.product.comboTiers && item.product.comboTiers.length > 0) {
+      const totalQty = productTotalQuantities[item.product.id] || item.quantity;
+      const smart = calculateSmartUnitPrice(
+        item.product.basePrice,
+        totalQty,
+        item.product.comboTiers
+      );
+
+      // Nếu có chênh lệch giá do packageOption / variant đặc biệt (so với basePrice) thì giữ phần phụ thu
+      const variantExtra = Math.max(0, (item.selectedPackage?.price ?? item.selectedVariant?.price ?? item.product.basePrice) - item.product.basePrice);
+      const finalUnitPrice = smart.unitPrice + variantExtra;
+
+      return {
+        ...item,
+        unitPrice: finalUnitPrice,
+        appliedTier: smart.appliedTier,
+        totalPrice: finalUnitPrice * item.quantity,
+      };
+    }
+    return item;
+  });
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -59,7 +99,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
               selected: it.selected !== undefined ? it.selected : true,
             }))
           : [];
-        setItems(normalized);
+        // Tự động đồng bộ lại giá sỉ theo tổng số lượng các màu
+        setItems(applyWholesalePricing(normalized));
       }
     } catch (e) {
       console.error('Failed to load cart from localStorage', e);
@@ -95,36 +136,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         newQuantity = prevItems[existingIndex].quantity + quantity;
       }
 
-      // 1688 Wholesale Auto-Tier Pricing:
-      let unitPrice = packageOption?.price ?? variant?.price ?? product.basePrice;
-      let appliedTier = undefined;
-
-      if (product.comboTiers && product.comboTiers.length > 0) {
-        const smart = calculateSmartUnitPrice(product.basePrice, newQuantity, product.comboTiers);
-        unitPrice = smart.unitPrice;
-        appliedTier = smart.appliedTier;
-      }
-
-      const updatedItem: CartItem = {
+      const rawItem: CartItem = {
         id: cartItemId,
         product,
         selectedVariant: variant,
         selectedPackage: packageOption,
         customNote: customNote || (existingIndex > -1 ? prevItems[existingIndex].customNote : undefined),
         quantity: newQuantity,
-        unitPrice,
-        appliedTier,
-        totalPrice: unitPrice * newQuantity,
-        selected: true, // Auto selected when added
+        unitPrice: packageOption?.price ?? variant?.price ?? product.basePrice,
+        appliedTier: undefined,
+        totalPrice: (packageOption?.price ?? variant?.price ?? product.basePrice) * newQuantity,
+        selected: true,
       };
 
+      let newItems: CartItem[];
       if (existingIndex > -1) {
-        const next = [...prevItems];
-        next[existingIndex] = updatedItem;
-        return next;
+        newItems = [...prevItems];
+        newItems[existingIndex] = rawItem;
       } else {
-        return [...prevItems, updatedItem];
+        newItems = [...prevItems, rawItem];
       }
+
+      // Chuẩn sàn 1688: Tự động gom tất cả các màu để tính mốc giá sỉ chung
+      return applyWholesalePricing(newItems);
     });
 
     if (openDrawer) {
@@ -147,16 +181,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const existingIndex = unselectedOthers.findIndex((item) => item.id === targetId);
       const totalQty = existingIndex > -1 ? unselectedOthers[existingIndex].quantity + quantity : quantity;
 
-      // 1688 Wholesale Auto-Tier Pricing:
-      let unitPrice = packageOption?.price ?? variant?.price ?? product.basePrice;
-      let appliedTier = undefined;
-
-      if (product.comboTiers && product.comboTiers.length > 0) {
-        const smart = calculateSmartUnitPrice(product.basePrice, totalQty, product.comboTiers);
-        unitPrice = smart.unitPrice;
-        appliedTier = smart.appliedTier;
-      }
-
       const targetItem: CartItem = {
         id: targetId,
         product,
@@ -164,18 +188,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         selectedPackage: packageOption,
         customNote,
         quantity: totalQty,
-        unitPrice,
-        appliedTier,
-        totalPrice: unitPrice * totalQty,
+        unitPrice: packageOption?.price ?? variant?.price ?? product.basePrice,
+        appliedTier: undefined,
+        totalPrice: (packageOption?.price ?? variant?.price ?? product.basePrice) * totalQty,
         selected: true,
       };
 
+      let nextItems: CartItem[];
       if (existingIndex > -1) {
-        unselectedOthers[existingIndex] = targetItem;
-        return unselectedOthers;
+        nextItems = [...unselectedOthers];
+        nextItems[existingIndex] = targetItem;
       } else {
-        return [...unselectedOthers, targetItem];
+        nextItems = [...unselectedOthers, targetItem];
       }
+
+      return applyWholesalePricing(nextItems);
     });
 
     setIsCartOpen(false);
@@ -187,34 +214,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    setItems((prevItems) =>
-      prevItems.map((item) => {
+    setItems((prevItems) => {
+      const updated = prevItems.map((item) => {
         if (item.id === cartItemId) {
-          // 1688 Wholesale Auto-Tier Pricing:
-          let unitPrice = item.selectedPackage?.price ?? item.selectedVariant?.price ?? item.product.basePrice;
-          let appliedTier = item.appliedTier;
-
-          if (item.product.comboTiers && item.product.comboTiers.length > 0) {
-            const smart = calculateSmartUnitPrice(item.product.basePrice, newQuantity, item.product.comboTiers);
-            unitPrice = smart.unitPrice;
-            appliedTier = smart.appliedTier;
-          }
-
           return {
             ...item,
             quantity: newQuantity,
-            unitPrice,
-            appliedTier,
-            totalPrice: unitPrice * newQuantity,
+            totalPrice: item.unitPrice * newQuantity,
           };
         }
         return item;
-      })
-    );
+      });
+      return applyWholesalePricing(updated);
+    });
   };
 
   const removeItem = (cartItemId: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== cartItemId));
+    setItems((prev) => applyWholesalePricing(prev.filter((item) => item.id !== cartItemId)));
   };
 
   const clearCart = () => {

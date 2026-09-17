@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Order, OrderStatus, ShopSettings, Product, CustomerFeedback, ProductVariant, ComboTier, Category } from '@/types';
 import { formatVND } from '@/lib/utils';
 import { INITIAL_PRODUCTS } from '@/data/products';
+import { compressImage } from '@/lib/imageCompress';
 import { 
   Package, 
   Sparkles, 
@@ -183,17 +184,38 @@ export default function AdminPage() {
     try {
       const uploadedUrls: string[] = [];
       for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const formData = new FormData();
-        formData.append('file', file);
+        const rawFile = files[i];
+        let fileToUpload = rawFile;
+        let fallbackUrl = '';
 
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-        const data = await res.json();
-        if (data.success && data.url) {
-          uploadedUrls.push(data.url);
+        try {
+          // Nén ảnh siêu tốc ngay tại trình duyệt (1200px, WebP ~70KB thay vì 10MB)
+          const compressed = await compressImage(rawFile, 1200, 0.82);
+          fileToUpload = compressed.file;
+          fallbackUrl = compressed.dataUrl;
+        } catch (compErr) {
+          console.warn('Lỗi nén ảnh, tải file gốc:', compErr);
+        }
+
+        const formData = new FormData();
+        formData.append('file', fileToUpload);
+
+        try {
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+          });
+          const data = await res.json();
+          if (data.success && data.url) {
+            uploadedUrls.push(data.url);
+          } else if (fallbackUrl) {
+            // Fallback an toàn nếu serverless read-only
+            uploadedUrls.push(fallbackUrl);
+          }
+        } catch {
+          if (fallbackUrl) {
+            uploadedUrls.push(fallbackUrl);
+          }
         }
       }
 
@@ -230,17 +252,36 @@ export default function AdminPage() {
     try {
       const uploadedUrls: string[] = [];
       for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const formData = new FormData();
-        formData.append('file', file);
+        const rawFile = files[i];
+        let fileToUpload = rawFile;
+        let fallbackUrl = '';
 
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-        const data = await res.json();
-        if (data.success && data.url) {
-          uploadedUrls.push(data.url);
+        try {
+          const compressed = await compressImage(rawFile, 1600, 0.82);
+          fileToUpload = compressed.file;
+          fallbackUrl = compressed.dataUrl;
+        } catch (compErr) {
+          console.warn('Lỗi nén ảnh banner:', compErr);
+        }
+
+        const formData = new FormData();
+        formData.append('file', fileToUpload);
+
+        try {
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+          });
+          const data = await res.json();
+          if (data.success && data.url) {
+            uploadedUrls.push(data.url);
+          } else if (fallbackUrl) {
+            uploadedUrls.push(fallbackUrl);
+          }
+        } catch {
+          if (fallbackUrl) {
+            uploadedUrls.push(fallbackUrl);
+          }
         }
       }
 
@@ -267,6 +308,73 @@ export default function AdminPage() {
       setUploadingHeroImage(false);
       e.target.value = '';
     }
+  };
+
+  // Wholesale Template Helpers
+  const handleSaveCurrentTiersAsShopDefault = async () => {
+    if (!editingProduct?.comboTiers || editingProduct.comboTiers.length === 0) {
+      alert('Vui lòng thêm ít nhất 1 mốc sỉ trước khi lưu làm mẫu!');
+      return;
+    }
+    const base = Number(editingProduct.basePrice) || 1;
+    const tiersToSave = editingProduct.comboTiers.map(t => {
+      const discountPercent = Math.max(1, Math.min(99, Math.round((1 - (t.unitPrice || 0) / base) * 100)));
+      return {
+        minQuantity: Number(t.minQuantity) || 10,
+        discountPercent: discountPercent > 0 ? discountPercent : 10,
+        unitPrice: Number(t.unitPrice) || 0,
+        label: t.label || `Mốc ${t.minQuantity} cái`,
+        badge: t.badge || `Tiết kiệm ${discountPercent}%`,
+      };
+    });
+
+    const updatedSettings = {
+      ...settings,
+      customWholesaleTiers: tiersToSave,
+    };
+    setSettings(updatedSettings);
+
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedSettings),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActionSuccessMsg('Đã lưu cấu hình các mốc này làm "Mẫu của Shop" thành công! 🎉');
+        setTimeout(() => setActionSuccessMsg(''), 4000);
+        confetti({ particleCount: 35, spread: 60 });
+      }
+    } catch (err) {
+      console.error('Lỗi khi lưu mẫu sỉ:', err);
+    }
+  };
+
+  const applyShopCustomTemplate = () => {
+    if (!editingProduct) return;
+    const customTiers = settings.customWholesaleTiers && settings.customWholesaleTiers.length > 0
+      ? settings.customWholesaleTiers
+      : [
+          { minQuantity: 10, discountPercent: 10, label: 'Mốc 10 cái', badge: 'Sỉ nhẹ 10%' },
+          { minQuantity: 50, discountPercent: 25, label: 'Mốc 50 cái', badge: 'Tiết kiệm 25%' },
+          { minQuantity: 100, discountPercent: 40, label: 'Mốc 100 cái (Sỉ VIP)', badge: 'Hot Bán Chạy 🔥' },
+        ];
+    const base = Number(editingProduct.basePrice) || 2000;
+    const newTiers = customTiers.map(t => {
+      const discount = t.discountPercent ?? (t.unitPrice && base ? Math.max(5, Math.round((1 - t.unitPrice / base) * 100)) : 10);
+      const unitPrice = t.unitPrice && t.unitPrice > 0 ? t.unitPrice : Math.round(base * (1 - discount / 100));
+      return {
+        minQuantity: Number(t.minQuantity) || 10,
+        unitPrice: unitPrice,
+        label: t.label || `Mốc ${t.minQuantity} cái`,
+        badge: t.badge || `Tiết kiệm ${discount}%`,
+      };
+    });
+    setEditingProduct({
+      ...editingProduct,
+      comboTiers: newTiers,
+    });
   };
 
   // Quick Restock State
@@ -2515,7 +2623,7 @@ export default function AdminPage() {
                     <div className="flex flex-wrap items-center gap-2.5">
                       <label className="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs rounded-xl shadow-xs transition transform active:scale-95">
                         <UploadCloud className="w-4 h-4" />
-                        <span>{uploadingHeroImage ? 'Đang tải ảnh...' : '📁 Tải ảnh từ máy (Chọn nhiều ảnh cùng lúc)'}</span>
+                        <span>{uploadingHeroImage ? '⚡ Đang nén & tải ảnh banner...' : '📁 Tải ảnh từ máy (Nén nhanh WebP)'}</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -3401,7 +3509,7 @@ export default function AdminPage() {
                   <div className="flex flex-wrap items-center gap-2.5">
                     <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs rounded-xl shadow-xs transition transform active:scale-95">
                       <UploadCloud className="w-4 h-4" />
-                      <span>{uploadingImage ? 'Đang tải ảnh lên...' : '📁 Tải ảnh từ máy tính (Có thể chọn nhiều ảnh)'}</span>
+                      <span>{uploadingImage ? '⚡ Đang nén & tải ảnh...' : '📁 Tải ảnh từ máy / điện thoại (Nén nhanh WebP)'}</span>
                       <input
                         type="file"
                         accept="image/*"
@@ -3549,6 +3657,18 @@ export default function AdminPage() {
                   {/* Preset Buttons for Wholesale */}
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="text-[10px] text-gray-400 font-semibold">Tạo nhanh:</span>
+
+                    {/* Nút Áp dụng Mẫu cấu hình riêng của Shop */}
+                    <button
+                      type="button"
+                      onClick={applyShopCustomTemplate}
+                      className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-xs transition flex items-center gap-1"
+                      title="Áp dụng mẫu giá sỉ chuẩn đã cấu hình của Shop"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      <span>⭐ Mẫu của Shop {settings.customWholesaleTiers && settings.customWholesaleTiers.length > 0 ? `(${settings.customWholesaleTiers.map(t => t.minQuantity).join(', ')})` : '(10, 50, 100)'}</span>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => {
@@ -3589,11 +3709,13 @@ export default function AdminPage() {
                       type="button"
                       onClick={() => {
                         const currentTiers = editingProduct.comboTiers || [];
+                        const base = Number(editingProduct.basePrice) || 2000;
+                        const nextQty = currentTiers.length === 0 ? 10 : (currentTiers[currentTiers.length - 1].minQuantity * 2);
                         setEditingProduct({
                           ...editingProduct,
                           comboTiers: [
                             ...currentTiers,
-                            { minQuantity: (currentTiers.length + 1) * 50, unitPrice: Math.round((editingProduct.basePrice || 2000) * 0.8), label: `Mốc ${(currentTiers.length + 1) * 50} cái`, badge: 'Giá Sỉ' }
+                            { minQuantity: nextQty, unitPrice: Math.round(base * 0.8), label: `Mốc ${nextQty} cái`, badge: 'Giá Sỉ' }
                           ]
                         });
                       }}
@@ -3602,6 +3724,18 @@ export default function AdminPage() {
                       <Plus className="w-3.5 h-3.5" />
                       <span>+ Thêm mốc</span>
                     </button>
+
+                    {/* Nút lưu cấu hình mốc hiện tại làm mẫu của shop */}
+                    {(editingProduct.comboTiers || []).length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleSaveCurrentTiersAsShopDefault}
+                        className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-emerald-100 transition flex items-center gap-1 ml-auto"
+                        title="Lưu các mốc đang nhập làm Mẫu Shop để dùng nhanh cho tất cả sản phẩm khác"
+                      >
+                        <span>💾 Lưu làm mẫu Shop</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -3625,7 +3759,7 @@ export default function AdminPage() {
                       </div>
 
                       <div className="w-28">
-                        <span className="text-[10px] text-gray-500 block">Đơn giá combo:</span>
+                        <span className="text-[10px] text-gray-500 block">Đơn giá sỉ (đ/cái):</span>
                         <input
                           type="number"
                           min={0}
@@ -3650,7 +3784,7 @@ export default function AdminPage() {
                             newTiers[idx] = { ...newTiers[idx], label: e.target.value };
                             setEditingProduct({ ...editingProduct, comboTiers: newTiers });
                           }}
-                          placeholder="Combo 50 pcs..."
+                          placeholder="Mốc sỉ 50 cái..."
                           className="w-full px-2 py-1 bg-pink-50/30 border border-pink-200 rounded-lg font-medium"
                         />
                       </div>

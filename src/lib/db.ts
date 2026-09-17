@@ -216,6 +216,13 @@ export interface ShopSettings {
     desc: string;
   }[];
   purchasePolicyDetail?: string;
+  customWholesaleTiers?: {
+    minQuantity: number;
+    discountPercent?: number;
+    unitPrice?: number;
+    label: string;
+    badge?: string;
+  }[];
 }
 
 export interface DetailedDatabaseSchema {

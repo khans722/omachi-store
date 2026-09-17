@@ -25,7 +25,9 @@ export async function GET(
 
     // Sanitize to prevent directory traversal
     const safeSegments = segments.map((s) => path.basename(s));
-    const filePath = path.join(process.cwd(), 'public', 'uploads', ...safeSegments);
+    const tmpPath = path.join('/tmp', 'uploads', ...safeSegments);
+    const publicPath = path.join(process.cwd(), 'public', 'uploads', ...safeSegments);
+    const filePath = fs.existsSync(tmpPath) ? tmpPath : publicPath;
 
     if (!fs.existsSync(filePath)) {
       return new NextResponse('File not found', { status: 404 });

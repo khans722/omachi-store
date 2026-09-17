@@ -155,17 +155,30 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
               {product.name}
             </h4>
 
-            {/* Dynamic Price (1688 wholesale) */}
-            <div className="mt-1 flex items-baseline gap-2 flex-wrap">
+            {/* Dynamic Price & % Discount */}
+            <div className="mt-1 flex items-baseline gap-1.5 flex-wrap">
               <span className={`text-base sm:text-xl font-black ${style.priceText}`}>
                 {formatVND(unitPrice)}
               </span>
               <span className="text-[10px] sm:text-xs text-stone-500 font-medium">/cái</span>
-              {smartPricing.appliedTier && (
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">
-                  ⚡ {smartPricing.appliedTier.label}
-                </span>
-              )}
+
+              {(() => {
+                const base = product.basePrice || unitPrice;
+                const discount = base > unitPrice ? Math.round(((base - unitPrice) / base) * 100) : 0;
+                if (discount > 0) {
+                  return (
+                    <>
+                      <span className="text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.2 rounded">
+                        -{discount}%
+                      </span>
+                      <span className="text-[11px] text-stone-400 line-through">
+                        {formatVND(base)}
+                      </span>
+                    </>
+                  );
+                }
+                return null;
+              })()}
             </div>
 
             {/* Stock */}
@@ -245,56 +258,8 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
             </div>
           )}
 
-          {/* 2. Wholesale Tier Buttons */}
-          {product.comboTiers && product.comboTiers.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-stone-700 uppercase tracking-wider">
-                  Bảng Giá Sỉ Theo Số Lượng
-                </span>
-                <span className="text-[10px] text-stone-400">
-                  {smartPricing.appliedTier ? `Đã áp dụng: ${smartPricing.appliedTier.label}` : 'Mua nhiều tự động giảm'}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                {product.comboTiers.map((tier) => {
-                  const isActive = quantity >= tier.minQuantity;
-                  const savingsPerUnit = Math.max(0, product.basePrice - tier.unitPrice);
-                  const discountPercent = product.basePrice > 0 ? Math.round((savingsPerUnit / product.basePrice) * 100) : 0;
-
-                  return (
-                    <button
-                      key={tier.minQuantity}
-                      type="button"
-                      onClick={() => setQuantity(tier.minQuantity)}
-                      className={`p-2 rounded-xl text-left transition flex flex-col justify-between border cursor-pointer ${
-                        isActive
-                          ? `${style.activeRing} ring-2 ring-offset-1 font-bold shadow-xs`
-                          : 'border-stone-200 bg-stone-50/70 hover:bg-stone-100 text-stone-700'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <span className="text-[11px] font-extrabold truncate">{tier.label}</span>
-                        {discountPercent > 0 && (
-                          <span className="text-[9px] font-black text-rose-600 bg-rose-50 px-1 rounded">
-                            -{discountPercent}%
-                          </span>
-                        )}
-                      </div>
-                      <p className={`text-xs font-black mt-1 ${style.priceText}`}>
-                        {formatVND(tier.unitPrice)}
-                        <span className="text-[9px] font-normal text-stone-400">/c</span>
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* 3. Quantity Stepper */}
-          <div className="pt-2 border-t border-stone-100 space-y-2">
+          {/* Quantity Stepper & Quick Multipliers (+10, +100) */}
+          <div className="pt-2 border-t border-stone-100 space-y-2.5">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs font-bold text-stone-700 uppercase tracking-wider">
@@ -322,14 +287,14 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
                   onChange={(e) => {
                     const val = parseInt(e.target.value, 10);
                     if (!isNaN(val) && val >= 1) {
-                      setQuantity(Math.min(val, availableStock || 999));
+                      setQuantity(Math.min(val, availableStock || 9999));
                     }
                   }}
-                  className="w-12 text-center text-xs font-black bg-transparent text-stone-800 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  className="w-14 text-center text-xs font-black bg-transparent text-stone-800 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
                 <button
                   type="button"
-                  onClick={() => setQuantity((q) => Math.min(availableStock || 999, q + 1))}
+                  onClick={() => setQuantity((q) => Math.min(availableStock || 9999, q + 1))}
                   disabled={quantity >= availableStock}
                   className="w-8 h-8 rounded-lg bg-white text-stone-700 font-extrabold flex items-center justify-center hover:bg-stone-50 active:scale-95 disabled:opacity-40 disabled:hover:bg-white shadow-2xs text-base transition"
                 >
@@ -338,23 +303,45 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
               </div>
             </div>
 
-            {/* Quick Presets */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] text-stone-400 font-semibold">Chọn nhanh:</span>
-              {[1, 10, 50, 100, 200].map((preset) => (
+            {/* Quick Presets: Tinh gọn chỉ 2 nút +10 và +100 cộng dồn theo bội số */}
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-stone-400 font-medium">Cộng nhanh:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setQuantity((q) => {
+                    if (q <= 1) return 10;
+                    return Math.min(availableStock || 9999, q + 10);
+                  });
+                }}
+                className="px-3 py-1.5 text-xs font-bold rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-200 active:scale-95 transition cursor-pointer"
+                title="Bấm để cộng thêm 10 cái"
+              >
+                +10 cái
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setQuantity((q) => {
+                    if (q <= 1) return 100;
+                    return Math.min(availableStock || 9999, q + 100);
+                  });
+                }}
+                className="px-3 py-1.5 text-xs font-bold rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-200 active:scale-95 transition cursor-pointer"
+                title="Bấm để cộng thêm 100 cái"
+              >
+                +100 cái
+              </button>
+
+              {quantity > 1 && (
                 <button
-                  key={preset}
                   type="button"
-                  onClick={() => setQuantity(preset)}
-                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer ${
-                    quantity === preset
-                      ? `${style.activeBadge}`
-                      : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                  }`}
+                  onClick={() => setQuantity(1)}
+                  className="text-[11px] text-stone-400 hover:text-stone-600 underline ml-auto cursor-pointer"
                 >
-                  {preset} cái
+                  Về 1 cái
                 </button>
-              ))}
+              )}
             </div>
           </div>
         </div>
