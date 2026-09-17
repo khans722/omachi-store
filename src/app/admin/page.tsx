@@ -3363,6 +3363,79 @@ export default function AdminPage() {
                     </strong>
                   </div>
                 ) : null}
+
+                {/* Cấu hình Quy Cách Bán Sỉ: Min Qty & Step Qty */}
+                <div className="pt-3 border-t border-amber-200/60 space-y-2">
+                  <div className="flex items-center justify-between flex-wrap gap-1">
+                    <span className="font-bold text-gray-800 text-xs flex items-center gap-1.5">
+                      <span>📦 Quy Cách Đặt Hàng &amp; Số Lượng Mua Tối Thiểu</span>
+                    </span>
+                    <span className="text-[10px] text-gray-400">Thiết lập để chặn khách mua lẻ đối với hàng bán theo bịch</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="font-bold text-gray-700 block">
+                        Số lượng mua tối thiểu (Min Qty):
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={editingProduct.minOrderQuantity || 1}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, minOrderQuantity: Math.max(1, Number(e.target.value)) })}
+                        className="w-full px-3 py-1.5 bg-white border border-amber-200 rounded-xl font-bold text-gray-800 text-xs"
+                      />
+                      <div className="flex items-center gap-1 mt-1 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => setEditingProduct({ ...editingProduct, minOrderQuantity: 1, stepQuantity: 1 })}
+                          className="px-2 py-0.5 text-[10px] font-bold rounded bg-gray-100 hover:bg-gray-200 text-gray-600"
+                        >
+                          Bán lẻ tự do (1)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingProduct({ ...editingProduct, minOrderQuantity: 10, stepQuantity: 10 })}
+                          className="px-2 py-0.5 text-[10px] font-bold rounded bg-amber-100 hover:bg-amber-200 text-amber-800"
+                        >
+                          Từ 10 cái
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingProduct({ ...editingProduct, minOrderQuantity: 50, stepQuantity: 50 })}
+                          className="px-2 py-0.5 text-[10px] font-bold rounded bg-rose-100 hover:bg-rose-200 text-rose-800"
+                        >
+                          Bịch 50 cái
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingProduct({ ...editingProduct, minOrderQuantity: 100, stepQuantity: 100 })}
+                          className="px-2 py-0.5 text-[10px] font-bold rounded bg-purple-100 hover:bg-purple-200 text-purple-800"
+                        >
+                          Bịch 100 cái
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="font-bold text-gray-700 block">
+                        Bội số bước nhảy (Step Qty):
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={editingProduct.stepQuantity || 1}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, stepQuantity: Math.max(1, Number(e.target.value)) })}
+                        className="w-full px-3 py-1.5 bg-white border border-amber-200 rounded-xl font-bold text-gray-800 text-xs"
+                      />
+                      <p className="text-[10px] text-gray-500 mt-1">
+                        {editingProduct.stepQuantity && editingProduct.stepQuantity > 1
+                          ? `Khách phải tăng/giảm theo bội số ${editingProduct.stepQuantity} cái/lần (không được mua lẻ lắt nhắt).`
+                          : 'Khách có thể tăng/giảm từng chiếc 1.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* SECTION 3: COLOR VARIANTS & INITIAL STOCK */}

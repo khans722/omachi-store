@@ -67,6 +67,8 @@ export interface Product {
   variants?: ProductVariant[];
   packageOptions?: ProductPackageOption[];
   comboTiers?: ComboTier[];
+  minOrderQuantity?: number; // Số lượng mua tối thiểu (VD: 1, 10, 50, 100)
+  stepQuantity?: number;     // Bội số mua hàng / Bước nhảy (VD: 1, 10, 50, 100)
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;

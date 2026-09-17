@@ -61,6 +61,9 @@ export default function ProductDetailPage() {
           const found = data.data.find((p: Product) => p.id === productId || p.slug === productId);
           if (found) {
             setProduct(found);
+            if (found.minOrderQuantity && found.minOrderQuantity > 1) {
+              setQuantity(found.minOrderQuantity);
+            }
             if (found.images && found.images[0]) {
               setSelectedImage(found.images[0]);
             }
@@ -190,6 +193,9 @@ export default function ProductDetailPage() {
   const unitPrice = smartPricing.unitPrice;
   const totalPrice = unitPrice * quantity;
   const totalItemCount = quantity;
+
+  const minQty = product?.minOrderQuantity && product.minOrderQuantity > 1 ? product.minOrderQuantity : 1;
+  const stepQty = product?.stepQuantity && product.stepQuantity > 1 ? product.stepQuantity : 1;
 
   const totalStockCount =
     product.variants && product.variants.length > 0
@@ -513,43 +519,65 @@ export default function ProductDetailPage() {
             )}
 
             {/* Desktop Quantity Stepper */}
-            <div className="p-4 rounded-2xl bg-stone-50/70 border border-stone-200/80 flex items-center justify-between">
-              <span className="text-xs text-gray-700 font-bold">Số Lượng Mua:</span>
+            <div className="p-4 rounded-2xl bg-stone-50/70 border border-stone-200/80 space-y-2">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <span className="text-xs text-gray-700 font-bold">Số Lượng Mua:</span>
 
-              <div className="flex items-center gap-3">
-                <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white shadow-2xs">
-                  <button
-                    type="button"
-                    disabled={quantity <= 1}
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className={`w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-100 ${curr.hoverTextColor} border-r border-gray-200 transition disabled:opacity-40`}
-                  >
-                    <Minus className="w-3.5 h-3.5" />
-                  </button>
-                  <input
-                    type="number"
-                    min="1"
-                    value={quantity}
-                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-16 h-9 text-center text-sm font-black text-gray-800 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setQuantity(quantity + 1)}
-                    className={`w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-100 ${curr.hoverTextColor} border-l border-gray-200 transition`}
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white shadow-2xs">
+                    <button
+                      type="button"
+                      disabled={quantity <= minQty}
+                      onClick={() => setQuantity(Math.max(minQty, quantity - stepQty))}
+                      className={`w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-100 ${curr.hoverTextColor} border-r border-gray-200 transition disabled:opacity-40`}
+                      title={stepQty > 1 ? `Giảm ${stepQty} cái` : 'Giảm 1'}
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <input
+                      type="number"
+                      min={minQty}
+                      step={stepQty}
+                      value={quantity}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        if (!isNaN(val)) setQuantity(val);
+                      }}
+                      onBlur={() => {
+                        let finalVal = Math.max(minQty, quantity);
+                        if (stepQty > 1) {
+                          finalVal = Math.round(finalVal / stepQty) * stepQty;
+                          if (finalVal < minQty) finalVal = minQty;
+                        }
+                        setQuantity(Math.min(product?.stock || 9999, finalVal));
+                      }}
+                      className="w-16 h-9 text-center text-sm font-black text-gray-800 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setQuantity(Math.min(product?.stock || 9999, quantity + stepQty))}
+                      className={`w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-100 ${curr.hoverTextColor} border-l border-gray-200 transition`}
+                      title={stepQty > 1 ? `Tăng ${stepQty} cái` : 'Tăng 1'}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
 
-                <div className="text-xs font-bold text-gray-700 bg-white border border-stone-200 px-3 py-2 rounded-lg flex items-center gap-1.5">
-                  <span>Tổng cộng:</span>
-                  <strong className={`${curr.highlightText} font-black text-sm`}>{quantity.toLocaleString('vi-VN')}</strong>
-                  <span>cái</span>
-                  <span className="text-gray-400">•</span>
-                  <strong className="text-gray-900 font-extrabold">{formatVND(totalPrice)}</strong>
+                  <div className="text-xs font-bold text-gray-700 bg-white border border-stone-200 px-3 py-2 rounded-lg flex items-center gap-1.5">
+                    <span>Tổng cộng:</span>
+                    <strong className={`${curr.highlightText} font-black text-sm`}>{quantity.toLocaleString('vi-VN')}</strong>
+                    <span>cái</span>
+                    <span className="text-gray-400">•</span>
+                    <strong className="text-gray-900 font-extrabold">{formatVND(totalPrice)}</strong>
+                  </div>
                 </div>
               </div>
+
+              {(minQty > 1 || stepQty > 1) && (
+                <p className="text-[11px] text-amber-700 font-semibold bg-amber-50 border border-amber-200/60 px-2.5 py-1 rounded-lg">
+                  ⚠️ Sản phẩm bán sỉ tối thiểu từ {minQty} cái{stepQty > 1 ? ` (bội số ${stepQty} cái/lần)` : ''}
+                </p>
+              )}
             </div>
 
             {/* Custom Note */}

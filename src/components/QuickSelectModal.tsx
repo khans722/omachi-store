@@ -25,14 +25,17 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(
     product.variants && product.variants.length > 0 ? product.variants[0] : undefined
   );
-  const [quantity, setQuantity] = useState(1);
+  const minQty = product.minOrderQuantity && product.minOrderQuantity > 1 ? product.minOrderQuantity : 1;
+  const stepQty = product.stepQuantity && product.stepQuantity > 1 ? product.stepQuantity : 1;
+
+  const [quantity, setQuantity] = useState(minQty);
   const [errorMsg, setErrorMsg] = useState('');
 
   // Reset when product changes or modal opens
   useEffect(() => {
     if (isOpen) {
       setSelectedVariant(product.variants && product.variants.length > 0 ? product.variants[0] : undefined);
-      setQuantity(1);
+      setQuantity(product.minOrderQuantity && product.minOrderQuantity > 1 ? product.minOrderQuantity : 1);
       setErrorMsg('');
     }
   }, [isOpen, product]);
@@ -273,35 +276,52 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
               <div className="flex items-center gap-1.5 bg-stone-100 p-1 rounded-xl border border-stone-200">
                 <button
                   type="button"
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  disabled={quantity <= 1}
+                  onClick={() => setQuantity((q) => Math.max(minQty, q - stepQty))}
+                  disabled={quantity <= minQty}
                   className="w-8 h-8 rounded-lg bg-white text-stone-700 font-extrabold flex items-center justify-center hover:bg-stone-50 active:scale-95 disabled:opacity-40 disabled:hover:bg-white shadow-2xs text-base transition"
+                  title={stepQty > 1 ? `Giảm ${stepQty} cái` : 'Giảm 1'}
                 >
                   -
                 </button>
                 <input
                   type="number"
-                  min={1}
+                  min={minQty}
+                  step={stepQty}
                   max={availableStock}
                   value={quantity}
                   onChange={(e) => {
                     const val = parseInt(e.target.value, 10);
-                    if (!isNaN(val) && val >= 1) {
-                      setQuantity(Math.min(val, availableStock || 9999));
+                    if (!isNaN(val)) {
+                      setQuantity(val);
                     }
+                  }}
+                  onBlur={() => {
+                    let finalVal = Math.max(minQty, quantity);
+                    if (stepQty > 1) {
+                      finalVal = Math.round(finalVal / stepQty) * stepQty;
+                      if (finalVal < minQty) finalVal = minQty;
+                    }
+                    setQuantity(Math.min(availableStock || 9999, finalVal));
                   }}
                   className="w-14 text-center text-xs font-black bg-transparent text-stone-800 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
                 <button
                   type="button"
-                  onClick={() => setQuantity((q) => Math.min(availableStock || 9999, q + 1))}
+                  onClick={() => setQuantity((q) => Math.min(availableStock || 9999, q + stepQty))}
                   disabled={quantity >= availableStock}
                   className="w-8 h-8 rounded-lg bg-white text-stone-700 font-extrabold flex items-center justify-center hover:bg-stone-50 active:scale-95 disabled:opacity-40 disabled:hover:bg-white shadow-2xs text-base transition"
+                  title={stepQty > 1 ? `Tăng ${stepQty} cái` : 'Tăng 1'}
                 >
                   +
                 </button>
               </div>
             </div>
+
+            {(minQty > 1 || stepQty > 1) && (
+              <p className="text-[10px] text-amber-700 font-semibold bg-amber-50 border border-amber-200/60 px-2 py-1 rounded-lg">
+                ⚠️ Sản phẩm bán tối thiểu từ {minQty} cái{stepQty > 1 ? ` (bội số ${stepQty} cái/lần)` : ''}
+              </p>
+            )}
           </div>
         </div>
 
