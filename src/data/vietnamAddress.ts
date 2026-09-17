@@ -1,8 +1,7 @@
 /**
- * DANH SÁCH 34 TỈNH & THÀNH PHỐ TRỰC THUỘC TRUNG ƯƠNG VIỆT NAM (SAU SÁP NHẬP)
- * Cập nhật chuẩn hóa theo dữ liệu Thư Viện Pháp Luật & Nghị quyết Quốc hội.
- * Tên tỉnh hiển thị gọn gàng, sạch sẽ, không ghi chú gộp gây rối mắt.
- * Hỗ trợ tra cứu tự động theo tên tỉnh cũ (Bắc Giang -> Bắc Ninh, Hải Dương -> Hải Phòng...).
+ * DANH SÁCH 34 TỈNH & THÀNH PHỐ TRỰC THUỘC TRUNG ƯƠNG VIỆT NAM (DỮ LIỆU MỚI HOÀN TOÀN)
+ * Chuẩn hóa 100% theo Thư Viện Pháp Luật & Nghị quyết Quốc hội sau sáp nhập.
+ * Hiển thị chính xác tên 34 tỉnh, gõ tên nào ra tên đó, không ghi chú gộp, không dùng dữ liệu cũ.
  */
 
 export type Region = 'NORTH' | 'CENTRAL' | 'SOUTH';
@@ -11,7 +10,6 @@ export interface ProvinceData {
   id: string;
   name: string;
   region: Region;
-  aliases: string[];
   districts: string[];
 }
 
@@ -20,9 +18,6 @@ export const VIETNAM_PROVINCES: ProvinceData[] = [
     "id": "ha-noi",
     "name": "Hà Nội",
     "region": "NORTH",
-    "aliases": [
-      "Hà Nội"
-    ],
     "districts": [
       "Ba Vì",
       "Ba Đình",
@@ -57,13 +52,228 @@ export const VIETNAM_PROVINCES: ProvinceData[] = [
     ]
   },
   {
+    "id": "cao-bang",
+    "name": "Cao Bằng",
+    "region": "NORTH",
+    "districts": [
+      "Bảo Lạc",
+      "Bảo Lâm",
+      "Cao Bằng",
+      "Hạ Lang",
+      "Hà Quảng",
+      "Hoà An",
+      "Nguyên Bình",
+      "Quảng Hòa",
+      "Thạch An",
+      "Trùng Khánh"
+    ]
+  },
+  {
+    "id": "tuyen-quang",
+    "name": "Tuyên Quang",
+    "region": "NORTH",
+    "districts": [
+      "Chiêm Hóa",
+      "Hàm Yên",
+      "Lâm Bình",
+      "Na Hang",
+      "Sơn Dương",
+      "Tuyên Quang",
+      "Yên Sơn",
+      "Bắc Mê",
+      "Bắc Quang",
+      "Hà Giang",
+      "Hoàng Su Phì",
+      "Mèo Vạc",
+      "Quản Bạ",
+      "Quang Bình",
+      "Vị Xuyên",
+      "Xín Mần",
+      "Yên Minh",
+      "Đồng Văn"
+    ]
+  },
+  {
+    "id": "lao-cai",
+    "name": "Lào Cai",
+    "region": "NORTH",
+    "districts": [
+      "Bắc Hà",
+      "Bảo Thắng",
+      "Bảo Yên",
+      "Bát Xát",
+      "Lào Cai",
+      "Mường Khương",
+      "Sa Pa",
+      "Si Ma Cai",
+      "Văn Bàn",
+      "Lục Yên",
+      "Mù Căng Chải",
+      "Nghĩa Lộ",
+      "Trạm Tấu",
+      "Trấn Yên",
+      "Văn Chấn",
+      "Văn Yên",
+      "Yên Bái",
+      "Yên Bình"
+    ]
+  },
+  {
+    "id": "dien-bien",
+    "name": "Điện Biên",
+    "region": "NORTH",
+    "districts": [
+      "Mường Ảng",
+      "Mường Chà",
+      "Mường Lay",
+      "Mường Nhé",
+      "Nậm Pồ",
+      "Tủa Chùa",
+      "Tuần Giáo",
+      "Điện Biên",
+      "Điện Biên Phủ",
+      "Điện Biên Đông"
+    ]
+  },
+  {
+    "id": "lai-chau",
+    "name": "Lai Châu",
+    "region": "NORTH",
+    "districts": [
+      "Lai Châu",
+      "Mường Tè",
+      "Nậm Nhùn",
+      "Phong Thổ",
+      "Sìn Hồ",
+      "Tam Đường",
+      "Tân Uyên",
+      "Than Uyên"
+    ]
+  },
+  {
+    "id": "son-la",
+    "name": "Sơn La",
+    "region": "NORTH",
+    "districts": [
+      "Bắc Yên",
+      "Mai Sơn",
+      "Mộc Châu",
+      "Mường La",
+      "Phù Yên",
+      "Quỳnh Nhai",
+      "Sơn La",
+      "Sông Mã",
+      "Sốp Cộp",
+      "Thuận Châu",
+      "Vân Hồ",
+      "Yên Châu"
+    ]
+  },
+  {
+    "id": "thai-nguyen",
+    "name": "Thái Nguyên",
+    "region": "NORTH",
+    "districts": [
+      "Phổ Yên",
+      "Phú Bình",
+      "Phú Lương",
+      "Sông Công",
+      "Thái Nguyên",
+      "Võ Nhai",
+      "Đại Từ",
+      "Định Hóa",
+      "Đồng Hỷ",
+      "Ba Bể",
+      "Bắc Kạn",
+      "Bạch Thông",
+      "Chợ Mới",
+      "Chợ Đồn",
+      "Na Rì",
+      "Ngân Sơn",
+      "Pác Nặm"
+    ]
+  },
+  {
+    "id": "lang-son",
+    "name": "Lạng Sơn",
+    "region": "NORTH",
+    "districts": [
+      "Bắc Sơn",
+      "Bình Gia",
+      "Cao Lộc",
+      "Chi Lăng",
+      "Hữu Lũng",
+      "Lạng Sơn",
+      "Lộc Bình",
+      "Tràng Định",
+      "Văn Lãng",
+      "Văn Quan",
+      "Đình Lập"
+    ]
+  },
+  {
+    "id": "quang-ninh",
+    "name": "Quảng Ninh",
+    "region": "NORTH",
+    "districts": [
+      "Ba Chẽ",
+      "Bình Liêu",
+      "Cẩm Phả",
+      "Cô Tô",
+      "Hạ Long",
+      "Hải Hà",
+      "Móng Cái",
+      "Quảng Yên",
+      "Tiên Yên",
+      "Uông Bí",
+      "Vân Đồn",
+      "Đầm Hà",
+      "Đông Triều"
+    ]
+  },
+  {
+    "id": "phu-tho",
+    "name": "Phú Thọ",
+    "region": "NORTH",
+    "districts": [
+      "Cẩm Khê",
+      "Hạ Hoà",
+      "Lâm Thao",
+      "Phù Ninh",
+      "Phú Thọ",
+      "Tam Nông",
+      "Tân Sơn",
+      "Thanh Ba",
+      "Thanh Sơn",
+      "Thanh Thuỷ",
+      "Việt Trì",
+      "Yên Lập",
+      "Đoan Hùng",
+      "Bình Xuyên",
+      "Lập Thạch",
+      "Phúc Yên",
+      "Sông Lô",
+      "Tam Dương",
+      "Tam Đảo",
+      "Vĩnh Tường",
+      "Vĩnh Yên",
+      "Yên Lạc",
+      "Cao Phong",
+      "Hòa Bình",
+      "Kim Bôi",
+      "Lạc Sơn",
+      "Lạc Thủy",
+      "Lương Sơn",
+      "Mai Châu",
+      "Tân Lạc",
+      "Yên Thủy",
+      "Đà Bắc"
+    ]
+  },
+  {
     "id": "bac-ninh",
     "name": "Bắc Ninh",
     "region": "NORTH",
-    "aliases": [
-      "Bắc Giang",
-      "Bắc Ninh"
-    ],
     "districts": [
       "Bắc Ninh",
       "Gia Bình",
@@ -108,10 +318,6 @@ export const VIETNAM_PROVINCES: ProvinceData[] = [
     "id": "hai-phong",
     "name": "Hải Phòng",
     "region": "NORTH",
-    "aliases": [
-      "Hải Phòng",
-      "Hải Dương"
-    ],
     "districts": [
       "An Dương",
       "An Lão",
@@ -142,36 +348,9 @@ export const VIETNAM_PROVINCES: ProvinceData[] = [
     ]
   },
   {
-    "id": "quang-ninh",
-    "name": "Quảng Ninh",
-    "region": "NORTH",
-    "aliases": [
-      "Quảng Ninh"
-    ],
-    "districts": [
-      "Ba Chẽ",
-      "Bình Liêu",
-      "Cẩm Phả",
-      "Cô Tô",
-      "Hạ Long",
-      "Hải Hà",
-      "Móng Cái",
-      "Quảng Yên",
-      "Tiên Yên",
-      "Uông Bí",
-      "Vân Đồn",
-      "Đầm Hà",
-      "Đông Triều"
-    ]
-  },
-  {
     "id": "hung-yen",
     "name": "Hưng Yên",
     "region": "NORTH",
-    "aliases": [
-      "Hưng Yên",
-      "Thái Bình"
-    ],
     "districts": [
       "Ân Thi",
       "Hưng Yên",
@@ -197,11 +376,6 @@ export const VIETNAM_PROVINCES: ProvinceData[] = [
     "id": "ninh-binh",
     "name": "Ninh Bình",
     "region": "NORTH",
-    "aliases": [
-      "Ninh Bình",
-      "Nam Định",
-      "Hà Nam"
-    ],
     "districts": [
       "Gia Viễn",
       "Hoa Lư",
@@ -230,245 +404,9 @@ export const VIETNAM_PROVINCES: ProvinceData[] = [
     ]
   },
   {
-    "id": "phu-tho",
-    "name": "Phú Thọ",
-    "region": "NORTH",
-    "aliases": [
-      "Phú Thọ",
-      "Vĩnh Phúc",
-      "Hòa Bình",
-      "Hoà Bình"
-    ],
-    "districts": [
-      "Cẩm Khê",
-      "Hạ Hoà",
-      "Lâm Thao",
-      "Phù Ninh",
-      "Phú Thọ",
-      "Tam Nông",
-      "Tân Sơn",
-      "Thanh Ba",
-      "Thanh Sơn",
-      "Thanh Thuỷ",
-      "Việt Trì",
-      "Yên Lập",
-      "Đoan Hùng",
-      "Bình Xuyên",
-      "Lập Thạch",
-      "Phúc Yên",
-      "Sông Lô",
-      "Tam Dương",
-      "Tam Đảo",
-      "Vĩnh Tường",
-      "Vĩnh Yên",
-      "Yên Lạc",
-      "Cao Phong",
-      "Hòa Bình",
-      "Kim Bôi",
-      "Lạc Sơn",
-      "Lạc Thủy",
-      "Lương Sơn",
-      "Mai Châu",
-      "Tân Lạc",
-      "Yên Thủy",
-      "Đà Bắc"
-    ]
-  },
-  {
-    "id": "thai-nguyen",
-    "name": "Thái Nguyên",
-    "region": "NORTH",
-    "aliases": [
-      "Thái Nguyên",
-      "Bắc Kạn",
-      "Bắc Cạn"
-    ],
-    "districts": [
-      "Phổ Yên",
-      "Phú Bình",
-      "Phú Lương",
-      "Sông Công",
-      "Thái Nguyên",
-      "Võ Nhai",
-      "Đại Từ",
-      "Định Hóa",
-      "Đồng Hỷ",
-      "Ba Bể",
-      "Bắc Kạn",
-      "Bạch Thông",
-      "Chợ Mới",
-      "Chợ Đồn",
-      "Na Rì",
-      "Ngân Sơn",
-      "Pác Nặm"
-    ]
-  },
-  {
-    "id": "lang-son",
-    "name": "Lạng Sơn",
-    "region": "NORTH",
-    "aliases": [
-      "Lạng Sơn"
-    ],
-    "districts": [
-      "Bắc Sơn",
-      "Bình Gia",
-      "Cao Lộc",
-      "Chi Lăng",
-      "Hữu Lũng",
-      "Lạng Sơn",
-      "Lộc Bình",
-      "Tràng Định",
-      "Văn Lãng",
-      "Văn Quan",
-      "Đình Lập"
-    ]
-  },
-  {
-    "id": "tuyen-quang",
-    "name": "Tuyên Quang",
-    "region": "NORTH",
-    "aliases": [
-      "Tuyên Quang",
-      "Hà Giang"
-    ],
-    "districts": [
-      "Chiêm Hóa",
-      "Hàm Yên",
-      "Lâm Bình",
-      "Na Hang",
-      "Sơn Dương",
-      "Tuyên Quang",
-      "Yên Sơn",
-      "Bắc Mê",
-      "Bắc Quang",
-      "Hà Giang",
-      "Hoàng Su Phì",
-      "Mèo Vạc",
-      "Quản Bạ",
-      "Quang Bình",
-      "Vị Xuyên",
-      "Xín Mần",
-      "Yên Minh",
-      "Đồng Văn"
-    ]
-  },
-  {
-    "id": "cao-bang",
-    "name": "Cao Bằng",
-    "region": "NORTH",
-    "aliases": [
-      "Cao Bằng"
-    ],
-    "districts": [
-      "Bảo Lạc",
-      "Bảo Lâm",
-      "Cao Bằng",
-      "Hạ Lang",
-      "Hà Quảng",
-      "Hoà An",
-      "Nguyên Bình",
-      "Quảng Hòa",
-      "Thạch An",
-      "Trùng Khánh"
-    ]
-  },
-  {
-    "id": "lao-cai",
-    "name": "Lào Cai",
-    "region": "NORTH",
-    "aliases": [
-      "Lào Cai",
-      "Yên Bái"
-    ],
-    "districts": [
-      "Bắc Hà",
-      "Bảo Thắng",
-      "Bảo Yên",
-      "Bát Xát",
-      "Lào Cai",
-      "Mường Khương",
-      "Sa Pa",
-      "Si Ma Cai",
-      "Văn Bàn",
-      "Lục Yên",
-      "Mù Căng Chải",
-      "Nghĩa Lộ",
-      "Trạm Tấu",
-      "Trấn Yên",
-      "Văn Chấn",
-      "Văn Yên",
-      "Yên Bái",
-      "Yên Bình"
-    ]
-  },
-  {
-    "id": "dien-bien",
-    "name": "Điện Biên",
-    "region": "NORTH",
-    "aliases": [
-      "Điện Biên"
-    ],
-    "districts": [
-      "Mường Ảng",
-      "Mường Chà",
-      "Mường Lay",
-      "Mường Nhé",
-      "Nậm Pồ",
-      "Tủa Chùa",
-      "Tuần Giáo",
-      "Điện Biên",
-      "Điện Biên Phủ",
-      "Điện Biên Đông"
-    ]
-  },
-  {
-    "id": "lai-chau",
-    "name": "Lai Châu",
-    "region": "NORTH",
-    "aliases": [
-      "Lai Châu"
-    ],
-    "districts": [
-      "Lai Châu",
-      "Mường Tè",
-      "Nậm Nhùn",
-      "Phong Thổ",
-      "Sìn Hồ",
-      "Tam Đường",
-      "Tân Uyên",
-      "Than Uyên"
-    ]
-  },
-  {
-    "id": "son-la",
-    "name": "Sơn La",
-    "region": "NORTH",
-    "aliases": [
-      "Sơn La"
-    ],
-    "districts": [
-      "Bắc Yên",
-      "Mai Sơn",
-      "Mộc Châu",
-      "Mường La",
-      "Phù Yên",
-      "Quỳnh Nhai",
-      "Sơn La",
-      "Sông Mã",
-      "Sốp Cộp",
-      "Thuận Châu",
-      "Vân Hồ",
-      "Yên Châu"
-    ]
-  },
-  {
     "id": "thanh-hoa",
     "name": "Thanh Hóa",
     "region": "NORTH",
-    "aliases": [
-      "Thanh Hóa"
-    ],
     "districts": [
       "Bá Thước",
       "Bỉm Sơn",
@@ -503,9 +441,6 @@ export const VIETNAM_PROVINCES: ProvinceData[] = [
     "id": "nghe-an",
     "name": "Nghệ An",
     "region": "NORTH",
-    "aliases": [
-      "Nghệ An"
-    ],
     "districts": [
       "Anh Sơn",
       "Con Cuông",
@@ -534,9 +469,6 @@ export const VIETNAM_PROVINCES: ProvinceData[] = [
     "id": "ha-tinh",
     "name": "Hà Tĩnh",
     "region": "NORTH",
-    "aliases": [
-      "Hà Tĩnh"
-    ],
     "districts": [
       "Cẩm Xuyên",
       "Can Lộc",
@@ -556,10 +488,6 @@ export const VIETNAM_PROVINCES: ProvinceData[] = [
     "id": "quang-tri",
     "name": "Quảng Trị",
     "region": "CENTRAL",
-    "aliases": [
-      "Quảng Trị",
-      "Quảng Bình"
-    ],
     "districts": [
       "Cam Lộ",
       "Gio Linh",
@@ -584,10 +512,6 @@ export const VIETNAM_PROVINCES: ProvinceData[] = [
     "id": "hue",
     "name": "Huế",
     "region": "CENTRAL",
-    "aliases": [
-      "Huế",
-      "Thừa Thiên Huế"
-    ],
     "districts": [
       "A Lưới",
       "Huế",
@@ -604,10 +528,6 @@ export const VIETNAM_PROVINCES: ProvinceData[] = [
     "id": "da-nang",
     "name": "Đà Nẵng",
     "region": "CENTRAL",
-    "aliases": [
-      "Đà Nẵng",
-      "Quảng Nam"
-    ],
     "districts": [
       "Cẩm Lệ",
       "Hải Châu",
@@ -640,10 +560,6 @@ export const VIETNAM_PROVINCES: ProvinceData[] = [
     "id": "quang-ngai",
     "name": "Quảng Ngãi",
     "region": "CENTRAL",
-    "aliases": [
-      "Quảng Ngãi",
-      "Kon Tum"
-    ],
     "districts": [
       "Ba Tơ",
       "Bình Sơn",
@@ -673,10 +589,6 @@ export const VIETNAM_PROVINCES: ProvinceData[] = [
     "id": "khanh-hoa",
     "name": "Khánh Hòa",
     "region": "CENTRAL",
-    "aliases": [
-      "Khánh Hòa",
-      "Ninh Thuận"
-    ],
     "districts": [
       "Cam Lâm",
       "Cam Ranh",
@@ -700,10 +612,6 @@ export const VIETNAM_PROVINCES: ProvinceData[] = [
     "id": "gia-lai",
     "name": "Gia Lai",
     "region": "CENTRAL",
-    "aliases": [
-      "Gia Lai",
-      "Bình Định"
-    ],
     "districts": [
       "An Khê",
       "Ayun Pa",
@@ -739,10 +647,6 @@ export const VIETNAM_PROVINCES: ProvinceData[] = [
     "id": "dak-lak",
     "name": "Đắk Lắk",
     "region": "CENTRAL",
-    "aliases": [
-      "Đắk Lắk",
-      "Phú Yên"
-    ],
     "districts": [
       "Buôn Hồ",
       "Buôn Ma Thuột",
@@ -774,11 +678,6 @@ export const VIETNAM_PROVINCES: ProvinceData[] = [
     "id": "lam-dong",
     "name": "Lâm Đồng",
     "region": "CENTRAL",
-    "aliases": [
-      "Lâm Đồng",
-      "Đắk Nông",
-      "Bình Thuận"
-    ],
     "districts": [
       "Bảo Lâm",
       "Bảo Lộc",
@@ -813,16 +712,68 @@ export const VIETNAM_PROVINCES: ProvinceData[] = [
     ]
   },
   {
+    "id": "tay-ninh",
+    "name": "Tây Ninh",
+    "region": "SOUTH",
+    "districts": [
+      "Bến Cầu",
+      "Châu Thành",
+      "Dương Minh Châu",
+      "Gò Dầu",
+      "Hòa Thành",
+      "Tân Biên",
+      "Tân Châu",
+      "Tây Ninh",
+      "Trảng Bàng",
+      "Bến Lức",
+      "Cần Giuộc",
+      "Cần Đước",
+      "Kiến Tường",
+      "Mộc Hóa",
+      "Tân An",
+      "Tân Hưng",
+      "Tân Thạnh",
+      "Tân Trụ",
+      "Thạnh Hóa",
+      "Thủ Thừa",
+      "Vĩnh Hưng",
+      "Đức Hòa",
+      "Đức Huệ"
+    ]
+  },
+  {
+    "id": "dong-nai",
+    "name": "Đồng Nai",
+    "region": "SOUTH",
+    "districts": [
+      "Biên Hòa",
+      "Cẩm Mỹ",
+      "Long Khánh",
+      "Long Thành",
+      "Nhơn Trạch",
+      "Tân Phú",
+      "Thống Nhất",
+      "Trảng Bom",
+      "Vĩnh Cửu",
+      "Xuân Lộc",
+      "Định Quán",
+      "Bình Long",
+      "Bù Gia Mập",
+      "Bù Đăng",
+      "Bù Đốp",
+      "Chơn Thành",
+      "Hớn Quản",
+      "Lộc Ninh",
+      "Phú Riềng",
+      "Phước Long",
+      "Đồng Phú",
+      "Đồng Xoài"
+    ]
+  },
+  {
     "id": "tp-ho-chi-minh",
     "name": "TP. Hồ Chí Minh",
     "region": "SOUTH",
-    "aliases": [
-      "Hồ Chí Minh",
-      "TP. Hồ Chí Minh",
-      "Bình Dương",
-      "Bà Rịa - Vũng Tàu",
-      "Vũng Tàu"
-    ],
     "districts": [
       "Quận 1",
       "Quận 10",
@@ -865,119 +816,9 @@ export const VIETNAM_PROVINCES: ProvinceData[] = [
     ]
   },
   {
-    "id": "dong-nai",
-    "name": "Đồng Nai",
-    "region": "SOUTH",
-    "aliases": [
-      "Đồng Nai",
-      "Bình Phước"
-    ],
-    "districts": [
-      "Biên Hòa",
-      "Cẩm Mỹ",
-      "Long Khánh",
-      "Long Thành",
-      "Nhơn Trạch",
-      "Tân Phú",
-      "Thống Nhất",
-      "Trảng Bom",
-      "Vĩnh Cửu",
-      "Xuân Lộc",
-      "Định Quán",
-      "Bình Long",
-      "Bù Gia Mập",
-      "Bù Đăng",
-      "Bù Đốp",
-      "Chơn Thành",
-      "Hớn Quản",
-      "Lộc Ninh",
-      "Phú Riềng",
-      "Phước Long",
-      "Đồng Phú",
-      "Đồng Xoài"
-    ]
-  },
-  {
-    "id": "tay-ninh",
-    "name": "Tây Ninh",
-    "region": "SOUTH",
-    "aliases": [
-      "Tây Ninh",
-      "Long An"
-    ],
-    "districts": [
-      "Bến Cầu",
-      "Châu Thành",
-      "Dương Minh Châu",
-      "Gò Dầu",
-      "Hòa Thành",
-      "Tân Biên",
-      "Tân Châu",
-      "Tây Ninh",
-      "Trảng Bàng",
-      "Bến Lức",
-      "Cần Giuộc",
-      "Cần Đước",
-      "Kiến Tường",
-      "Mộc Hóa",
-      "Tân An",
-      "Tân Hưng",
-      "Tân Thạnh",
-      "Tân Trụ",
-      "Thạnh Hóa",
-      "Thủ Thừa",
-      "Vĩnh Hưng",
-      "Đức Hòa",
-      "Đức Huệ"
-    ]
-  },
-  {
-    "id": "can-tho",
-    "name": "Cần Thơ",
-    "region": "SOUTH",
-    "aliases": [
-      "Cần Thơ",
-      "Hậu Giang",
-      "Sóc Trăng"
-    ],
-    "districts": [
-      "Bình Thuỷ",
-      "Cái Răng",
-      "Cờ Đỏ",
-      "Ninh Kiều",
-      "Ô Môn",
-      "Phong Điền",
-      "Thới Lai",
-      "Thốt Nốt",
-      "Vĩnh Thạnh",
-      "Châu Thành",
-      "Châu Thành A",
-      "Long Mỹ",
-      "Ngã Bảy",
-      "Phụng Hiệp",
-      "Vị Thanh",
-      "Vị Thuỷ",
-      "Cù Lao Dung",
-      "Kế Sách",
-      "Long Phú",
-      "Mỹ Tú",
-      "Mỹ Xuyên",
-      "Ngã Năm",
-      "Sóc Trăng",
-      "Thạnh Trị",
-      "Trần Đề",
-      "Vĩnh Châu"
-    ]
-  },
-  {
     "id": "vinh-long",
     "name": "Vĩnh Long",
     "region": "SOUTH",
-    "aliases": [
-      "Vĩnh Long",
-      "Bến Tre",
-      "Trà Vinh"
-    ],
     "districts": [
       "Bình Minh",
       "Bình Tân",
@@ -1009,10 +850,6 @@ export const VIETNAM_PROVINCES: ProvinceData[] = [
     "id": "dong-thap",
     "name": "Đồng Tháp",
     "region": "SOUTH",
-    "aliases": [
-      "Đồng Tháp",
-      "Tiền Giang"
-    ],
     "districts": [
       "Cao Lãnh",
       "Châu Thành",
@@ -1039,10 +876,6 @@ export const VIETNAM_PROVINCES: ProvinceData[] = [
     "id": "an-giang",
     "name": "An Giang",
     "region": "SOUTH",
-    "aliases": [
-      "An Giang",
-      "Kiên Giang"
-    ],
     "districts": [
       "An Phú",
       "Châu Phú",
@@ -1072,13 +905,42 @@ export const VIETNAM_PROVINCES: ProvinceData[] = [
     ]
   },
   {
+    "id": "can-tho",
+    "name": "Cần Thơ",
+    "region": "SOUTH",
+    "districts": [
+      "Bình Thuỷ",
+      "Cái Răng",
+      "Cờ Đỏ",
+      "Ninh Kiều",
+      "Ô Môn",
+      "Phong Điền",
+      "Thới Lai",
+      "Thốt Nốt",
+      "Vĩnh Thạnh",
+      "Châu Thành",
+      "Châu Thành A",
+      "Long Mỹ",
+      "Ngã Bảy",
+      "Phụng Hiệp",
+      "Vị Thanh",
+      "Vị Thuỷ",
+      "Cù Lao Dung",
+      "Kế Sách",
+      "Long Phú",
+      "Mỹ Tú",
+      "Mỹ Xuyên",
+      "Ngã Năm",
+      "Sóc Trăng",
+      "Thạnh Trị",
+      "Trần Đề",
+      "Vĩnh Châu"
+    ]
+  },
+  {
     "id": "ca-mau",
     "name": "Cà Mau",
     "region": "SOUTH",
-    "aliases": [
-      "Cà Mau",
-      "Bạc Liêu"
-    ],
     "districts": [
       "Cà Mau",
       "Cái Nước",
@@ -1112,7 +974,7 @@ export interface SPXShippingQuote {
 
 /**
  * Tính toán cước phí vận chuyển SPX Express chuẩn theo 34 tỉnh thành mới
- * Kho shop: Bắc Ninh (bao gồm khu vực Bắc Giang cũ)
+ * Kho shop: Tỉnh Bắc Ninh
  */
 export function calculateSPXShipping(
   destinationProvince: string,
@@ -1124,7 +986,7 @@ export function calculateSPXShipping(
   const cleanOrig = (originProvince || 'Bắc Ninh').trim().toLowerCase();
 
   const isLocalOrigin = (prov: string) => {
-    return prov.includes('bắc giang') || prov.includes('bac giang') || prov.includes('bắc ninh') || prov.includes('bac ninh');
+    return prov === 'bắc ninh' || prov === 'bac ninh' || prov.includes('bắc ninh');
   };
 
   const isDestLocal = isLocalOrigin(cleanDest);
@@ -1133,8 +995,7 @@ export function calculateSPXShipping(
     (p) =>
       p.name.toLowerCase() === cleanDest ||
       cleanDest.includes(p.name.toLowerCase()) ||
-      p.name.toLowerCase().includes(cleanDest) ||
-      (p.aliases && p.aliases.some(a => a.toLowerCase() === cleanDest || cleanDest.includes(a.toLowerCase()) || a.toLowerCase().includes(cleanDest)))
+      p.name.toLowerCase().includes(cleanDest)
   );
 
   const origInfo = VIETNAM_PROVINCES.find(
@@ -1150,7 +1011,6 @@ export function calculateSPXShipping(
   let tierName = 'SPX Nội Miền';
 
   if (isDestLocal) {
-    // Bắc Ninh & Bắc Giang đều tính nội tỉnh ưu đãi của shop
     routeType = 'SAME_PROVINCE';
     originalFee = 16500;
     estimatedDelivery = '1 - 2 ngày';

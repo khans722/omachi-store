@@ -35,7 +35,7 @@ const formatVND = (amount: number) => {
   }).format(amount);
 };
 
-export type DropdownItem = string | { value: string; label?: string; subLabel?: string; aliases?: string[] };
+export type DropdownItem = string | { value: string; label?: string };
 
 function SearchableDropdown({
   label,
@@ -96,7 +96,7 @@ function SearchableDropdown({
         const strippedUnacc = removeVietnameseTones(stripped);
         return { value: opt, label: opt, subLabel: undefined, searchKey: `${raw} ${unaccented} ${stripped} ${strippedUnacc}` };
       }
-      const rawText = [opt.label || opt.value, ...(opt.aliases || [])].filter(Boolean).join(' ');
+      const rawText = opt.label || opt.value;
       const raw = rawText.toLowerCase();
       const unaccented = removeVietnameseTones(rawText);
       const stripped = raw.replace(/^(tỉnh|thành phố|tp\.?|quận|huyện|thị xã|tx\.?|phường|xã|thị trấn|tt\.?)\s+/i, '');
@@ -657,7 +657,6 @@ export default function CheckoutPage() {
     return VIETNAM_PROVINCES.map((p) => ({
       value: p.name,
       label: p.name,
-      aliases: p.aliases,
     }));
   }, []);
 
@@ -675,8 +674,7 @@ export default function CheckoutPage() {
       (p) =>
         p.name.toLowerCase() === clean ||
         p.name.toLowerCase().includes(clean) ||
-        clean.includes(p.name.toLowerCase()) ||
-        (p.aliases && p.aliases.some((a) => a.toLowerCase() === clean || clean.includes(a.toLowerCase())))
+        clean.includes(p.name.toLowerCase())
     );
   }, [selectedProvince]);
 
