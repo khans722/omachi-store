@@ -685,6 +685,13 @@ export default function CheckoutPage() {
       if (data.success) {
         setCreatedOrder(data.data);
         clearCart();
+        try {
+          const custOrders = JSON.parse(localStorage.getItem('omachi_customer_orders') || '[]');
+          localStorage.setItem('omachi_customer_orders', JSON.stringify([data.data, ...custOrders.filter((o: any) => o.id !== data.data.id)]));
+
+          const adminOrders = JSON.parse(localStorage.getItem('omachi_admin_orders_v2') || '[]');
+          localStorage.setItem('omachi_admin_orders_v2', JSON.stringify([data.data, ...adminOrders.filter((o: any) => o.id !== data.data.id)]));
+        } catch (e) {}
         confetti({
           particleCount: 80,
           spread: 70,

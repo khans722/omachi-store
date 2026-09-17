@@ -2040,7 +2040,12 @@ export const db = {
       return readDb().orders || [];
     },
     getById(idOrCode: string): Order | undefined {
-      return (readDb().orders || []).find((o) => o.id === idOrCode || o.code.toLowerCase() === idOrCode.toLowerCase());
+      if (!idOrCode) return undefined;
+      const clean = idOrCode.replace(/^#/, '').trim().toLowerCase();
+      return (readDb().orders || []).find((o) => 
+        (o.id && o.id.toLowerCase() === clean) || 
+        (o.code && o.code.replace(/^#/, '').toLowerCase() === clean)
+      );
     },
     getByPhone(phone: string): Order[] {
       const cleanPhone = phone.replace(/[^0-9]/g, '');
@@ -2208,9 +2213,69 @@ export const db = {
       return newOrder;
     },
 
-    updateStatus(orderId: string, status?: OrderStatus, paymentStatus?: PaymentStatus, carrierName?: string, trackingNumber?: string, shippingFee?: number): Order | null {
+    upsert(order: Order): Order {
       const dbData = readDb();
-      const index = dbData.orders.findIndex((o) => o.id === orderId || o.code === orderId);
+      if (!dbData.orders) dbData.orders = [];
+      const cleanId = (order.id || '').replace(/^#/, '').trim().toLowerCase();
+      const cleanCode = (order.code || '').replace(/^#/, '').trim().toLowerCase();
+      const index = dbData.orders.findIndex((o) => 
+        (cleanId && o.id && o.id.toLowerCase() === cleanId) || 
+        (cleanCode && o.code && o.code.replace(/^#/, '').toLowerCase() === cleanCode)
+      );
+      if (index !== -1) {
+        dbData.orders[index] = {
+          ...dbData.orders[index],
+          ...order,
+          updatedAt: new Date().toISOString(),
+        };
+        writeDb(dbData);
+        return dbData.orders[index];
+      } else {
+        dbData.orders.unshift(order);
+        writeDb(dbData);
+        return order;
+      }
+    },
+
+    upsertBatch(ordersList: Order[]): Order[] {
+      const dbData = readDb();
+      if (!dbData.orders) dbData.orders = [];
+      ordersList.forEach((order) => {
+        if (!order || (!order.id && !order.code)) return;
+        const cleanId = (order.id || '').replace(/^#/, '').trim().toLowerCase();
+        const cleanCode = (order.code || '').replace(/^#/, '').trim().toLowerCase();
+        const index = dbData.orders.findIndex((o) => 
+          (cleanId && o.id && o.id.toLowerCase() === cleanId) || 
+          (cleanCode && o.code && o.code.replace(/^#/, '').toLowerCase() === cleanCode)
+        );
+        if (index !== -1) {
+          dbData.orders[index] = {
+            ...dbData.orders[index],
+            ...order,
+          };
+        } else {
+          dbData.orders.unshift(order);
+        }
+      });
+      writeDb(dbData);
+      return dbData.orders;
+    },
+
+    updateStatus(orderId: string, status?: OrderStatus, paymentStatus?: PaymentStatus, carrierName?: string, trackingNumber?: string, shippingFee?: number, fallbackOrder?: Order): Order | null {
+      const dbData = readDb();
+      if (!dbData.orders) dbData.orders = [];
+      const cleanId = (orderId || '').replace(/^#/, '').trim().toLowerCase();
+      let index = dbData.orders.findIndex((o) => 
+        (o.id && o.id.toLowerCase() === cleanId) || 
+        (o.code && o.code.replace(/^#/, '').toLowerCase() === cleanId)
+      );
+
+      if (index === -1 && fallbackOrder) {
+        // Auto-recover order if sent from client
+        dbData.orders.unshift(fallbackOrder);
+        index = 0;
+      }
+
       if (index === -1) return null;
 
       const oldStatus = dbData.orders[index].orderStatus;

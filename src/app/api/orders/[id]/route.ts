@@ -19,13 +19,15 @@ export async function PATCH(
 ) {
   try {
     const body = await req.json();
+    const fallbackOrder = body.order || body.orderData;
     const updated = db.orders.updateStatus(
       params.id,
       body.orderStatus,
       body.paymentStatus,
       body.carrierName,
       body.trackingNumber,
-      body.shippingFee
+      body.shippingFee,
+      fallbackOrder
     );
 
     if (!updated) {

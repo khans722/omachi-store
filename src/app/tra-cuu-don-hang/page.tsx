@@ -64,15 +64,71 @@ export default function OrderLookupPage() {
     try {
       const res = await fetch(`/api/orders/lookup?query=${encodeURIComponent(q)}`);
       const data = await res.json();
-      if (data.success && data.data) {
+      if (data.success && data.data && data.data.length > 0) {
         setOrders(data.data);
       } else {
-        setOrders([]);
-        setErrorMsg(data.error || 'Không tìm thấy đơn hàng nào khớp với thông tin này');
+        const cleanQuery = q.toLowerCase().replace(/^#/, '').trim();
+        const cleanDigits = q.replace(/[^0-9]/g, '');
+        let localMatches: Order[] = [];
+        try {
+          const custOrders = JSON.parse(localStorage.getItem('omachi_customer_orders') || '[]');
+          const adminOrders = JSON.parse(localStorage.getItem('omachi_admin_orders_v2') || '[]');
+          const allLocal: Order[] = [...custOrders, ...adminOrders];
+          const map = new Map<string, Order>();
+          allLocal.forEach((o: any) => {
+            const oPhone = (o.customer?.phone || '').replace(/[^0-9]/g, '');
+            const oCode = (o.code || '').toLowerCase().replace(/^#/, '').trim();
+            const oId = (o.id || '').toLowerCase().replace(/^#/, '').trim();
+            const matches = (cleanDigits.length >= 4 && oPhone.includes(cleanDigits)) ||
+                            oCode.includes(cleanQuery) ||
+                            oId.includes(cleanQuery);
+            if (matches) {
+              const key = o.id || o.code;
+              if (key && !map.has(key)) map.set(key, o);
+            }
+          });
+          localMatches = Array.from(map.values());
+        } catch (e) {}
+
+        if (localMatches.length > 0) {
+          setOrders(localMatches);
+          setErrorMsg('');
+        } else {
+          setOrders(data.data || []);
+          setErrorMsg(data.error || 'Không tìm thấy đơn hàng nào khớp với thông tin này');
+        }
       }
     } catch (err: any) {
-      setErrorMsg('Lỗi kết nối máy chủ khi tra cứu: ' + (err.message || err));
-      setOrders([]);
+      const cleanQuery = q.toLowerCase().replace(/^#/, '').trim();
+      const cleanDigits = q.replace(/[^0-9]/g, '');
+      let localMatches: Order[] = [];
+      try {
+        const custOrders = JSON.parse(localStorage.getItem('omachi_customer_orders') || '[]');
+        const adminOrders = JSON.parse(localStorage.getItem('omachi_admin_orders_v2') || '[]');
+        const allLocal: Order[] = [...custOrders, ...adminOrders];
+        const map = new Map<string, Order>();
+        allLocal.forEach((o: any) => {
+          const oPhone = (o.customer?.phone || '').replace(/[^0-9]/g, '');
+          const oCode = (o.code || '').toLowerCase().replace(/^#/, '').trim();
+          const oId = (o.id || '').toLowerCase().replace(/^#/, '').trim();
+          const matches = (cleanDigits.length >= 4 && oPhone.includes(cleanDigits)) ||
+                          oCode.includes(cleanQuery) ||
+                          oId.includes(cleanQuery);
+          if (matches) {
+            const key = o.id || o.code;
+            if (key && !map.has(key)) map.set(key, o);
+          }
+        });
+        localMatches = Array.from(map.values());
+      } catch (e) {}
+
+      if (localMatches.length > 0) {
+        setOrders(localMatches);
+        setErrorMsg('');
+      } else {
+        setErrorMsg('Lỗi kết nối máy chủ khi tra cứu: ' + (err.message || err));
+        setOrders([]);
+      }
     } finally {
       setIsSearching(false);
     }

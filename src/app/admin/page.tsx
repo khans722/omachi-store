@@ -397,13 +397,70 @@ export default function AdminPage() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
+      let localOrders: Order[] = [];
+      try {
+        const cached = localStorage.getItem('omachi_admin_orders_v2');
+        if (cached) {
+          localOrders = JSON.parse(cached);
+        }
+      } catch (e) {}
+
       const res = await fetch('/api/orders');
       const data = await res.json();
-      if (data.success) {
-        setOrders(data.data);
+      if (data.success && Array.isArray(data.data)) {
+        const serverOrders: Order[] = data.data;
+        const map = new Map<string, Order>();
+
+        // Put server orders in map
+        serverOrders.forEach((o) => {
+          const key = (o.id || o.code || '').toLowerCase().replace(/^#/, '').trim();
+          if (key) map.set(key, o);
+        });
+
+        // Merge local orders (recover orders created during cold-starts or with newer client edits)
+        const missingOnServer: Order[] = [];
+        localOrders.forEach((lo) => {
+          const key = (lo.id || lo.code || '').toLowerCase().replace(/^#/, '').trim();
+          if (!key) return;
+          if (!map.has(key)) {
+            map.set(key, lo);
+            missingOnServer.push(lo);
+          } else {
+            const serverO = map.get(key)!;
+            const sTime = new Date(serverO.updatedAt || serverO.createdAt || 0).getTime();
+            const lTime = new Date(lo.updatedAt || lo.createdAt || 0).getTime();
+            if (lTime > sTime) {
+              map.set(key, lo);
+            }
+          }
+        });
+
+        const mergedOrders = Array.from(map.values()).sort(
+          (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+        );
+
+        setOrders(mergedOrders);
+        try {
+          localStorage.setItem('omachi_admin_orders_v2', JSON.stringify(mergedOrders));
+        } catch (e) {}
+
+        // Auto background sync any local orders back to the server container
+        if (missingOnServer.length > 0) {
+          fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ syncOrders: missingOnServer }),
+          }).catch(() => {});
+        }
+      } else if (localOrders.length > 0) {
+        setOrders(localOrders);
       }
     } catch (err) {
       console.error(err);
+      try {
+        const cached = localStorage.getItem('omachi_admin_orders_v2');
+        if (cached) setOrders(JSON.parse(cached));
+      } catch (e) {}
     } finally {
       setLoading(false);
     }
@@ -697,24 +754,45 @@ export default function AdminPage() {
 
   // Order Status Handler
   const handleUpdateStatus = async (orderId: string, newStatus?: OrderStatus, paymentStatus?: 'UNPAID' | 'PAID') => {
+    const cleanId = (orderId || '').toLowerCase().replace(/^#/, '').trim();
+    const currentOrder = orders.find(o => 
+      (o.id && o.id.toLowerCase().replace(/^#/, '').trim() === cleanId) || 
+      (o.code && o.code.toLowerCase().replace(/^#/, '').trim() === cleanId)
+    );
+
     // Optimistic update
-    setOrders(prev => prev.map(o => {
-      if (o.id === orderId || o.code === orderId) {
-        return {
-          ...o,
-          ...(newStatus ? { orderStatus: newStatus } : {}),
-          ...(paymentStatus ? { paymentStatus } : {}),
-        };
-      }
-      return o;
-    }));
+    let updatedTargetOrder: Order | undefined;
+    setOrders(prev => {
+      const updatedList = prev.map(o => {
+        const oId = (o.id || '').toLowerCase().replace(/^#/, '').trim();
+        const oCode = (o.code || '').toLowerCase().replace(/^#/, '').trim();
+        if (oId === cleanId || oCode === cleanId) {
+          const updated = {
+            ...o,
+            ...(newStatus ? { orderStatus: newStatus } : {}),
+            ...(paymentStatus ? { paymentStatus } : {}),
+            updatedAt: new Date().toISOString(),
+          };
+          updatedTargetOrder = updated;
+          return updated;
+        }
+        return o;
+      });
+      try {
+        localStorage.setItem('omachi_admin_orders_v2', JSON.stringify(updatedList));
+      } catch (e) {}
+      return updatedList;
+    });
 
     try {
-      const payload: any = {};
+      const payload: any = {
+        id: orderId,
+        order: updatedTargetOrder || currentOrder,
+      };
       if (newStatus) payload.orderStatus = newStatus;
       if (paymentStatus) payload.paymentStatus = paymentStatus;
 
-      const res = await fetch(`/api/orders/${orderId}`, {
+      const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -723,13 +801,48 @@ export default function AdminPage() {
       if (data.success && data.data) {
         setActionSuccessMsg(`Đã cập nhật đơn #${data.data.code} thành công! ✨`);
         setTimeout(() => setActionSuccessMsg(''), 3000);
-        setOrders(prev => prev.map(o => (o.id === orderId || o.code === orderId) ? { ...o, ...data.data } : o));
+        setOrders(prev => {
+          const list = prev.map(o => {
+            const oId = (o.id || '').toLowerCase().replace(/^#/, '').trim();
+            const oCode = (o.code || '').toLowerCase().replace(/^#/, '').trim();
+            return (oId === cleanId || oCode === cleanId) ? { ...o, ...data.data } : o;
+          });
+          try {
+            localStorage.setItem('omachi_admin_orders_v2', JSON.stringify(list));
+          } catch (e) {}
+          return list;
+        });
       } else {
-        fetchOrders();
+        // Fallback to /api/orders
+        const resFallback = await fetch('/api/orders', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const dataFallback = await resFallback.json();
+        if (dataFallback.success && dataFallback.data) {
+          setActionSuccessMsg(`Đã cập nhật đơn #${dataFallback.data.code} thành công! ✨`);
+          setTimeout(() => setActionSuccessMsg(''), 3000);
+          setOrders(prev => {
+            const list = prev.map(o => {
+              const oId = (o.id || '').toLowerCase().replace(/^#/, '').trim();
+              const oCode = (o.code || '').toLowerCase().replace(/^#/, '').trim();
+              return (oId === cleanId || oCode === cleanId) ? { ...o, ...dataFallback.data } : o;
+            });
+            try {
+              localStorage.setItem('omachi_admin_orders_v2', JSON.stringify(list));
+            } catch (e) {}
+            return list;
+          });
+        } else {
+          setActionSuccessMsg(`Đã lưu trạng thái đơn #${currentOrder?.code || orderId} tại bộ nhớ Admin! ✨`);
+          setTimeout(() => setActionSuccessMsg(''), 3000);
+        }
       }
     } catch (err) {
       console.error(err);
-      fetchOrders();
+      setActionSuccessMsg(`Đã lưu trạng thái đơn #${currentOrder?.code || orderId} tại bộ nhớ Admin! ✨`);
+      setTimeout(() => setActionSuccessMsg(''), 3000);
     }
   };
 
@@ -738,40 +851,100 @@ export default function AdminPage() {
     if (rawVal === undefined || rawVal === '') return;
     const numVal = Math.max(0, Number(rawVal) || 0);
 
+    const cleanId = (orderId || '').toLowerCase().replace(/^#/, '').trim();
+    const currentOrder = orders.find(o => 
+      (o.id && o.id.toLowerCase().replace(/^#/, '').trim() === cleanId) || 
+      (o.code && o.code.toLowerCase().replace(/^#/, '').trim() === cleanId)
+    );
+
     // Optimistic state update immediately
-    setOrders(prev => prev.map(o => {
-      if (o.id === orderId || o.code === orderId) {
-        const itemsTotal = o.itemsTotalAmount || o.subtotal || 0;
-        return {
-          ...o,
-          shippingFee: numVal,
-          itemsTotalAmount: itemsTotal,
-          totalAmount: itemsTotal + numVal,
-          finalTotalAmount: itemsTotal + numVal,
-        };
-      }
-      return o;
-    }));
+    let updatedTargetOrder: Order | undefined;
+    setOrders(prev => {
+      const updatedList = prev.map(o => {
+        const oId = (o.id || '').toLowerCase().replace(/^#/, '').trim();
+        const oCode = (o.code || '').toLowerCase().replace(/^#/, '').trim();
+        if (oId === cleanId || oCode === cleanId) {
+          const itemsTotal = o.itemsTotalAmount || o.subtotal || 0;
+          const updated = {
+            ...o,
+            shippingFee: numVal,
+            itemsTotalAmount: itemsTotal,
+            totalAmount: itemsTotal + numVal,
+            finalTotalAmount: itemsTotal + numVal,
+            updatedAt: new Date().toISOString(),
+          };
+          updatedTargetOrder = updated;
+          return updated;
+        }
+        return o;
+      });
+      try {
+        localStorage.setItem('omachi_admin_orders_v2', JSON.stringify(updatedList));
+      } catch (e) {}
+      return updatedList;
+    });
 
     try {
-      const res = await fetch(`/api/orders/${orderId}`, {
+      const orderPayload = updatedTargetOrder || currentOrder;
+      const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shippingFee: numVal }),
+        body: JSON.stringify({
+          id: orderId,
+          shippingFee: numVal,
+          order: orderPayload,
+        }),
       });
       const data = await res.json();
       if (data.success && data.data) {
         setActionSuccessMsg(`Đã cập nhật phí ship ${formatVND(numVal)} cho đơn #${data.data.code}! ✨`);
         setTimeout(() => setActionSuccessMsg(''), 3000);
-        setOrders(prev => prev.map(o => (o.id === orderId || o.code === orderId) ? { ...o, ...data.data } : o));
+        setOrders(prev => {
+          const list = prev.map(o => {
+            const oId = (o.id || '').toLowerCase().replace(/^#/, '').trim();
+            const oCode = (o.code || '').toLowerCase().replace(/^#/, '').trim();
+            return (oId === cleanId || oCode === cleanId) ? { ...o, ...data.data } : o;
+          });
+          try {
+            localStorage.setItem('omachi_admin_orders_v2', JSON.stringify(list));
+          } catch (e) {}
+          return list;
+        });
       } else {
-        alert(data.message || 'Không thể lưu phí ship!');
-        fetchOrders();
+        // Fallback to /api/orders
+        const resFallback = await fetch('/api/orders', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: orderId,
+            shippingFee: numVal,
+            order: orderPayload,
+          }),
+        });
+        const dataFallback = await resFallback.json();
+        if (dataFallback.success && dataFallback.data) {
+          setActionSuccessMsg(`Đã cập nhật phí ship ${formatVND(numVal)} cho đơn #${dataFallback.data.code}! ✨`);
+          setTimeout(() => setActionSuccessMsg(''), 3000);
+          setOrders(prev => {
+            const list = prev.map(o => {
+              const oId = (o.id || '').toLowerCase().replace(/^#/, '').trim();
+              const oCode = (o.code || '').toLowerCase().replace(/^#/, '').trim();
+              return (oId === cleanId || oCode === cleanId) ? { ...o, ...dataFallback.data } : o;
+            });
+            try {
+              localStorage.setItem('omachi_admin_orders_v2', JSON.stringify(list));
+            } catch (e) {}
+            return list;
+          });
+        } else {
+          setActionSuccessMsg(`Đã lưu phí ship ${formatVND(numVal)} cho đơn #${currentOrder?.code || orderId} tại bộ nhớ Admin! ✨`);
+          setTimeout(() => setActionSuccessMsg(''), 3000);
+        }
       }
     } catch (err) {
       console.error(err);
-      alert('Lỗi mạng khi cập nhật phí ship!');
-      fetchOrders();
+      setActionSuccessMsg(`Đã lưu phí ship ${formatVND(numVal)} cho đơn #${currentOrder?.code || orderId} tại bộ nhớ Admin! ✨`);
+      setTimeout(() => setActionSuccessMsg(''), 3000);
     }
   };
 
