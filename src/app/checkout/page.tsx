@@ -657,6 +657,7 @@ export default function CheckoutPage() {
     return VIETNAM_PROVINCES.map((p) => ({
       value: p.name,
       label: p.name,
+      aliases: p.aliases,
     }));
   }, []);
 
@@ -674,7 +675,8 @@ export default function CheckoutPage() {
       (p) =>
         p.name.toLowerCase() === clean ||
         p.name.toLowerCase().includes(clean) ||
-        clean.includes(p.name.toLowerCase())
+        clean.includes(p.name.toLowerCase()) ||
+        (p.aliases && p.aliases.some((a) => a.toLowerCase() === clean || clean.includes(a.toLowerCase())))
     );
   }, [selectedProvince]);
 
