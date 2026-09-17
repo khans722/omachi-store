@@ -133,7 +133,7 @@ export default function HomePage() {
   const isSearching = Boolean(searchQuery.trim());
 
   return (
-    <div className="space-y-6 sm:space-y-8 pb-16 max-w-7xl mx-auto">
+    <div className="space-y-3.5 sm:space-y-8 pb-16 max-w-7xl mx-auto">
       {/* Hero Banner - Tự động ẩn khi tìm kiếm để hàng hóa hiển thị ngay trên đầu trang */}
       {!isSearching && (
         <HeroBanner settings={settings || undefined} />

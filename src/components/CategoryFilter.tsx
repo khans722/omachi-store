@@ -73,7 +73,7 @@ export default function CategoryFilter({
   const curr = themeConfig[theme] || themeConfig.green;
 
   return (
-    <div className="my-5">
+    <div className="my-2 sm:my-5">
       {/* Header Row with Title and Subtitle */}
       <div className="flex items-center justify-between mb-3.5 px-1">
         <div className="flex items-center gap-2">
