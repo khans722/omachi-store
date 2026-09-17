@@ -97,6 +97,7 @@ export interface Customer {
   customerType: 'NEW' | 'REGULAR_VIP' | 'WHOLESALE'; // Khách mới, Khách quen, Khách sỉ
   totalOrdersCount: number;
   totalSpent: number;
+  lastOrderAt?: string;
   internalNotes?: string;
   createdAt: string;
   updatedAt: string;
@@ -2080,16 +2081,50 @@ export const db = {
       return (readDb().orders || []).filter((o) => (o.customer?.phone || '').replace(/[^0-9]/g, '') === cleanPhone)
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     },
-    lookup(query: string): Order[] {
-      const raw = query.trim();
-      const q = raw.toLowerCase();
+    lookup(query: string, customerId?: string): Order[] {
+      const raw = (query || '').trim();
+      const q = raw.toLowerCase().replace(/^#/, '');
       const cleanDigits = raw.replace(/[^0-9]/g, '');
-      const orders = readDb().orders || [];
+      const dbData = readDb();
+      const orders = dbData.orders || [];
+      const customers = dbData.customers || [];
+
+      const cust = customerId ? customers.find((c) => c.id === customerId) : undefined;
+      const custPhone = cust ? (cust.phone || '').replace(/[^0-9]/g, '') : '';
 
       return orders.filter((o) => {
+        // Mode 1: Logged-in customer search / load all
+        if (customerId) {
+          const oPhone = (o.customer?.phone || '').replace(/[^0-9]/g, '');
+          const isOwnOrder = (o.customerId && o.customerId === customerId) ||
+                             (custPhone && oPhone === custPhone);
+
+          if (!isOwnOrder) return false;
+
+          // If no search keyword, return all orders for this customer
+          if (!raw) return true;
+
+          // If search keyword is given, filter within their orders
+          const oCode = (o.code || '').toLowerCase().replace(/^#/, '');
+          const oId = (o.id || '').toLowerCase().replace(/^#/, '');
+          const oReceiverName = (o.customer?.fullName || '').toLowerCase();
+          const matchesItem = (o.items || []).some((item: any) =>
+            (item.productName || item.product?.name || '').toLowerCase().includes(q)
+          );
+          return (
+            (cleanDigits.length >= 4 && oPhone.includes(cleanDigits)) ||
+            oCode.includes(q) ||
+            oId.includes(q) ||
+            oReceiverName.includes(q) ||
+            matchesItem
+          );
+        }
+
+        // Mode 2: Guest lookup (by phone or order code)
+        if (!raw) return false;
         const oPhone = (o.customer?.phone || '').replace(/[^0-9]/g, '');
-        const oCode = (o.code || '').toLowerCase();
-        const oId = (o.id || '').toLowerCase();
+        const oCode = (o.code || '').toLowerCase().replace(/^#/, '');
+        const oId = (o.id || '').toLowerCase().replace(/^#/, '');
 
         // Match by phone if query has at least 4 digits
         if (cleanDigits.length >= 4 && oPhone.includes(cleanDigits)) return true;
@@ -2100,6 +2135,7 @@ export const db = {
       }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     },
     create(orderInput: {
+      customerId?: string;
       customer: { fullName: string; phone: string; address: string; city?: string; note?: string };
       items: any[];
       subtotal?: number;
@@ -2119,6 +2155,16 @@ export const db = {
       
       // 1. Generate Random Order Code OM-XXXX
       const randomCode = `OM-${Math.floor(1000 + Math.random() * 9000)}`;
+
+      // Xác định customerId liên kết (Ưu tiên ID từ tài khoản đang đăng nhập, nếu không thì đối soát SĐT)
+      const cleanPhone = (orderInput.customer?.phone || '').replace(/[^0-9]/g, '');
+      let linkedCustomerId = orderInput.customerId;
+      if (!linkedCustomerId && cleanPhone) {
+        const matchingCust = (dbData.customers || []).find((c) => (c.phone || '').replace(/[^0-9]/g, '') === cleanPhone);
+        if (matchingCust) {
+          linkedCustomerId = matchingCust.id;
+        }
+      }
       
       // 2. Map Items with SKU and detail calculation
       const mappedItems: OrderItem[] = (orderInput.items || []).map((it, idx) => {
@@ -2185,6 +2231,7 @@ export const db = {
       const newOrder: Order = {
         id: `ord-${Date.now()}`,
         code: randomCode,
+        customerId: linkedCustomerId,
         customer: {
           fullName: orderInput.customer.fullName,
           phone: orderInput.customer.phone,
@@ -2218,9 +2265,12 @@ export const db = {
         updatedAt: new Date().toISOString(),
       };
 
-      // Tự động lưu địa chỉ vào tài khoản khách hàng (làm mặc định nếu đơn đầu hoặc có chọn lưu)
-      const cleanPhone = (orderInput.customer?.phone || '').replace(/[^0-9]/g, '');
-      const existingCust = (dbData.customers || []).find((c) => c.phone.replace(/[^0-9]/g, '') === cleanPhone);
+      // Tự động lưu địa chỉ & cập nhật thống kê tài khoản khách hàng
+      const existingCust = linkedCustomerId
+        ? (dbData.customers || []).find((c) => c.id === linkedCustomerId)
+        : cleanPhone
+        ? (dbData.customers || []).find((c) => (c.phone || '').replace(/[^0-9]/g, '') === cleanPhone)
+        : undefined;
 
       const specificAddr = (orderInput.customer as any)?.specificAddress || orderInput.customer?.address || '';
       const orderCity = orderInput.customer?.city || 'Bắc Giang';
@@ -2261,6 +2311,7 @@ export const db = {
 
         existingCust.totalOrdersCount = (existingCust.totalOrdersCount || 0) + 1;
         existingCust.totalSpent = (existingCust.totalSpent || 0) + finalTotal;
+        existingCust.lastOrderAt = new Date().toISOString();
         existingCust.updatedAt = new Date().toISOString();
       }
 

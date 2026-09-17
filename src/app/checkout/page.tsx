@@ -701,6 +701,7 @@ export default function CheckoutPage() {
 
     try {
       const orderPayload = {
+        customerId: loggedInCustomer?.id || undefined,
         customer: {
           fullName: customer.fullName.trim(),
           phone: customer.phone.trim(),
@@ -736,11 +737,15 @@ export default function CheckoutPage() {
         setCreatedOrder(data.data);
         clearCart();
         try {
+          const orderWithCustomer = {
+            ...data.data,
+            customerId: data.data.customerId || loggedInCustomer?.id || undefined,
+          };
           const custOrders = JSON.parse(localStorage.getItem('omachi_customer_orders') || '[]');
-          localStorage.setItem('omachi_customer_orders', JSON.stringify([data.data, ...custOrders.filter((o: any) => o.id !== data.data.id)]));
+          localStorage.setItem('omachi_customer_orders', JSON.stringify([orderWithCustomer, ...custOrders.filter((o: any) => o.id !== data.data.id)]));
 
           const adminOrders = JSON.parse(localStorage.getItem('omachi_admin_orders_v2') || '[]');
-          localStorage.setItem('omachi_admin_orders_v2', JSON.stringify([data.data, ...adminOrders.filter((o: any) => o.id !== data.data.id)]));
+          localStorage.setItem('omachi_admin_orders_v2', JSON.stringify([orderWithCustomer, ...adminOrders.filter((o: any) => o.id !== data.data.id)]));
         } catch (e) {}
         confetti({
           particleCount: 80,
@@ -1095,10 +1100,10 @@ export default function CheckoutPage() {
             </Link>
 
             <Link
-              href={`/tra-cuu-don-hang?phone=${encodeURIComponent(createdOrder.customer.phone)}`}
+              href={loggedInCustomer ? '/tra-cuu-don-hang' : `/tra-cuu-don-hang?code=${encodeURIComponent(createdOrder.code)}`}
               className="w-full py-2.5 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-bold text-xs flex items-center justify-center gap-1.5 transition"
             >
-              <span>🔍 Tra Cứu Đơn Hàng</span>
+              <span>{loggedInCustomer ? '📦 Xem Đơn Hàng Của Tôi' : '🔍 Tra Cứu Đơn Hàng'}</span>
             </Link>
 
             <div className="pt-1">

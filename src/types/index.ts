@@ -184,6 +184,7 @@ export interface Customer {
   customerType: 'NEW' | 'REGULAR_VIP' | 'WHOLESALE';
   totalOrdersCount: number;
   totalSpent: number;
+  lastOrderAt?: string;
   internalNotes?: string;
   createdAt: string;
   updatedAt: string;

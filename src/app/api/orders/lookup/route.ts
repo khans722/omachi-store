@@ -4,13 +4,14 @@ import { db } from '@/lib/db';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const query = searchParams.get('query') || searchParams.get('phone') || searchParams.get('code');
+    const customerId = searchParams.get('customerId') || undefined;
+    const query = searchParams.get('query') || searchParams.get('phone') || searchParams.get('code') || '';
 
-    if (!query || !query.trim()) {
+    if (!customerId && (!query || !query.trim())) {
       return NextResponse.json({ success: false, error: 'Vui lòng nhập số điện thoại hoặc mã đơn hàng để tra cứu' }, { status: 400 });
     }
 
-    const orders = db.orders.lookup(query);
+    const orders = db.orders.lookup(query, customerId);
 
     return NextResponse.json({
       success: true,
