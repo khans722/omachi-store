@@ -752,6 +752,7 @@ export default function AdminPage() {
       costPrice: 800,
       material: 'Acrylic cao cấp pastel',
       dimensions: '8mm - 12mm',
+      weight: 50,
       images: ['/uploads/charm_1789432914386_1789371730804_1528911961217344.jpg'],
       description: 'Mô tả chi tiết về kích thước, màu sắc và chất liệu sản phẩm...',
       isHot: false,
@@ -1010,10 +1011,11 @@ export default function AdminPage() {
     }
   };
 
-  const handleUpdateShippingFee = async (orderId: string) => {
-    const rawVal = shippingFeeInputs[orderId];
+  const handleUpdateShippingFee = async (orderId: string, explicitFee?: number) => {
+    const rawVal = explicitFee !== undefined ? explicitFee : shippingFeeInputs[orderId];
     if (rawVal === undefined || rawVal === '') return;
     const numVal = Math.max(0, Number(rawVal) || 0);
+    setShippingFeeInputs(prev => ({ ...prev, [orderId]: String(numVal) }));
 
     const cleanId = (orderId || '').toLowerCase().replace(/^#/, '').trim();
     const currentOrder = orders.find(o => 
@@ -1548,6 +1550,7 @@ export default function AdminPage() {
                 const calculatedShippingFee = Number(order.shippingFee || 0);
                 const calculatedFinalTotal = calculatedItemsTotal + calculatedShippingFee;
                 const totalItemCount = (order.items || []).reduce((sum: number, it: any) => sum + Number(it.quantity || 1), 0);
+                const isOrderEligibleFreeship = (calculatedItemsTotal >= 1000000) || (Number(order.subtotal || 0) >= 1000000) || (Number(order.totalAmount || 0) >= 1000000);
 
                 return (
                   <div
@@ -1602,6 +1605,23 @@ export default function AdminPage() {
                         >
                           {order.paymentStatus === 'PAID' ? '✓ Đã nhận tiền' : '⏳ Chưa thu COD'}
                         </button>
+
+                        {/* 3. Phương thức thanh toán khách chọn */}
+                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-lg border ${
+                          order.paymentMethod === 'BANK'
+                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                            : 'bg-stone-50 text-stone-700 border-stone-200'
+                        }`}>
+                          {order.paymentMethod === 'BANK' ? '💳 Chuyển khoản VietQR' : '💵 Thu tiền mặt COD'}
+                        </span>
+
+                        {/* 4. Huy hiệu đủ điều kiện Freeship nếu đơn >= 1tr */}
+                        {isOrderEligibleFreeship && (
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
+                            <span>✨</span>
+                            <span>ĐƠN ≥ 1TR (FREESHIP NẾU CK)</span>
+                          </span>
+                        )}
                       </div>
 
                       {/* Right: Tổng tiền thanh toán chuẩn */}
@@ -1677,40 +1697,94 @@ export default function AdminPage() {
                               </div>
 
                               {/* Phí ship sau khi cân hàng thực tế */}
-                              <div className="p-2.5 bg-white/90 rounded-xl border border-orange-200 space-y-2">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                  <div className="flex items-center gap-1.5 text-orange-950 font-bold text-xs">
-                                    <Truck className="w-4 h-4 text-orange-600 shrink-0" />
-                                    <span>Cước SPX sau khi cân:</span>
-                                  </div>
-                                  <div className="flex items-center gap-1.5">
-                                    <div className="relative">
-                                      <input
-                                        type="number"
-                                        min={0}
-                                        step="any"
-                                        value={shippingFeeInputs[order.id] !== undefined ? shippingFeeInputs[order.id] : (order.shippingFee || '')}
-                                        onChange={(e) => setShippingFeeInputs({ ...shippingFeeInputs, [order.id]: e.target.value })}
-                                        placeholder="Nhập ship..."
-                                        className="w-24 px-2.5 py-1 bg-orange-50 border border-orange-300 rounded-lg text-xs font-black text-rose-600 text-center focus:ring-2 focus:ring-orange-400 focus:outline-none"
-                                      />
+                              {(() => {
+                                const orderWeightKg = (Number(order.totalWeight) || 0) > 0
+                                  ? ((Number(order.totalWeight) || 0) / 1000).toFixed(2)
+                                  : (totalItemCount * 0.05).toFixed(2);
+
+                                return (
+                                  <div className={`p-2.5 bg-white/90 rounded-xl border space-y-2 ${
+                                    isOrderEligibleFreeship ? 'border-emerald-300 ring-1 ring-emerald-100 shadow-2xs' : 'border-orange-200'
+                                  }`}>
+                                    {/* Freeship Alert in Admin */}
+                                    {isOrderEligibleFreeship && (
+                                      <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-[11px] space-y-0.5">
+                                        <div className="flex items-center justify-between">
+                                          <span className="font-extrabold flex items-center gap-1 text-emerald-800">
+                                            <span>🎉</span>
+                                            <span>Đơn ≥ 1.000.000₫: Đủ điều kiện FREESHIP</span>
+                                          </span>
+                                          <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white px-1.5 py-0.2 rounded">
+                                            {order.paymentMethod === 'BANK' ? 'Đã chọn CK' : 'Chờ CK'}
+                                          </span>
+                                        </div>
+                                        <p className="text-[10px] text-emerald-700">
+                                          Bấm nút <strong>&quot;🎁 Miễn Ship (0đ)&quot;</strong> bên dưới nếu khách đã chuyển khoản thành công.
+                                        </p>
+                                      </div>
+                                    )}
+
+                                    <div className="flex items-center justify-between gap-1 text-[11px] text-gray-500 pb-1 border-b border-orange-100">
+                                      <span className="flex items-center gap-1 font-bold text-gray-700">
+                                        <Truck className="w-3.5 h-3.5 text-orange-600 shrink-0" />
+                                        <span>Cước SPX (Cân nặng: ~{orderWeightKg} kg):</span>
+                                      </span>
+                                      <strong className={calculatedShippingFee > 0 ? 'text-emerald-700 font-black' : 'text-amber-600 font-bold'}>
+                                        {calculatedShippingFee > 0 ? `+${formatVND(calculatedShippingFee)}` : 'Miễn ship (0đ)'}
+                                      </strong>
                                     </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleUpdateShippingFee(order.id)}
-                                      className="px-2.5 py-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-[11px] rounded-lg shadow-2xs transition active:scale-95 shrink-0"
-                                    >
-                                      Lưu Ship
-                                    </button>
+
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                      {/* Quick Preset Buttons */}
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleUpdateShippingFee(order.id, 0)}
+                                          className={`px-2 py-1 rounded-lg text-[10px] font-bold transition active:scale-95 flex items-center gap-1 ${
+                                            isOrderEligibleFreeship
+                                              ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs font-black ring-2 ring-emerald-300 animate-pulse'
+                                              : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300'
+                                          }`}
+                                          title="Miễn phí vận chuyển cho khách"
+                                        >
+                                          <span>🎁 Miễn Ship (0đ)</span>
+                                          {isOrderEligibleFreeship && <span className="bg-white/20 text-white text-[9px] px-1 rounded">≥1tr</span>}
+                                        </button>
+                                        {calculatedShippingFee >= 24000 && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleUpdateShippingFee(order.id, Math.max(0, calculatedShippingFee - 24000))}
+                                            className="px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold transition active:scale-95"
+                                            title="Khách chuyển khoản: Trừ 24k phí bảo hiểm COD"
+                                          >
+                                            ⚡ Giảm 24k (CK)
+                                          </button>
+                                        )}
+                                      </div>
+
+                                      {/* Manual custom shipping input */}
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          step="any"
+                                          value={shippingFeeInputs[order.id] !== undefined ? shippingFeeInputs[order.id] : (order.shippingFee || '')}
+                                          onChange={(e) => setShippingFeeInputs({ ...shippingFeeInputs, [order.id]: e.target.value })}
+                                          placeholder="Nhập ship..."
+                                          className="w-24 px-2 py-1 bg-orange-50 border border-orange-300 rounded-lg text-xs font-black text-rose-600 text-center focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => handleUpdateShippingFee(order.id)}
+                                          className="px-2.5 py-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-[11px] rounded-lg shadow-2xs transition active:scale-95 shrink-0"
+                                        >
+                                          Lưu Ship
+                                        </button>
+                                      </div>
+                                    </div>
                                   </div>
-                                </div>
-                                <div className="flex justify-between text-[11px] text-gray-500 pt-1 border-t border-orange-100">
-                                  <span>Trạng thái cước:</span>
-                                  <strong className={calculatedShippingFee > 0 ? 'text-emerald-700' : 'text-amber-600 font-bold'}>
-                                    {calculatedShippingFee > 0 ? `Đã nhập: +${formatVND(calculatedShippingFee)}` : 'Chưa tính ship (Chờ cân)'}
-                                  </strong>
-                                </div>
-                              </div>
+                                );
+                              })()}
 
                               <div className="flex justify-between items-baseline pt-2 border-t border-amber-200/80">
                                 <div>
@@ -3610,7 +3684,7 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
                       <label className="font-bold text-gray-700">Danh Mục</label>
@@ -3671,6 +3745,21 @@ export default function AdminPage() {
                       onChange={(e) => setEditingProduct({ ...editingProduct, dimensions: e.target.value })}
                       placeholder="VD: 8mm-12mm / Dây rút 15cm"
                       className="w-full px-3 py-2 bg-white border border-pink-200 rounded-xl font-medium"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="font-bold text-gray-700 flex items-center justify-between">
+                      <span>Cân Nặng (gram)</span>
+                      <span className="text-[10px] text-gray-400 font-normal">Tính cước SPX</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={editingProduct.weight !== undefined && editingProduct.weight !== null ? editingProduct.weight : ''}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, weight: Math.max(0, Number(e.target.value)) })}
+                      placeholder="VD: 50 (50g)"
+                      className="w-full px-3 py-2 bg-white border border-pink-200 rounded-xl font-bold text-gray-800 focus:ring-2 focus:ring-rose-400"
                     />
                   </div>
                 </div>

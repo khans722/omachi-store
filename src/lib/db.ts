@@ -159,9 +159,10 @@ export interface Order {
   discount?: number;
   itemsTotalAmount: number; // Tiền hàng thực tế sau giảm combo
   shippingFee: number; // Phí ship (thương lượng Zalo)
+  totalWeight?: number; // Tổng cân nặng (gram)
   finalTotalAmount: number; // Tổng thanh toán = tiền hàng + ship
   totalAmount: number; // Tương thích các component cũ
-  paymentMethod: 'ZALO_CONFIRM' | 'COD';
+  paymentMethod: 'ZALO_CONFIRM' | 'COD' | 'BANK';
   paymentStatus: PaymentStatus;
   orderStatus: OrderStatus;
   trackingNumber?: string; // Mã vận đơn giao hàng
@@ -2096,7 +2097,8 @@ export const db = {
       shippingFee?: number;
       discount?: number;
       totalAmount?: number;
-      paymentMethod?: 'ZALO_CONFIRM' | 'COD';
+      totalWeight?: number;
+      paymentMethod?: 'ZALO_CONFIRM' | 'COD' | 'BANK';
     }): Order {
       const dbData = readDb();
       if (!dbData.orders || !Array.isArray(dbData.orders)) {
@@ -2166,6 +2168,7 @@ export const db = {
         comboDiscountAmount: discount,
         itemsTotalAmount: itemsTotal,
         shippingFee: shipping,
+        totalWeight: Number(orderInput.totalWeight) || 0,
         finalTotalAmount: finalTotal,
         totalAmount: finalTotal,
         paymentMethod: orderInput.paymentMethod || 'ZALO_CONFIRM',

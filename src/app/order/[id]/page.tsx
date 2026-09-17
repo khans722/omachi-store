@@ -258,14 +258,17 @@ export default function OrderTrackingPage() {
                 <div className="flex justify-between items-center">
                   <span className="flex items-center gap-1.5">
                     <Truck className="w-3.5 h-3.5 text-rose-500" />
-                    <span>Phí vận chuyển ({order.carrierName || 'SPX Express'}):</span>
+                    <span>
+                      Phí vận chuyển ({order.carrierName || 'SPX Express'}
+                      {order.totalWeight ? ` • ${(Number(order.totalWeight) / 1000).toFixed(2)}kg` : ''}):
+                    </span>
                   </span>
                   <span className="font-bold text-gray-800">
                     {shippingFee > 0 ? (
-                      <span className="text-rose-600">+{formatVND(shippingFee)}</span>
+                      <span className="text-rose-600 font-bold">+{formatVND(shippingFee)}</span>
                     ) : (
-                      <span className="text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 text-xs font-semibold">
-                        Shop báo cước sau khi cân
+                      <span className="text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 text-xs font-bold">
+                        🎁 Miễn phí ship (0đ)
                       </span>
                     )}
                   </span>
@@ -274,8 +277,8 @@ export default function OrderTrackingPage() {
                   <div>
                     <span>Tổng thanh toán:</span>
                     {shippingFee === 0 && (
-                      <span className="text-[10px] text-gray-400 font-normal block">
-                        (Tiền hàng • Cước ship báo sau khi cân)
+                      <span className="text-[10px] text-emerald-600 font-bold block">
+                        (Đã miễn phí vận chuyển 0đ)
                       </span>
                     )}
                   </div>

@@ -473,15 +473,18 @@ export default function OrderLookupPage() {
                           <div className="flex items-center justify-between text-stone-600">
                             <span className="flex items-center gap-1.5">
                               <Truck className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                              <span>Phí vận chuyển ({order.carrierName || 'SPX Express'}):</span>
+                              <span>
+                                Phí vận chuyển ({order.carrierName || 'SPX Express'}
+                                {order.totalWeight ? ` • ${(Number(order.totalWeight) / 1000).toFixed(2)}kg` : ''}):
+                              </span>
                             </span>
                             {shippingFee > 0 ? (
                               <span className="font-black text-rose-600">
                                 +{formatVND(shippingFee)}
                               </span>
                             ) : (
-                              <span className="text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 text-xs font-semibold">
-                                Shop báo cước sau khi cân
+                              <span className="text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 text-xs font-bold">
+                                🎁 Miễn phí ship (0đ)
                               </span>
                             )}
                           </div>
@@ -491,8 +494,8 @@ export default function OrderLookupPage() {
                               <span className="text-stone-800 text-xs sm:text-sm">Tổng thanh toán:</span>
                               <span className="text-[10px] sm:text-xs text-stone-400 block font-normal">
                                 {shippingFee > 0
-                                  ? (order.paymentMethod === 'COD' ? '(Đã gồm cước ship • Thu tiền mặt COD)' : '(Đã gồm cước ship • Chốt qua Zalo)')
-                                  : '(Tiền hàng • Cước ship báo sau khi cân)'}
+                                  ? (order.paymentMethod === 'COD' ? '(Đã gồm cước ship • Thu tiền mặt COD)' : '(Đã gồm cước ship)')
+                                  : '(Đã miễn phí vận chuyển 0đ)'}
                               </span>
                             </div>
                             <span className="text-base sm:text-lg font-black text-rose-600">

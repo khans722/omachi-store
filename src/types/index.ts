@@ -69,6 +69,7 @@ export interface Product {
   comboTiers?: ComboTier[];
   minOrderQuantity?: number; // Số lượng mua tối thiểu (VD: 1, 10, 50, 100)
   stepQuantity?: number;     // Bội số mua hàng / Bước nhảy (VD: 1, 10, 50, 100)
+  weight?: number;           // Khối lượng mỗi sản phẩm (đơn vị: gram, VD: 10, 50, 100, 500)
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -145,6 +146,7 @@ export interface Order {
   itemsTotalAmount?: number;
   shippingFee: number;
   totalAmount: number;
+  totalWeight?: number; // Tổng cân nặng đơn hàng (đơn vị: gram)
   finalTotalAmount?: number;
   paymentMethod: 'ZALO_CONFIRM' | 'COD' | 'BANK';
   paymentStatus: PaymentStatus | 'UNPAID' | 'PAID';

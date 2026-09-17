@@ -75,6 +75,11 @@ export default function CartPage() {
     selectedIds.forEach((id) => removeItem(id));
   };
 
+  const FREESHIP_THRESHOLD = 1000000;
+  const isFreeshipEligible = selectedSubtotal >= FREESHIP_THRESHOLD;
+  const missingForFreeship = Math.max(0, FREESHIP_THRESHOLD - selectedSubtotal);
+  const freeshipProgress = Math.min(100, Math.round((selectedSubtotal / FREESHIP_THRESHOLD) * 100));
+
   return (
     <div className="max-w-4xl mx-auto py-3 sm:py-6 px-2 sm:px-4 lg:px-6 space-y-3 pb-28 font-sans animate-fade-in">
       
@@ -116,6 +121,56 @@ export default function CartPage() {
           </div>
         )}
       </div>
+
+      {/* FREESHIP PROMOTION PROGRESS BANNER */}
+      {items.length > 0 && (
+        <div className={`p-3 sm:p-3.5 rounded-xl border transition-all ${
+          isFreeshipEligible
+            ? 'bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border-emerald-200 shadow-xs'
+            : 'bg-gradient-to-r from-amber-50 via-orange-50/50 to-amber-50 border-amber-200/80 shadow-2xs'
+        }`}>
+          <div className="flex items-start sm:items-center justify-between gap-2 mb-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-base sm:text-lg shrink-0">
+                {isFreeshipEligible ? '🎉' : '🎁'}
+              </span>
+              <div>
+                <p className={`text-xs sm:text-sm font-black ${
+                  isFreeshipEligible ? 'text-emerald-800' : 'text-stone-800'
+                }`}>
+                  {isFreeshipEligible ? (
+                    <span>Đã đủ điều kiện <span className="text-emerald-600 underline decoration-emerald-400">MIỄN PHÍ SHIP</span> khi Chuyển Khoản!</span>
+                  ) : (
+                    <span>Mua thêm <strong className="text-rose-600 font-black">{formatVND(missingForFreeship)}</strong> để được <strong className="text-emerald-700">MIỄN PHÍ SHIP</strong> khi Chuyển Khoản!</span>
+                  )}
+                </p>
+                <p className="text-[10px] sm:text-[11px] text-stone-500 font-medium">
+                  Áp dụng cho đơn hàng từ 1.000.000₫ thanh toán chuyển khoản toàn quốc
+                </p>
+              </div>
+            </div>
+            <span className={`text-[11px] font-black px-2 py-0.5 rounded-full shrink-0 ${
+              isFreeshipEligible
+                ? 'bg-emerald-600 text-white shadow-2xs'
+                : 'bg-amber-100 text-amber-800 border border-amber-300'
+            }`}>
+              {freeshipProgress}%
+            </span>
+          </div>
+
+          {/* Progress bar */}
+          <div className="w-full bg-stone-200/70 h-2 rounded-full overflow-hidden">
+            <div
+              className={`h-full transition-all duration-500 rounded-full ${
+                isFreeshipEligible
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                  : 'bg-gradient-to-r from-amber-500 to-orange-500'
+              }`}
+              style={{ width: `${freeshipProgress}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* 2. MAIN CONTENT AREA */}
       {items.length === 0 ? (
@@ -325,11 +380,18 @@ export default function CartPage() {
 
 
           {/* SPX Delivery Row */}
-          <div className="p-2.5 bg-amber-50/50 border-t border-amber-100/60 flex items-center gap-2 text-xs text-amber-900">
-            <Truck className="w-4 h-4 text-amber-600 shrink-0" />
-            <span className="text-[11px] text-amber-800">
-              Giao hàng SPX Express • Shop đóng gói cân thực tế để tính cước rẻ nhất
-            </span>
+          <div className="p-2.5 bg-amber-50/50 border-t border-amber-100/60 flex items-center justify-between gap-2 text-xs text-amber-900">
+            <div className="flex items-center gap-2">
+              <Truck className="w-4 h-4 text-amber-600 shrink-0" />
+              <span className="text-[11px] text-amber-800">
+                Giao hàng SPX Express • Đơn từ 1.000.000₫ <strong className="text-emerald-700 font-bold">MIỄN PHÍ SHIP (0đ)</strong> khi Chuyển Khoản
+              </span>
+            </div>
+            {isFreeshipEligible && (
+              <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded shrink-0">
+                Đủ điều kiện 0đ ship
+              </span>
+            )}
           </div>
 
         </div>

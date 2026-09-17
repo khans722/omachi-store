@@ -16,7 +16,8 @@ import {
   MessageCircle,
   Tag,
   Edit2,
-  Check
+  Check,
+  CreditCard
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -25,6 +26,7 @@ import { VIETNAM_PROVINCES } from '@/data/vietnamAddress';
 import { Order, ShopSettings } from '@/types';
 import confetti from 'canvas-confetti';
 import { removeVietnameseTones } from '@/lib/search';
+import { calculateShippingFee } from '@/lib/utils';
 
 const formatVND = (amount: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -320,6 +322,21 @@ export default function CheckoutPage() {
   const checkoutTotalSavings = selectedItems.length > 0 ? selectedTotalSavings : totalSavings;
   const checkoutTotalItems = selectedItems.length > 0 ? selectedTotalItems : totalItems;
 
+  // Tính tổng cân nặng đơn hàng (đơn vị: gram, mặc định 50g nếu sản phẩm chưa config cân nặng)
+  const checkoutTotalWeightGram = useMemo(() => {
+    return checkoutItems.reduce((sum, it) => {
+      const itemWeight = Number(it.product?.weight) > 0 ? Number(it.product.weight) : 50;
+      return sum + it.quantity * itemWeight;
+    }, 0);
+  }, [checkoutItems]);
+
+  // Tính cước vận chuyển chuẩn theo cân nặng & giá trị đơn hàng
+  const shipInfo = useMemo(() => {
+    return calculateShippingFee(checkoutTotalWeightGram, checkoutSubtotal);
+  }, [checkoutTotalWeightGram, checkoutSubtotal]);
+
+  const checkoutShippingFee = shipInfo.shippingFee;
+
   const [settings, setSettings] = useState<ShopSettings | null>(null);
 
   useEffect(() => {
@@ -380,6 +397,14 @@ export default function CheckoutPage() {
 
   // Payment method selection (Shopee style)
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BANK'>('COD');
+
+  // Freeship cho đơn hàng từ 1.000.000₫ khi thanh toán Chuyển Khoản
+  const FREESHIP_THRESHOLD = 1000000;
+  const isOrderOver1M = checkoutSubtotal >= FREESHIP_THRESHOLD;
+  const missingForFreeship = Math.max(0, FREESHIP_THRESHOLD - checkoutSubtotal);
+  const isBankTransferFreeship = isOrderOver1M && paymentMethod === 'BANK';
+  const effectiveShippingFee = isBankTransferFreeship ? 0 : checkoutShippingFee;
+  const checkoutFinalTotal = checkoutSubtotal + effectiveShippingFee;
 
   // Address edit toggle: auto-expand if any required field is missing (2 cấp: Tỉnh/TP và Phường/Xã)
   const isAddressComplete = Boolean(
@@ -678,9 +703,11 @@ export default function CheckoutPage() {
         setAsDefaultAddress: saveAsDefault,
         items: checkoutItems,
         subtotal: checkoutSubtotal,
-        shippingFee: 0,
+        shippingFee: effectiveShippingFee,
+        totalWeight: checkoutTotalWeightGram,
         discount: checkoutTotalSavings,
-        totalAmount: checkoutSubtotal,
+        totalAmount: checkoutFinalTotal,
+        finalTotalAmount: checkoutFinalTotal,
         paymentMethod: paymentMethod,
         paymentStatus: 'UNPAID' as const,
         orderStatus: 'PENDING_CONFIRM' as const,
@@ -771,15 +798,23 @@ export default function CheckoutPage() {
               </strong>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-500">Phí vận chuyển (SPX):</span>
-              <strong className="text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200 text-[11px]">
-                Shop cân thực tế &amp; báo sau
-              </strong>
+              <span className="text-gray-500">
+                Phí vận chuyển (SPX{createdOrder.totalWeight ? ` • ${(Number(createdOrder.totalWeight) / 1000).toFixed(2)}kg` : ''}):
+              </span>
+              {(createdOrder.shippingFee || 0) > 0 ? (
+                <strong className="text-rose-600 font-bold">
+                  +{formatVND(createdOrder.shippingFee)}
+                </strong>
+              ) : (
+                <strong className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[11px]">
+                  🎁 Miễn phí ship (0đ)
+                </strong>
+              )}
             </div>
             <div className="flex justify-between items-baseline pt-2 border-t border-gray-200">
               <span className="font-bold text-gray-800">Tổng thanh toán:</span>
               <strong className={`${curr.priceText} text-base font-black`}>
-                {formatVND(createdOrder.subtotal || createdOrder.totalAmount)}
+                {formatVND(createdOrder.finalTotalAmount || createdOrder.totalAmount)}
               </strong>
             </div>
             <div className="pt-2 border-t border-gray-100 flex justify-between text-gray-600">
@@ -796,13 +831,28 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          <div className="bg-emerald-50/80 p-3 rounded-xl border border-emerald-200 text-xs text-emerald-900 space-y-1 text-left">
-            <p className="font-bold flex items-center gap-1 text-emerald-800">
+          {/* Freeship Alert if Order >= 1,000,000đ */}
+          {(Number(createdOrder.subtotal) || Number(createdOrder.totalAmount) || 0) >= 1000000 && (
+            <div className="bg-emerald-50 p-3.5 rounded-xl border border-emerald-200 text-xs text-emerald-900 space-y-1 text-left shadow-2xs">
+              <p className="font-black flex items-center gap-1.5 text-emerald-800">
+                <span>🎉</span>
+                <span>ĐƠN TRÊN 1.000.000₫ – MIỄN PHÍ SHIP KHI CHUYỂN KHOẢN!</span>
+              </p>
+              <p className="text-[11px] text-emerald-700 leading-relaxed font-medium">
+                {createdOrder.paymentMethod === 'BANK'
+                  ? '✨ Bạn đã chọn Chuyển Khoản: Đơn hàng đã được áp dụng MIỄN PHÍ VẬN CHUYỂN 0đ! Shop sẽ chủ động nhắn qua Zalo gửi thông tin để bạn chuyển khoản nhé.'
+                  : '💡 Bạn đang chọn COD: Nếu bạn muốn được MIỄN 100% CƯỚC SHIP (0đ), bạn chỉ cần nhắn tin Zalo cho shop báo đổi sang Chuyển khoản là xong nhé!'}
+              </p>
+            </div>
+          )}
+
+          <div className="bg-stone-50 p-3 rounded-xl border border-stone-200 text-xs text-stone-800 space-y-1 text-left">
+            <p className="font-bold flex items-center gap-1 text-stone-900">
               <span>📦</span>
               <span>Shop đã nhận được đơn hàng tự động!</span>
             </p>
-            <p className="text-[11px] text-gray-600 leading-relaxed">
-              Xưởng Omachi sẽ soạn hàng, đóng gói cẩn thận và cân khối lượng thực tế. Shop sẽ liên hệ qua SĐT/Zalo của bạn để báo cước ship SPX rẻ nhất nhé!
+            <p className="text-[11px] text-stone-600 leading-relaxed">
+              Xưởng Omachi sẽ soạn hàng, đóng gói cẩn thận và liên hệ qua SĐT/Zalo của bạn để xác nhận đơn hàng sớm nhất nhé! 💕
             </p>
           </div>
 
@@ -899,6 +949,43 @@ export default function CheckoutPage() {
       {/* MAIN CONTAINER */}
       <form onSubmit={handleSubmitOrder} noValidate className="max-w-2xl mx-auto px-2 sm:px-4 py-2.5 space-y-2.5">
         
+        {/* Freeship notification banner */}
+        <div className={`p-3 rounded-xl border flex items-center justify-between gap-2 shadow-2xs ${
+          isOrderOver1M
+            ? 'bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border-emerald-200 text-emerald-900'
+            : 'bg-gradient-to-r from-amber-50 via-orange-50/50 to-amber-50 border-amber-200 text-stone-800'
+        }`}>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-base sm:text-lg shrink-0">{isOrderOver1M ? '🎉' : '🎁'}</span>
+            <div className="text-xs min-w-0">
+              {isOrderOver1M ? (
+                <div>
+                  <strong className="text-emerald-800 font-black block sm:inline">
+                    Đơn hàng trên 1.000.000₫: MIỄN PHÍ SHIP khi Chuyển Khoản!
+                  </strong>
+                  <span className="text-[11px] text-emerald-700 sm:ml-1 block sm:inline font-medium">
+                    (Chọn Chuyển khoản VietQR bên dưới để nhận cước 0đ)
+                  </span>
+                </div>
+              ) : (
+                <div>
+                  <strong className="text-stone-800 font-bold block sm:inline">
+                    Mua thêm {formatVND(missingForFreeship)} để được MIỄN PHÍ SHIP!
+                  </strong>
+                  <span className="text-[11px] text-stone-500 sm:ml-1 block sm:inline font-medium">
+                    (Áp dụng toàn quốc khi thanh toán Chuyển Khoản)
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+          {isOrderOver1M && (
+            <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white px-2 py-0.5 rounded-full shrink-0 shadow-2xs">
+              Freeship CK
+            </span>
+          )}
+        </div>
+
         {/* 2. SHOPEE ADDRESS CARD (Bì Thư Viền Ruy Băng) */}
         <div ref={addressSectionRef} className="bg-white rounded-lg shadow-2xs overflow-hidden border border-gray-100">
           {/* Top striped ribbon bar */}
@@ -1157,19 +1244,129 @@ export default function CheckoutPage() {
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs font-bold text-gray-800">Phương thức vận chuyển</span>
                 </div>
-                <p className="text-[11px] text-gray-500 mt-0.5">
-                  SPX Express (Nhanh) • Giao tận nơi COD
+                <p className="text-[11px] text-gray-500 mt-0.5 font-medium">
+                  SPX Express • Giao tận nơi COD
                 </p>
-                <p className="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded inline-block mt-0.5 border border-amber-200">
-                  Shop cân trọng lượng thực tế &amp; báo cước ưu đãi
+                <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                  <span className="text-[10px] text-stone-700 bg-stone-100 px-1.5 py-0.5 rounded font-bold border border-stone-200">
+                    📦 Ước tính: {shipInfo.weightKg}kg ({shipInfo.tierLabel})
+                  </span>
+                  {shipInfo.isHighValueOrder && (
+                    <span className="text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 font-bold">
+                      Đơn ≥ 3tr (bảo hiểm COD)
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-0.5">
+                  Shop sẽ kiểm tra và có thể hỗ trợ miễn/giảm cước khi xác nhận đơn
                 </p>
               </div>
             </div>
-            <span className="text-xs font-bold text-gray-900 shrink-0">₫0 (báo cước sau)</span>
+            <span className="text-xs font-bold text-rose-600 shrink-0">+{formatVND(checkoutShippingFee)}</span>
           </div>
         </div>
 
-        {/* 4. SHOPEE VOUCHER / DISCOUNT ROW */}
+        {/* 4. SHOPEE PAYMENT METHOD CARD */}
+        <div className="bg-white rounded-lg shadow-2xs p-3.5 space-y-3 border border-gray-100">
+          <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+            <div className="flex items-center gap-1.5">
+              <CreditCard className="w-4 h-4 text-stone-700" />
+              <span className="text-xs font-bold text-gray-900">Phương thức thanh toán</span>
+            </div>
+            {isOrderOver1M && (
+              <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                ✨ Đơn ≥ 1tr (Freeship khi CK)
+              </span>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            {/* Option 1: COD */}
+            <label
+              onClick={() => setPaymentMethod('COD')}
+              className={`p-3 rounded-xl border flex items-start justify-between gap-3 cursor-pointer transition ${
+                paymentMethod === 'COD'
+                  ? 'bg-rose-50/40 border-rose-400 ring-1 ring-rose-200'
+                  : 'bg-gray-50/60 border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              <div className="flex items-start gap-2.5">
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  checked={paymentMethod === 'COD'}
+                  onChange={() => setPaymentMethod('COD')}
+                  className="mt-0.5 w-4 h-4 text-rose-600 focus:ring-rose-400 cursor-pointer"
+                />
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-gray-900">Thanh toán khi nhận hàng (COD)</span>
+                    <span className="text-[10px] text-gray-400 font-medium">Tiền mặt</span>
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    Thanh toán trực tiếp cho shipper khi nhận kiện hàng.
+                  </p>
+                  {isOrderOver1M && (
+                    <p className="text-[10px] text-amber-700 font-bold mt-1 bg-amber-50 px-1.5 py-0.5 rounded inline-block border border-amber-200">
+                      💡 Mẹo: Chuyển khoản để được MIỄN PHÍ SHIP 0đ (tiết kiệm {formatVND(checkoutShippingFee)})
+                    </p>
+                  )}
+                </div>
+              </div>
+              <span className="text-xs font-bold text-rose-600 shrink-0">
+                +{formatVND(checkoutShippingFee)}
+              </span>
+            </label>
+
+            {/* Option 2: BANK TRANSFER */}
+            <label
+              onClick={() => setPaymentMethod('BANK')}
+              className={`p-3 rounded-xl border flex items-start justify-between gap-3 cursor-pointer transition ${
+                paymentMethod === 'BANK'
+                  ? 'bg-emerald-50/50 border-emerald-400 ring-1 ring-emerald-200'
+                  : 'bg-gray-50/60 border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              <div className="flex items-start gap-2.5">
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  checked={paymentMethod === 'BANK'}
+                  onChange={() => setPaymentMethod('BANK')}
+                  className="mt-0.5 w-4 h-4 text-emerald-600 focus:ring-emerald-400 cursor-pointer"
+                />
+                <div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs font-bold text-gray-900">Chuyển khoản Ngân hàng (VietQR)</span>
+                    {isOrderOver1M ? (
+                      <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded border border-emerald-300">
+                        🎁 MIỄN PHÍ SHIP 0Đ
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-stone-500 bg-stone-100 px-1.5 py-0.2 rounded font-medium">
+                        Nhanh &amp; Tiện
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    {isOrderOver1M ? (
+                      <strong className="text-emerald-700 font-bold">
+                        Đơn từ 1.000.000₫ được shop MIỄN 100% cước ship khi thanh toán chuyển khoản!
+                      </strong>
+                    ) : (
+                      <span>Chuyển khoản tiện lợi qua VietQR khi shop liên hệ xác nhận đơn hàng.</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <span className={`text-xs font-black shrink-0 ${isBankTransferFreeship ? 'text-emerald-700' : 'text-rose-600'}`}>
+                {isBankTransferFreeship ? '0₫ (Miễn ship)' : `+${formatVND(checkoutShippingFee)}`}
+              </span>
+            </label>
+          </div>
+        </div>
+
+        {/* 5. SHOPEE VOUCHER / DISCOUNT ROW */}
         {checkoutTotalSavings > 0 && (
           <div className="bg-white rounded-lg shadow-2xs p-3.5 flex items-center justify-between border border-gray-100">
             <div className="flex items-center gap-2">
@@ -1201,17 +1398,33 @@ export default function CheckoutPage() {
             </div>
           )}
 
-          <div className="flex justify-between">
-            <span>Tổng tiền phí vận chuyển:</span>
-            <span className="text-amber-700 font-medium bg-amber-50 px-1.5 py-0.2 rounded border border-amber-100 text-[11px]">
-              Shop báo cước sau khi cân
-            </span>
+          <div className="flex justify-between items-center">
+            <span>Tổng tiền phí vận chuyển ({shipInfo.weightKg}kg):</span>
+            {isBankTransferFreeship ? (
+              <span className="text-emerald-700 font-black text-xs flex items-center gap-1.5">
+                <span className="line-through text-gray-400 font-normal">{formatVND(checkoutShippingFee)}</span>
+                <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200">
+                  🎁 Miễn ship (0đ)
+                </span>
+              </span>
+            ) : (
+              <span className="text-rose-600 font-bold text-xs">
+                +{formatVND(checkoutShippingFee)}
+              </span>
+            )}
           </div>
 
           <div className="flex justify-between pt-2 border-t border-gray-100 items-baseline">
-            <span className="font-bold text-gray-900 text-xs">Tổng thanh toán:</span>
+            <div>
+              <span className="font-bold text-gray-900 text-xs block">Tổng thanh toán:</span>
+              {isBankTransferFreeship && (
+                <span className="text-[10px] text-emerald-600 font-bold">
+                  (Đã miễn phí ship khi Chuyển Khoản)
+                </span>
+              )}
+            </div>
             <span className={`text-base font-black ${curr.priceText}`}>
-              {formatVND(checkoutSubtotal)}
+              {formatVND(checkoutFinalTotal)}
             </span>
           </div>
         </div>
@@ -1231,14 +1444,18 @@ export default function CheckoutPage() {
             <div className="flex items-baseline gap-1">
               <span className="text-xs text-gray-600">Tổng thanh toán:</span>
               <span className={`text-base sm:text-lg font-black ${curr.priceText}`}>
-                {formatVND(checkoutSubtotal)}
+                {formatVND(checkoutFinalTotal)}
               </span>
             </div>
-            {checkoutTotalSavings > 0 && (
+            {isBankTransferFreeship ? (
+              <span className="text-[10px] text-emerald-600 font-bold">
+                🎁 Đã freeship khi Chuyển Khoản
+              </span>
+            ) : checkoutTotalSavings > 0 ? (
               <span className={`text-[10px] ${curr.priceText} font-semibold`}>
                 Tiết kiệm {formatVND(checkoutTotalSavings)}
               </span>
-            )}
+            ) : null}
           </div>
 
           <button
