@@ -1942,7 +1942,7 @@ export const db = {
         email: data.email || '',
         hasAccount: true,
         address: data.address || '',
-        city: data.city || 'Hà Nội',
+        city: data.city || '',
         customerType: 'NEW',
         totalOrdersCount: 0,
         totalSpent: 0,
@@ -2048,7 +2048,7 @@ export const db = {
         fullName: customerData.fullName,
         phone: customerData.phone,
         address: customerData.address,
-        city: customerData.city || 'Hà Nội',
+        city: customerData.city || '',
         customerType: 'NEW',
         totalOrdersCount: 0,
         totalSpent: 0,
@@ -2236,7 +2236,7 @@ export const db = {
           fullName: orderInput.customer.fullName,
           phone: orderInput.customer.phone,
           address: orderInput.customer.address,
-          city: orderInput.customer.city || 'Hà Nội',
+          city: orderInput.customer.city || '',
           note: orderInput.customer.note || '',
         },
         items: mappedItems,
@@ -2273,7 +2273,7 @@ export const db = {
         : undefined;
 
       const specificAddr = (orderInput.customer as any)?.specificAddress || orderInput.customer?.address || '';
-      const orderCity = orderInput.customer?.city || 'Bắc Giang';
+      const orderCity = orderInput.customer?.city || '';
       const orderDistrict = (orderInput.customer as any)?.district || '';
       const setAsDefault = (orderInput as any)?.setAsDefaultAddress !== false;
 

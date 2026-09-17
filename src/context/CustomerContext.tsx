@@ -59,6 +59,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
       if (data.success && data.data) {
         setCustomer(data.data);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data.data));
+        try { localStorage.removeItem('omachi_checkout_shipping_info'); } catch (e) {}
         closeAuthModal();
         return { success: true };
       } else {
@@ -80,6 +81,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
       if (data.success && data.data) {
         setCustomer(data.data);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data.data));
+        try { localStorage.removeItem('omachi_checkout_shipping_info'); } catch (e) {}
         closeAuthModal();
         return { success: true };
       } else {
@@ -93,6 +95,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setCustomer(null);
     localStorage.removeItem(STORAGE_KEY);
+    try { localStorage.removeItem('omachi_checkout_shipping_info'); } catch (e) {}
   };
 
   const updateProfile = async (updateData: Partial<Customer>) => {

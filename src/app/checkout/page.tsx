@@ -453,26 +453,28 @@ export default function CheckoutPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [saveAsDefault, setSaveAsDefault] = useState(true);
 
-  // Restore guest checkout shipping info from localStorage if available
+  // Restore guest checkout shipping info from localStorage if available (GUESTS ONLY)
   useEffect(() => {
-    try {
-      const cached = localStorage.getItem('omachi_checkout_shipping_info');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed.fullName) setCustomer((prev) => ({ ...prev, fullName: prev.fullName || parsed.fullName }));
-        if (parsed.phone) setCustomer((prev) => ({ ...prev, phone: prev.phone || parsed.phone }));
-        if (parsed.selectedProvince) setSelectedProvince((prev) => prev || parsed.selectedProvince);
-        if (parsed.selectedDistrict) setSelectedDistrict((prev) => prev || parsed.selectedDistrict);
-        if (parsed.selectedWard) setSelectedWard((prev) => prev || parsed.selectedWard);
-        if (parsed.specificAddress) setSpecificAddress((prev) => prev || parsed.specificAddress);
-      }
-    } catch (e) {}
-  }, []);
+    if (!loggedInCustomer) {
+      try {
+        const cached = localStorage.getItem('omachi_checkout_shipping_info');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.fullName) setCustomer((prev) => ({ ...prev, fullName: prev.fullName || parsed.fullName }));
+          if (parsed.phone) setCustomer((prev) => ({ ...prev, phone: prev.phone || parsed.phone }));
+          if (parsed.selectedProvince) setSelectedProvince((prev) => prev || parsed.selectedProvince);
+          if (parsed.selectedDistrict) setSelectedDistrict((prev) => prev || parsed.selectedDistrict);
+          if (parsed.selectedWard) setSelectedWard((prev) => prev || parsed.selectedWard);
+          if (parsed.specificAddress) setSpecificAddress((prev) => prev || parsed.specificAddress);
+        }
+      } catch (e) {}
+    }
+  }, [loggedInCustomer]);
 
-  // Auto save shipping info to localStorage for guest convenience
+  // Auto save shipping info to localStorage for guest convenience ONLY
   useEffect(() => {
     try {
-      if (customer.fullName || customer.phone || specificAddress || selectedProvince) {
+      if (!loggedInCustomer && (customer.fullName || customer.phone || specificAddress || selectedProvince)) {
         localStorage.setItem(
           'omachi_checkout_shipping_info',
           JSON.stringify({
@@ -486,7 +488,7 @@ export default function CheckoutPage() {
         );
       }
     } catch (e) {}
-  }, [customer.fullName, customer.phone, selectedProvince, selectedDistrict, selectedWard, specificAddress]);
+  }, [loggedInCustomer, customer.fullName, customer.phone, selectedProvince, selectedDistrict, selectedWard, specificAddress]);
 
   // Reactive auto-clear error banner when customer fixes corresponding field
   useEffect(() => {
@@ -536,37 +538,43 @@ export default function CheckoutPage() {
     return [];
   }, [loggedInCustomer]);
 
-  const applySavedAddress = (addr: { id?: string; address: string; district?: string; city?: string }) => {
-    if (addr.city) {
-      setSelectedProvince(addr.city);
-      if (addr.district) {
-        setSelectedDistrict(addr.district);
-      }
-    }
-    if (addr.address) {
-      setSpecificAddress(addr.address);
-    }
+  const applySavedAddress = (addr: { id?: string; address: string; district?: string; city?: string; ward?: string }) => {
+    setSelectedProvince(addr.city || '');
+    setSelectedDistrict(addr.district || '');
+    setSelectedWard((addr as any).ward || '');
+    setSpecificAddress(addr.address || '');
   };
 
   useEffect(() => {
     if (loggedInCustomer) {
+      // Purge any guest checkout residue from localStorage
+      try { localStorage.removeItem('omachi_checkout_shipping_info'); } catch (e) {}
+
+      // Prioritize account's name and phone
       setCustomer((prev) => ({
         ...prev,
-        fullName: prev.fullName || loggedInCustomer.fullName || '',
-        phone: prev.phone || loggedInCustomer.phone || '',
+        fullName: loggedInCustomer.fullName || '',
+        phone: loggedInCustomer.phone || '',
       }));
 
-      if (savedAddresses.length > 0) {
+      const hasValidSavedAddress = savedAddresses.length > 0;
+      const hasProfileAddress = Boolean(loggedInCustomer.address && loggedInCustomer.address.trim());
+
+      if (hasValidSavedAddress) {
         const defaultSaved = savedAddresses.find((a) => a.isDefault) || savedAddresses[0];
         applySavedAddress(defaultSaved);
-      } else if (loggedInCustomer.city) {
-        setSelectedProvince(loggedInCustomer.city);
-        if (loggedInCustomer.district) {
-          setSelectedDistrict(loggedInCustomer.district);
-        }
-        if (loggedInCustomer.address) {
-          setSpecificAddress(loggedInCustomer.address);
-        }
+      } else if (hasProfileAddress) {
+        setSelectedProvince(loggedInCustomer.city || '');
+        setSelectedDistrict(loggedInCustomer.district || '');
+        setSelectedWard((loggedInCustomer as any).ward || '');
+        setSpecificAddress(loggedInCustomer.address || '');
+      } else {
+        // Brand new customer with NO saved address:
+        // Clear all fields so user can enter their own address cleanly!
+        setSelectedProvince('');
+        setSelectedDistrict('');
+        setSelectedWard('');
+        setSpecificAddress('');
       }
     }
   }, [loggedInCustomer, savedAddresses]);

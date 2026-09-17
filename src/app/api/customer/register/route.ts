@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
       phone: phone.trim(),
       password: password.trim(),
       address: address?.trim() || '',
-      city: city?.trim() || 'Hà Nội',
+      city: city?.trim() || '',
       email: email?.trim() || '',
     });
 
