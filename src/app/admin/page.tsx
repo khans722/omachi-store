@@ -1804,26 +1804,6 @@ export default function AdminPage() {
                                           </button>
                                         )}
                                       </div>
-
-                                      {/* Manual custom shipping input */}
-                                      <div className="flex items-center gap-1.5 shrink-0">
-                                        <input
-                                          type="number"
-                                          min={0}
-                                          step="any"
-                                          value={shippingFeeInputs[order.id] !== undefined ? shippingFeeInputs[order.id] : (order.shippingFee || '')}
-                                          onChange={(e) => setShippingFeeInputs({ ...shippingFeeInputs, [order.id]: e.target.value })}
-                                          placeholder="Nhập ship..."
-                                          className="w-24 px-2 py-1 bg-orange-50 border border-orange-300 rounded-lg text-xs font-black text-rose-600 text-center focus:ring-2 focus:ring-orange-400 focus:outline-none"
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={() => handleUpdateShippingFee(order.id)}
-                                          className="px-2.5 py-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-[11px] rounded-lg shadow-2xs transition active:scale-95 shrink-0"
-                                        >
-                                          Lưu Ship
-                                        </button>
-                                      </div>
                                     </div>
                                   </div>
                                 );

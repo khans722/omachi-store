@@ -1689,7 +1689,12 @@ const INITIAL_DATABASE: DetailedDatabaseSchema = {
     "websiteUrl": "",
     "enableTelegramNotify": true,
     "prepaidFreeShipThreshold": 10000,
-    "enablePrepaidFreeShip": true
+    "enablePrepaidFreeShip": true,
+    "momoPhone": "0375408256",
+    "momoName": "DUONG QUOC KHANH",
+    "bankId": "Vietcombank",
+    "bankAccount": "1013388086",
+    "bankOwner": "DUONG QUOC KHANH"
   }
 };
 

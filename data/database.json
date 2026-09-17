@@ -726,10 +726,10 @@
     "enableTelegramNotify": true,
     "prepaidFreeShipThreshold": 10000,
     "enablePrepaidFreeShip": true,
-    "momoPhone": "0398445122",
-    "momoName": "OMACHI HANDMADE STORE",
-    "bankId": "MB",
-    "bankAccount": "0398445122",
-    "bankOwner": "OMACHI STORE"
+    "momoPhone": "0375408256",
+    "momoName": "DUONG QUOC KHANH",
+    "bankId": "Vietcombank",
+    "bankAccount": "1013388086",
+    "bankOwner": "DUONG QUOC KHANH"
   }
 }

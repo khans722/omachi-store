@@ -427,7 +427,10 @@ export default function CheckoutPage() {
       .then((r) => r.json())
       .then((res) => {
         if (res.success && res.data) {
-          setSettings({ ...res.data, ...(localSaved || {}) });
+          setSettings(res.data);
+          try {
+            localStorage.setItem('omachi_shop_settings', JSON.stringify(res.data));
+          } catch {}
         }
       })
       .catch(() => {});
@@ -1008,7 +1011,7 @@ export default function CheckoutPage() {
                     src={
                       settings?.momoQrImage ||
                       `https://api.qrserver.com/v1/create-qr-code/?size=250x250&margin=8&data=${encodeURIComponent(
-                        `2|99|${(settings?.momoPhone || '0398445122').replace(/[^0-9]/g, '')}|||0|0|${
+                        `2|99|${(settings?.momoPhone || '0375408256').replace(/[^0-9]/g, '')}|||0|0|${
                           createdOrder.finalTotalAmount || createdOrder.totalAmount
                         }|DH ${createdOrder.code}|transfer_p2p`
                       )}`
@@ -1026,7 +1029,7 @@ export default function CheckoutPage() {
 
                 {/* Deep link button for Mobile */}
                 <a
-                  href={`momo://?action=transfer&phone=${(settings?.momoPhone || '0398445122').replace(/[^0-9]/g, '')}&amount=${
+                  href={`momo://?action=transfer&phone=${(settings?.momoPhone || '0375408256').replace(/[^0-9]/g, '')}&amount=${
                     createdOrder.finalTotalAmount || createdOrder.totalAmount
                   }&comment=${encodeURIComponent(`DH ${createdOrder.code}`)}`}
                   className="w-full py-2 px-3 bg-[#A50064] hover:bg-[#880052] text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition active:scale-98"
@@ -1041,11 +1044,11 @@ export default function CheckoutPage() {
                   <span className="text-stone-500">Số điện thoại MoMo:</span>
                   <div className="flex items-center gap-1.5">
                     <strong className="text-stone-900 font-mono font-bold text-sm">
-                      {settings?.momoPhone || '0398445122'}
+                      {settings?.momoPhone || '0375408256'}
                     </strong>
                     <button
                       type="button"
-                      onClick={() => copyToClipboard(settings?.momoPhone || '0398445122', 'momoPhone')}
+                      onClick={() => copyToClipboard(settings?.momoPhone || '0375408256', 'momoPhone')}
                       className="text-[10px] bg-white border border-stone-300 hover:border-pink-500 text-stone-700 px-2 py-0.5 rounded font-bold transition"
                     >
                       {copiedField === 'momoPhone' ? '✓ Đã chép' : 'Sao chép'}
@@ -1056,7 +1059,7 @@ export default function CheckoutPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-stone-500">Tên chủ ví:</span>
                   <strong className="text-stone-900 font-bold uppercase">
-                    {settings?.momoName || 'OMACHI HANDMADE STORE'}
+                    {settings?.momoName || 'DUONG QUOC KHANH'}
                   </strong>
                 </div>
 
@@ -1115,15 +1118,21 @@ export default function CheckoutPage() {
               {/* VietQR Dynamic Code */}
               <div className="bg-white p-3 rounded-xl border border-blue-200 flex flex-col items-center text-center space-y-2">
                 <div className="relative p-2 bg-white rounded-lg border border-blue-100 shadow-2xs">
-                  <img
-                    src={`https://img.vietqr.io/image/${settings?.bankId || 'MB'}-${settings?.bankAccount || '0398445122'}-compact2.png?amount=${
-                      createdOrder.finalTotalAmount || createdOrder.totalAmount
-                    }&addInfo=${encodeURIComponent(`DH ${createdOrder.code}`)}&accountName=${encodeURIComponent(
-                      settings?.bankOwner || 'OMACHI STORE'
-                    )}`}
-                    alt="VietQR Chuyển khoản"
-                    className="w-52 h-auto object-contain rounded-md"
-                  />
+                  {(() => {
+                    const rawBank = (settings?.bankId || 'VCB').toUpperCase().trim();
+                    const qrBank = rawBank.includes('VIETCOM') ? 'VCB' : rawBank.includes('MB') ? 'MB' : rawBank;
+                    return (
+                      <img
+                        src={`https://img.vietqr.io/image/${qrBank}-${settings?.bankAccount || '1013388086'}-compact2.png?amount=${
+                          createdOrder.finalTotalAmount || createdOrder.totalAmount
+                        }&addInfo=${encodeURIComponent(`DH ${createdOrder.code}`)}&accountName=${encodeURIComponent(
+                          settings?.bankOwner || 'DUONG QUOC KHANH'
+                        )}`}
+                        alt="VietQR Chuyển khoản"
+                        className="w-52 h-auto object-contain rounded-md"
+                      />
+                    );
+                  })()}
                 </div>
                 <p className="text-[11px] text-stone-500 font-medium">
                   Mở app ngân hàng &gt; Quét QR để tự động điền STK, số tiền và nội dung
@@ -1135,7 +1144,7 @@ export default function CheckoutPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-stone-500">Ngân hàng:</span>
                   <strong className="text-stone-900 font-bold">
-                    {settings?.bankId || 'MB Bank'}
+                    {settings?.bankId || 'Vietcombank'}
                   </strong>
                 </div>
 
@@ -1143,11 +1152,11 @@ export default function CheckoutPage() {
                   <span className="text-stone-500">Số tài khoản:</span>
                   <div className="flex items-center gap-1.5">
                     <strong className="text-stone-900 font-mono font-bold text-sm">
-                      {settings?.bankAccount || '0398445122'}
+                      {settings?.bankAccount || '1013388086'}
                     </strong>
                     <button
                       type="button"
-                      onClick={() => copyToClipboard(settings?.bankAccount || '0398445122', 'bankAccount')}
+                      onClick={() => copyToClipboard(settings?.bankAccount || '1013388086', 'bankAccount')}
                       className="text-[10px] bg-white border border-stone-300 hover:border-blue-500 text-stone-700 px-2 py-0.5 rounded font-bold transition"
                     >
                       {copiedField === 'bankAccount' ? '✓ Đã chép' : 'Sao chép'}
@@ -1158,7 +1167,7 @@ export default function CheckoutPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-stone-500">Chủ tài khoản:</span>
                   <strong className="text-stone-900 font-bold uppercase">
-                    {settings?.bankOwner || 'OMACHI STORE'}
+                    {settings?.bankOwner || 'DUONG QUOC KHANH'}
                   </strong>
                 </div>
 
@@ -1583,33 +1592,18 @@ export default function CheckoutPage() {
           </div>
 
           {/* Shipping row: SPX Express */}
-          <div className="pt-2.5 border-t border-gray-100 flex items-start justify-between gap-2">
-            <div className="flex items-start gap-2">
-              <Truck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+          <div className="pt-2.5 border-t border-gray-100 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Truck className="w-4 h-4 text-emerald-600 shrink-0" />
               <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-bold text-gray-800">Phương thức vận chuyển</span>
-                </div>
-                <p className="text-[11px] text-gray-500 mt-0.5 font-medium">
-                  SPX Express • Giao tận nơi COD
-                </p>
-                <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                  <span className="text-[10px] text-stone-700 bg-stone-100 px-1.5 py-0.5 rounded font-bold border border-stone-200">
-                    📦 Ước tính: {shipInfo.weightKg}kg ({shipInfo.tierLabel})
-                  </span>
-                  {shipInfo.isHighValueOrder && (
-                    <span className="text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 font-bold">
-                      Đơn ≥ 3tr (bảo hiểm COD)
-                    </span>
-                  )}
-                </div>
-                <p className="text-[10px] text-gray-400 mt-0.5">
-                  Shop sẽ kiểm tra và có thể hỗ trợ miễn/giảm cước khi xác nhận đơn
+                <span className="text-xs font-bold text-gray-800">Phương thức vận chuyển</span>
+                <p className="text-[11px] text-gray-500 font-medium">
+                  SPX Express • Giao tận nơi
                 </p>
               </div>
             </div>
             {effectiveShippingFee === 0 ? (
-              <span className="text-xs font-bold text-emerald-600 shrink-0">0₫</span>
+              <span className="text-xs font-bold text-emerald-600 shrink-0">0đ</span>
             ) : (
               <span className="text-xs font-bold text-rose-600 shrink-0">+{formatVND(checkoutShippingFee)}</span>
             )}
@@ -1680,15 +1674,6 @@ export default function CheckoutPage() {
                 <div>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="text-xs font-bold text-gray-900">Chuyển khoản Ngân hàng (VietQR)</span>
-                    {isOrderOverThreshold && isPrepaidFreeshipEnabled ? (
-                      <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded border border-emerald-300">
-                        🎁 MIỄN PHÍ SHIP 0Đ
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-stone-500 bg-stone-100 px-1.5 py-0.2 rounded font-medium">
-                        Nhanh &amp; Tiện
-                      </span>
-                    )}
                   </div>
                   <p className="text-[11px] text-gray-500 mt-0.5">
                     {isOrderOverThreshold && isPrepaidFreeshipEnabled ? (
@@ -1696,7 +1681,7 @@ export default function CheckoutPage() {
                         Đơn từ {formatVND(FREESHIP_THRESHOLD)} được shop MIỄN 100% cước ship khi thanh toán chuyển khoản!
                       </strong>
                     ) : (
-                      <span>Quét mã VietQR tiện lợi qua mọi app ngân hàng ({settings?.bankId || 'MB Bank'}).</span>
+                      <span>Quét mã VietQR tiện lợi qua mọi app ngân hàng ({settings?.bankId || 'Vietcombank'}).</span>
                     )}
                   </p>
                 </div>
@@ -1726,15 +1711,6 @@ export default function CheckoutPage() {
                       <span className="w-4 h-4 rounded bg-[#A50064] text-white text-[9px] font-black inline-flex items-center justify-center">M</span>
                       Ví Điện Tử MoMo
                     </span>
-                    {isOrderOverThreshold && isPrepaidFreeshipEnabled ? (
-                      <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded border border-emerald-300">
-                        🎁 MIỄN PHÍ SHIP 0Đ
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-[#A50064] bg-pink-100 px-1.5 py-0.2 rounded font-bold">
-                        Quét QR / Ví
-                      </span>
-                    )}
                   </div>
                   <p className="text-[11px] text-gray-500 mt-0.5">
                     {isOrderOverThreshold && isPrepaidFreeshipEnabled ? (
@@ -1742,7 +1718,7 @@ export default function CheckoutPage() {
                         Đơn từ {formatVND(FREESHIP_THRESHOLD)} được MIỄN 100% cước ship khi thanh toán qua MoMo!
                       </strong>
                     ) : (
-                      <span>Quét mã MoMo hoặc chuyển trực tiếp đến SĐT ví {settings?.momoPhone || 'của shop'}.</span>
+                      <span>Quét mã MoMo hoặc chuyển trực tiếp đến SĐT ví {settings?.momoPhone || '0375408256'}.</span>
                     )}
                   </p>
                 </div>
@@ -1784,13 +1760,13 @@ export default function CheckoutPage() {
           )}
 
           <div className="flex justify-between items-center">
-            <span>Tổng tiền phí vận chuyển ({shipInfo.weightKg}kg):</span>
-            {isPrepaidFreeship ? (
-              <span className="text-emerald-700 font-black text-xs flex items-center gap-1.5">
-                <span className="line-through text-gray-400 font-normal">{formatVND(checkoutShippingFee)}</span>
-                <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200">
-                  🎁 Miễn ship (0đ)
-                </span>
+            <span>Tổng tiền phí vận chuyển:</span>
+            {effectiveShippingFee === 0 ? (
+              <span className="font-bold text-xs flex items-center gap-1.5">
+                {checkoutShippingFee > 0 && (
+                  <span className="line-through text-gray-400 font-normal">{formatVND(checkoutShippingFee)}</span>
+                )}
+                <span className="text-emerald-600 font-bold">0đ</span>
               </span>
             ) : (
               <span className="text-rose-600 font-bold text-xs">
@@ -1800,14 +1776,7 @@ export default function CheckoutPage() {
           </div>
 
           <div className="flex justify-between pt-2 border-t border-gray-100 items-baseline">
-            <div>
-              <span className="font-bold text-gray-900 text-xs block">Tổng thanh toán:</span>
-              {isPrepaidFreeship && (
-                <span className="text-[10px] text-emerald-600 font-bold">
-                  (Đã miễn phí ship khi CK / MoMo)
-                </span>
-              )}
-            </div>
+            <span className="font-bold text-gray-900 text-xs block">Tổng thanh toán:</span>
             <span className={`text-base font-black ${curr.priceText}`}>
               {formatVND(checkoutFinalTotal)}
             </span>
@@ -1832,15 +1801,11 @@ export default function CheckoutPage() {
                 {formatVND(checkoutFinalTotal)}
               </span>
             </div>
-            {isPrepaidFreeship ? (
-              <span className="text-[10px] text-emerald-600 font-bold">
-                🎁 Đã freeship khi CK / MoMo
-              </span>
-            ) : checkoutTotalSavings > 0 ? (
+            {checkoutTotalSavings > 0 && (
               <span className={`text-[10px] ${curr.priceText} font-semibold`}>
                 Tiết kiệm {formatVND(checkoutTotalSavings)}
               </span>
-            ) : null}
+            )}
           </div>
 
           <button
