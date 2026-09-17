@@ -404,6 +404,17 @@ export default function AdminPage() {
         if (cached) {
           localOrders = JSON.parse(cached);
         }
+        const custCached = localStorage.getItem('omachi_customer_orders');
+        if (custCached) {
+          const parsedCust: Order[] = JSON.parse(custCached);
+          const existingIds = new Set(localOrders.map((o) => (o.id || o.code || '').toLowerCase().replace(/^#/, '').trim()));
+          parsedCust.forEach((co) => {
+            const k = (co.id || co.code || '').toLowerCase().replace(/^#/, '').trim();
+            if (k && !existingIds.has(k)) {
+              localOrders.push(co);
+            }
+          });
+        }
       } catch (e) {}
 
       const res = await fetch('/api/orders');
@@ -2903,100 +2914,17 @@ export default function AdminPage() {
 
                 {/* 6. TELEGRAM BOT NOTIFICATIONS */}
                 <div className="bg-gradient-to-r from-sky-50 via-blue-50 to-indigo-50/40 p-5 rounded-2xl border border-sky-200 shadow-2xs space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-sky-100">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-2xl">🤖</span>
-                      <div>
-                        <h4 className="font-black text-sky-900 text-xs sm:text-sm">
-                          6. Thông Báo Đơn Hàng Tự Động Qua Telegram
-                        </h4>
-                        <p className="text-[11px] text-sky-700">
-                          Điện thoại rung chuông &quot;Ting ting&quot; ngay sau 0.1s mỗi khi có đơn mới
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowTelegramGuide(!showTelegramGuide)}
-                        className="px-2.5 py-1.5 bg-white hover:bg-sky-100 text-sky-800 border border-sky-300 rounded-xl font-bold text-[11px] flex items-center gap-1 shadow-2xs transition"
-                      >
-                        <span>{showTelegramGuide ? '✕ Đóng hướng dẫn' : '📖 Cách lấy Token & ID'}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleTestTelegram}
-                        className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-extrabold text-[11px] flex items-center gap-1 shadow-sm transition active:scale-95 shrink-0"
-                      >
-                        <span>🔔 Gửi Thử Tin</span>
-                      </button>
+                  <div className="flex items-center gap-2.5 pb-3 border-b border-sky-100">
+                    <span className="text-2xl">🤖</span>
+                    <div>
+                      <h4 className="font-black text-sky-900 text-xs sm:text-sm">
+                        6. Thông Báo Đơn Hàng Tự Động Qua Telegram
+                      </h4>
+                      <p className="text-[11px] text-sky-700">
+                        Điện thoại rung chuông &quot;Ting ting&quot; ngay sau 0.1s mỗi khi có đơn mới
+                      </p>
                     </div>
                   </div>
-
-                  {/* STATUS NOTIFICATION BANNER */}
-                  {testTelegramStatus && (
-                    <div className={`p-3 rounded-xl border text-xs font-bold animate-fade-in flex items-start gap-2 shadow-xs ${
-                      testTelegramStatus.type === 'loading'
-                        ? 'bg-amber-50 border-amber-300 text-amber-900'
-                        : testTelegramStatus.type === 'success'
-                        ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
-                        : 'bg-rose-50 border-rose-300 text-rose-900'
-                    }`}>
-                      <span className="text-sm shrink-0">
-                        {testTelegramStatus.type === 'loading' ? '⏳' : testTelegramStatus.type === 'success' ? '🎉' : '⚠️'}
-                      </span>
-                      <div className="flex-1 leading-relaxed">
-                        {testTelegramStatus.message}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* QUICK STEP-BY-STEP GUIDE CARD */}
-                  {showTelegramGuide && (
-                    <div className="bg-white/95 rounded-2xl p-4 border border-sky-300 shadow-sm space-y-3 text-xs text-gray-700 animate-fade-in">
-                      <div className="font-extrabold text-sky-900 text-sm flex items-center gap-1.5">
-                        <span>✨ Hướng dẫn cài đặt Telegram nhận đơn trong 2 phút:</span>
-                      </div>
-
-                      <div className="space-y-2.5">
-                        <div className="p-2.5 rounded-xl bg-sky-50/70 border border-sky-100">
-                          <p className="font-bold text-sky-950 flex items-center gap-1.5">
-                            <span className="w-5 h-5 rounded-full bg-sky-600 text-white flex items-center justify-center text-[10px] font-black">1</span>
-                            <span>Tạo Bot lấy Token:</span>
-                          </p>
-                          <p className="text-[11px] text-gray-600 mt-1 pl-6">
-                            Mở Telegram, tìm kiếm <b>@BotFather</b> (tích xanh) &rarr; gửi lệnh <code>/newbot</code> &rarr; nhập tên hiển thị (VD: <i>Omachi Alert</i>) &rarr; nhập username kết thúc bằng chữ &quot;bot&quot; (VD: <i>omachi_shop_alert_bot</i>). Sau đó copy dãy <b>API Token</b> dán vào ô bên dưới.
-                          </p>
-                        </div>
-
-                        <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200">
-                          <p className="font-bold text-amber-950 flex items-center gap-1.5">
-                            <span className="w-5 h-5 rounded-full bg-amber-600 text-white flex items-center justify-center text-[10px] font-black">2</span>
-                            <span>BẮT BUỘC: Kích hoạt Bot:</span>
-                          </p>
-                          <p className="text-[11px] text-amber-900 mt-1 pl-6">
-                            ⚠️ Nhấp vào link bot vừa tạo mà @BotFather gửi (dạng <i>t.me/omachi_shop_alert_bot</i>) và bấm nút <b>START</b>. <i>(Nếu không bấm START, Telegram sẽ chặn bot gửi tin cho bạn vì lý do chống spam!)</i>.
-                          </p>
-                        </div>
-
-                        <div className="p-2.5 rounded-xl bg-indigo-50/70 border border-indigo-100">
-                          <p className="font-bold text-indigo-950 flex items-center gap-1.5">
-                            <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black">3</span>
-                            <span>Lấy Chat ID của bạn:</span>
-                          </p>
-                          <p className="text-[11px] text-gray-600 mt-1 pl-6">
-                            Tìm kiếm bot <b>@userinfobot</b> &rarr; bấm <b>START</b> &rarr; copy dãy số nguyên ở dòng <code>Id: 123456789...</code> dán vào ô Chat ID.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="text-[11px] text-sky-800 bg-sky-100/60 p-2 rounded-lg font-medium">
-                        💡 <b>Bước cuối:</b> Dán xong bấm <b>🔔 Gửi Thử Tin</b> để kiểm tra chuông nổ, sau đó bấm <b>💾 Lưu Toàn Bộ Cài Đặt Shop</b> ở góc dưới!
-                      </div>
-                    </div>
-                  )}
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div>

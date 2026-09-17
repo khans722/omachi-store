@@ -1712,6 +1712,14 @@ function readDb(): DetailedDatabaseSchema {
       parsed.categories = INITIAL_DATABASE.categories;
       needResave = true;
     }
+    if (!parsed.orders || !Array.isArray(parsed.orders)) {
+      parsed.orders = [];
+      needResave = true;
+    }
+    if (!parsed.customers || !Array.isArray(parsed.customers)) {
+      parsed.customers = [];
+      needResave = true;
+    }
     if (needResave) {
       writeDb(parsed);
     }
@@ -2082,6 +2090,12 @@ export const db = {
       paymentMethod?: 'ZALO_CONFIRM' | 'COD';
     }): Order {
       const dbData = readDb();
+      if (!dbData.orders || !Array.isArray(dbData.orders)) {
+        dbData.orders = [];
+      }
+      if (!dbData.customers || !Array.isArray(dbData.customers)) {
+        dbData.customers = [];
+      }
       
       // 1. Generate Random Order Code OM-XXXX
       const randomCode = `OM-${Math.floor(1000 + Math.random() * 9000)}`;

@@ -538,6 +538,13 @@ export default function CheckoutPage() {
     }));
   }, []);
 
+  const wardOptions = useMemo(() => {
+    return currentWards.map((w) => ({
+      value: w,
+      label: w,
+    }));
+  }, [currentWards]);
+
   const currentProvinceData = useMemo(() => {
     if (!selectedProvince) return null;
     const clean = selectedProvince.trim().toLowerCase();
@@ -996,51 +1003,29 @@ export default function CheckoutPage() {
                   />
 
                   {/* Phường / Xã / Thị trấn (Cấp 2 trực tiếp) */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-[11px] font-bold text-gray-700 block">
-                        Phường / Xã / Thị trấn <span className="text-rose-500">*</span>
-                      </label>
-                      <span className="text-[10px] text-gray-400 font-medium">
-                        {isLoadingWards ? 'Đang tải danh sách...' : 'Chọn hoặc điền tay'}
-                      </span>
-                    </div>
-                    <div className="relative">
-                      <input
-                        ref={wardRef}
-                        type="text"
-                        list="ward-datalist-suggestions"
-                        disabled={!selectedProvince}
-                        placeholder={
-                          !selectedProvince
-                            ? 'Chọn Tỉnh / TP trước...'
-                            : 'VD: Phường Tiền Phong / Xã Nội Hoàng...'
-                        }
-                        value={selectedWard}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setSelectedWard(val);
-                          if (fieldErrors.ward) setFieldErrors((p) => ({ ...p, ward: undefined }));
-                          if (errorMessage && errorMessage.includes('Phường')) setErrorMessage('');
-                        }}
-                        className={`w-full px-3 py-2 text-xs ${
-                          !selectedProvince ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50'
-                        } border ${
-                          fieldErrors.ward ? 'border-rose-400 ring-1 ring-rose-200 bg-rose-50/20' : 'border-gray-200'
-                        } rounded-lg font-medium text-gray-900 focus:outline-none focus:bg-white ${curr.focusBorder}`}
-                      />
-                      {currentWards.length > 0 && (
-                        <datalist id="ward-datalist-suggestions">
-                          {currentWards.map((w, idx) => (
-                            <option key={`${w}-${idx}`} value={w} />
-                          ))}
-                        </datalist>
-                      )}
-                    </div>
-                    {fieldErrors.ward && (
-                      <p className="text-[10px] text-rose-500 font-semibold mt-0.5">⚠️ {fieldErrors.ward}</p>
-                    )}
-                  </div>
+                  <SearchableDropdown
+                    label="Phường / Xã / Thị trấn"
+                    required
+                    disabled={!selectedProvince}
+                    disabledText="Chọn Tỉnh / TP trước..."
+                    placeholder={
+                      !selectedProvince
+                        ? 'Chọn Tỉnh / TP trước...'
+                        : isLoadingWards
+                        ? 'Đang tải danh sách...'
+                        : 'Chọn Phường / Xã...'
+                    }
+                    searchPlaceholder="🔍 Gõ tìm xã, phường..."
+                    value={selectedWard}
+                    onChange={(ward) => {
+                      setSelectedWard(ward);
+                      if (fieldErrors.ward) setFieldErrors((p) => ({ ...p, ward: undefined }));
+                      if (errorMessage && errorMessage.includes('Phường')) setErrorMessage('');
+                    }}
+                    options={wardOptions}
+                    error={fieldErrors.ward}
+                    buttonRef={wardRef}
+                  />
                 </div>
 
                 {/* Hàng 4: 1 DÒNG ĐỂ ĐIỀN TAY ĐỊA CHỈ CHI TIẾT (100% full width rộng rãi) */}
