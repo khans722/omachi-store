@@ -180,7 +180,7 @@ export default function AdminPage() {
   // Product modal state
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
-  const [productModalTab, setProductModalTab] = useState<'BASIC' | 'MEDIA' | 'VARIANTS_WHOLESALE'>('BASIC');
+  const [productModalTab, setProductModalTab] = useState<'BASIC' | 'PRICING' | 'MEDIA'>('BASIC');
   const [isSavingProduct, setIsSavingProduct] = useState(false);
 
   // Category modal state
@@ -3614,7 +3614,7 @@ export default function AdminPage() {
                   {editingProduct.id ? `Chỉnh sửa: ${editingProduct.name}` : 'Thêm sản phẩm mới'}
                 </h3>
                 <p className="text-xs text-stone-500 mt-0.5">
-                  Thiết lập thông tin, giá bán, hình ảnh và cấu hình phân loại
+                  Thiết lập thông tin, giá bán lẻ &amp; giá sỉ, hình ảnh và phân loại
                 </p>
               </div>
               <button
@@ -3626,7 +3626,7 @@ export default function AdminPage() {
               </button>
             </div>
 
-            {/* TAB SELECTOR */}
+            {/* TAB SELECTOR - 3 UNIFIED TABS */}
             <div className="shrink-0 px-5 sm:px-6 py-2.5 bg-stone-50/80 border-b border-stone-200/70">
               <div className="flex items-center gap-1.5 bg-stone-200/60 p-1 rounded-xl">
                 <button
@@ -3639,7 +3639,25 @@ export default function AdminPage() {
                   }`}
                 >
                   <Package className="w-3.5 h-3.5" />
-                  <span>Thông tin &amp; Giá</span>
+                  <span>1. Thông tin chung</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setProductModalTab('PRICING')}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 cursor-pointer ${
+                    productModalTab === 'PRICING'
+                      ? 'bg-white text-stone-900 shadow-xs'
+                      : 'text-stone-600 hover:text-stone-900'
+                  }`}
+                >
+                  <DollarSign className="w-3.5 h-3.5" />
+                  <span>2. Giá bán &amp; Bán sỉ</span>
+                  {(editingProduct.comboTiers?.length || 0) > 0 && (
+                    <span className="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                      {editingProduct.comboTiers?.length} mốc sỉ
+                    </span>
+                  )}
                 </button>
 
                 <button
@@ -3652,28 +3670,10 @@ export default function AdminPage() {
                   }`}
                 >
                   <ImagePlus className="w-3.5 h-3.5" />
-                  <span>Hình ảnh &amp; Mô tả</span>
-                  {(editingProduct.images?.length || 0) > 0 && (
+                  <span>3. Hình ảnh &amp; Màu sắc</span>
+                  {((editingProduct.images?.length || 0) > 0 || (editingProduct.variants?.length || 0) > 0) && (
                     <span className="bg-stone-100 text-stone-700 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
-                      {editingProduct.images?.length}
-                    </span>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setProductModalTab('VARIANTS_WHOLESALE')}
-                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 cursor-pointer ${
-                    productModalTab === 'VARIANTS_WHOLESALE'
-                      ? 'bg-white text-stone-900 shadow-xs'
-                      : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>Phân loại &amp; Giá sỉ</span>
-                  {((editingProduct.variants?.length || 0) > 0 || (editingProduct.comboTiers?.length || 0) > 0) && (
-                    <span className="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
-                      {(editingProduct.variants?.length || 0) + (editingProduct.comboTiers?.length || 0)}
+                      {(editingProduct.images?.length || 0) + (editingProduct.variants?.length || 0)}
                     </span>
                   )}
                 </button>
@@ -3684,7 +3684,7 @@ export default function AdminPage() {
             <form onSubmit={handleSaveProduct} noValidate className="flex-1 overflow-y-auto p-5 sm:p-6 text-xs flex flex-col justify-between">
               
               <div className="space-y-5">
-                {/* TAB 1: THÔNG TIN & GIÁ */}
+                {/* TAB 1: THÔNG TIN CHUNG */}
                 {productModalTab === 'BASIC' && (
                   <div className="space-y-4 animate-fade-in">
                     {/* Tên & SKU */}
@@ -3774,53 +3774,6 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                    {/* Giá bán lẻ & Giá vốn */}
-                    <div className="p-4 rounded-xl bg-stone-50/80 border border-stone-200 space-y-3">
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-stone-800">
-                        <DollarSign className="w-4 h-4 text-stone-600" />
-                        <span>Thiết Lập Giá Bán &amp; Giá Vốn</span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="font-semibold text-stone-700 text-xs flex items-center gap-1">
-                            <span>Giá bán lẻ (VNĐ)</span>
-                            <span className="text-rose-500">*</span>
-                          </label>
-                          <input
-                            type="number"
-                            required
-                            min={0}
-                            step="any"
-                            value={editingProduct.basePrice || 0}
-                            onChange={(e) => setEditingProduct({ ...editingProduct, basePrice: Number(e.target.value) })}
-                            className="w-full px-3.5 py-2.5 bg-white border border-stone-200 rounded-xl font-bold text-rose-600 text-base focus:border-stone-400 focus:ring-2 focus:ring-stone-100 focus:outline-none"
-                          />
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="font-semibold text-stone-700 text-xs">Giá vốn nhập kho (VNĐ)</label>
-                          <input
-                            type="number"
-                            min={0}
-                            step="any"
-                            value={editingProduct.costPrice || 0}
-                            onChange={(e) => setEditingProduct({ ...editingProduct, costPrice: Number(e.target.value) })}
-                            placeholder="Tùy chọn (để theo dõi lãi)"
-                            className="w-full px-3.5 py-2.5 bg-white border border-stone-200 rounded-xl font-semibold text-stone-800 text-sm focus:border-stone-400 focus:ring-2 focus:ring-stone-100 focus:outline-none"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Cảnh báo bán xả kho (chỉ hiện khi giá bán < giá vốn) */}
-                      {editingProduct.basePrice !== undefined && editingProduct.costPrice !== undefined && Number(editingProduct.costPrice) > 0 && Number(editingProduct.basePrice) < Number(editingProduct.costPrice) && (
-                        <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
-                          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                          <span>Lưu ý: Giá bán lẻ thấp hơn giá vốn (-{formatVND(Number(editingProduct.costPrice) - Number(editingProduct.basePrice))}/cái - Bán xả kho). Vẫn cho phép lưu.</span>
-                        </div>
-                      )}
-                    </div>
-
                     {/* Chất liệu & Kích thước */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1.5">
@@ -3848,7 +3801,7 @@ export default function AdminPage() {
 
                     {/* Checkbox nhãn / Thuộc tính hiển thị */}
                     <div className="space-y-1.5 pt-1">
-                      <label className="font-semibold text-stone-700 text-xs block">Thuộc tính hiển thị</label>
+                      <label className="font-semibold text-stone-700 text-xs block">Thuộc tính hiển thị gian hàng</label>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                         <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition ${
                           editingProduct.isHot
@@ -3893,12 +3846,275 @@ export default function AdminPage() {
                         </label>
                       </div>
                     </div>
+
+                    {/* Mô tả chi tiết sản phẩm */}
+                    <div className="space-y-1.5 pt-1">
+                      <label className="font-semibold text-stone-700 text-xs">Mô tả chi tiết sản phẩm</label>
+                      <textarea
+                        rows={4}
+                        value={editingProduct.description || ''}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
+                        placeholder="Mô tả chi tiết về sản phẩm, hướng dẫn phối phụ kiện, cách bảo quản..."
+                        className="w-full px-3.5 py-2.5 bg-white border border-stone-200 rounded-xl font-medium text-xs text-stone-800 focus:border-stone-400 focus:ring-2 focus:ring-stone-100 focus:outline-none"
+                      />
+                    </div>
                   </div>
                 )}
 
-                {/* TAB 2: HÌNH ẢNH & MÔ TẢ */}
+                {/* TAB 2: GIÁ BÁN & BÁN SỈ (GỘP CHUNG GIÁ LẺ, GIÁ VỐN, QUY CÁCH MIN/STEP VÀ MỐC SỈ) */}
+                {productModalTab === 'PRICING' && (
+                  <div className="space-y-4 animate-fade-in">
+                    {/* 1. Giá bán lẻ & Giá vốn */}
+                    <div className="p-4 rounded-xl bg-stone-50/80 border border-stone-200 space-y-3">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-stone-800">
+                        <DollarSign className="w-4 h-4 text-stone-600" />
+                        <span>1. Thiết Lập Giá Bán Lẻ &amp; Giá Vốn</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="font-semibold text-stone-700 text-xs flex items-center gap-1">
+                            <span>Giá bán lẻ 1 chiếc (VNĐ)</span>
+                            <span className="text-rose-500">*</span>
+                          </label>
+                          <input
+                            type="number"
+                            required
+                            min={0}
+                            step="any"
+                            value={editingProduct.basePrice || 0}
+                            onChange={(e) => setEditingProduct({ ...editingProduct, basePrice: Number(e.target.value) })}
+                            className="w-full px-3.5 py-2.5 bg-white border border-stone-200 rounded-xl font-bold text-rose-600 text-base focus:border-stone-400 focus:ring-2 focus:ring-stone-100 focus:outline-none"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="font-semibold text-stone-700 text-xs">Giá vốn nhập kho (VNĐ)</label>
+                          <input
+                            type="number"
+                            min={0}
+                            step="any"
+                            value={editingProduct.costPrice || 0}
+                            onChange={(e) => setEditingProduct({ ...editingProduct, costPrice: Number(e.target.value) })}
+                            placeholder="Tùy chọn (để theo dõi giá nhập)"
+                            className="w-full px-3.5 py-2.5 bg-white border border-stone-200 rounded-xl font-semibold text-stone-800 text-sm focus:border-stone-400 focus:ring-2 focus:ring-stone-100 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Cảnh báo bán xả kho (chỉ hiện khi giá bán < giá vốn) */}
+                      {editingProduct.basePrice !== undefined && editingProduct.costPrice !== undefined && Number(editingProduct.costPrice) > 0 && Number(editingProduct.basePrice) < Number(editingProduct.costPrice) && (
+                        <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span>Lưu ý: Giá bán lẻ thấp hơn giá vốn (-{formatVND(Number(editingProduct.costPrice) - Number(editingProduct.basePrice))}/cái - Bán xả kho). Vẫn cho phép lưu.</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 2. Quy Cách Đặt Hàng (Min Qty & Step Qty) */}
+                    <div className="p-4 rounded-xl bg-stone-50/80 border border-stone-200 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-stone-800 text-xs flex items-center gap-1.5">
+                          <Boxes className="w-4 h-4 text-stone-600" />
+                          <span>2. Quy Cách Mua &amp; Số Lượng Tối Thiểu</span>
+                        </span>
+                        <span className="text-[11px] text-stone-400">Giới hạn số lượng mua lẻ</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="font-semibold text-stone-700 block text-xs">
+                            Mua tối thiểu (Min Qty):
+                          </label>
+                          <input
+                            type="number"
+                            min={1}
+                            value={editingProduct.minOrderQuantity || 1}
+                            onChange={(e) => setEditingProduct({ ...editingProduct, minOrderQuantity: Math.max(1, Number(e.target.value)) })}
+                            className="w-full px-3 py-1.5 bg-white border border-stone-200 rounded-xl font-bold text-stone-800 text-xs"
+                          />
+                          <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                            <button
+                              type="button"
+                              onClick={() => setEditingProduct({ ...editingProduct, minOrderQuantity: 1, stepQuantity: 1 })}
+                              className="px-2 py-0.5 text-[10px] font-semibold rounded bg-stone-200 hover:bg-stone-300 text-stone-700 cursor-pointer"
+                            >
+                              Lẻ (1)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingProduct({ ...editingProduct, minOrderQuantity: 10, stepQuantity: 10 })}
+                              className="px-2 py-0.5 text-[10px] font-semibold rounded bg-stone-200 hover:bg-stone-300 text-stone-700 cursor-pointer"
+                            >
+                              10 cái
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingProduct({ ...editingProduct, minOrderQuantity: 50, stepQuantity: 50 })}
+                              className="px-2 py-0.5 text-[10px] font-semibold rounded bg-stone-200 hover:bg-stone-300 text-stone-700 cursor-pointer"
+                            >
+                              Bịch 50
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingProduct({ ...editingProduct, minOrderQuantity: 100, stepQuantity: 100 })}
+                              className="px-2 py-0.5 text-[10px] font-semibold rounded bg-stone-200 hover:bg-stone-300 text-stone-700 cursor-pointer"
+                            >
+                              Bịch 100
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="font-semibold text-stone-700 block text-xs">
+                            Bước nhảy số lượng (Step Qty):
+                          </label>
+                          <input
+                            type="number"
+                            min={1}
+                            value={editingProduct.stepQuantity || 1}
+                            onChange={(e) => setEditingProduct({ ...editingProduct, stepQuantity: Math.max(1, Number(e.target.value)) })}
+                            className="w-full px-3 py-1.5 bg-white border border-stone-200 rounded-xl font-bold text-stone-800 text-xs"
+                          />
+                          <p className="text-[10px] text-stone-500 mt-1">
+                            {editingProduct.stepQuantity && editingProduct.stepQuantity > 1
+                              ? `Tăng/giảm theo bước nhảy ${editingProduct.stepQuantity} cái/lần.`
+                              : 'Tăng/giảm từng chiếc 1.'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 3. Bảng mốc giá sỉ */}
+                    <div className="p-4 rounded-xl bg-white border border-stone-200 space-y-3">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div>
+                          <h4 className="font-bold text-stone-800 flex items-center gap-1.5 text-xs">
+                            <Tag className="w-4 h-4 text-stone-600" />
+                            <span>3. Bảng Mốc Giá Sỉ Bậc Thang (Theo Số Lượng)</span>
+                          </h4>
+                          <p className="text-[11px] text-stone-400">
+                            Khách mua đạt số lượng sẽ tự động áp dụng mức giá sỉ tương ứng
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={applyShopCustomTemplate}
+                            className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 transition flex items-center gap-1 cursor-pointer"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-stone-600" />
+                            <span>Mẫu có sẵn</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const currentTiers = editingProduct.comboTiers || [];
+                              const lastMin = currentTiers.length > 0 ? currentTiers[currentTiers.length - 1].minQuantity * 2 : 10;
+                              const base = Number(editingProduct.basePrice) || 2000;
+                              setEditingProduct({
+                                ...editingProduct,
+                                comboTiers: [
+                                  ...currentTiers,
+                                  {
+                                    minQuantity: lastMin,
+                                    unitPrice: Math.round(base * 0.9),
+                                    label: `Mốc ${lastMin} cái`,
+                                    badge: 'Sỉ',
+                                  },
+                                ],
+                              });
+                            }}
+                            className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 transition cursor-pointer"
+                          >
+                            + Thêm Mốc
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {(editingProduct.comboTiers || []).length === 0 ? (
+                          <p className="text-stone-400 italic text-center py-3 text-xs">
+                            Chưa có mốc giá sỉ. Bấm &quot;Mẫu có sẵn&quot; hoặc &quot;+ Thêm Mốc&quot; để thiết lập.
+                          </p>
+                        ) : (
+                          (editingProduct.comboTiers || []).map((tier, idx) => (
+                            <div key={idx} className="flex flex-wrap sm:flex-nowrap items-center gap-2 p-2 rounded-xl bg-stone-50 border border-stone-200/80">
+                              <div className="w-24">
+                                <span className="text-[10px] text-stone-500 block">Từ số lượng:</span>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  step="any"
+                                  value={tier.minQuantity}
+                                  onChange={(e) => {
+                                    const newTiers = [...(editingProduct.comboTiers || [])];
+                                    newTiers[idx] = { ...newTiers[idx], minQuantity: Number(e.target.value) };
+                                    setEditingProduct({ ...editingProduct, comboTiers: newTiers });
+                                  }}
+                                  className="w-full px-2 py-1 bg-white border border-stone-200 rounded-lg font-bold text-center text-xs"
+                                />
+                              </div>
+
+                              <div className="w-28">
+                                <span className="text-[10px] text-stone-500 block">Đơn giá sỉ:</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  step="any"
+                                  value={tier.unitPrice}
+                                  onChange={(e) => {
+                                    const newTiers = [...(editingProduct.comboTiers || [])];
+                                    newTiers[idx] = { ...newTiers[idx], unitPrice: Number(e.target.value) };
+                                    setEditingProduct({ ...editingProduct, comboTiers: newTiers });
+                                  }}
+                                  className={`w-full px-2 py-1 border rounded-lg font-bold text-center text-xs ${
+                                    Number(editingProduct.costPrice) > 0 && Number(tier.unitPrice) > 0 && Number(tier.unitPrice) < Number(editingProduct.costPrice)
+                                      ? 'bg-amber-50 border-amber-300 text-amber-800'
+                                      : 'bg-white border-stone-200 text-rose-600'
+                                  }`}
+                                />
+                              </div>
+
+                              <div className="flex-1 min-w-[120px]">
+                                <span className="text-[10px] text-stone-500 block">Tên mốc hiển thị:</span>
+                                <input
+                                  type="text"
+                                  value={tier.label}
+                                  onChange={(e) => {
+                                    const newTiers = [...(editingProduct.comboTiers || [])];
+                                    newTiers[idx] = { ...newTiers[idx], label: e.target.value };
+                                    setEditingProduct({ ...editingProduct, comboTiers: newTiers });
+                                  }}
+                                  placeholder="VD: Mốc 50 cái..."
+                                  className="w-full px-2.5 py-1 bg-white border border-stone-200 rounded-lg font-medium text-xs"
+                                />
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newTiers = (editingProduct.comboTiers || []).filter((_, i) => i !== idx);
+                                  setEditingProduct({ ...editingProduct, comboTiers: newTiers });
+                                }}
+                                className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-stone-100 transition shrink-0 mt-3 cursor-pointer"
+                                title="Xóa mốc này"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB 3: HÌNH ẢNH & PHÂN LOẠI MÀU SẮC */}
                 {productModalTab === 'MEDIA' && (
                   <div className="space-y-4 animate-fade-in">
+                    {/* 1. Bộ sưu tập hình ảnh */}
                     <div className="p-4 rounded-xl bg-white border border-stone-200 space-y-3">
                       <div className="flex items-center justify-between">
                         <label className="font-bold text-stone-800 text-xs block">
@@ -4036,24 +4252,7 @@ export default function AdminPage() {
                       )}
                     </div>
 
-                    {/* Mô tả chi tiết */}
-                    <div className="space-y-1.5">
-                      <label className="font-semibold text-stone-700 text-xs">Mô tả sản phẩm</label>
-                      <textarea
-                        rows={4}
-                        value={editingProduct.description || ''}
-                        onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
-                        placeholder="Mô tả chi tiết về đặc điểm, hướng dẫn sử dụng, bảo quản sản phẩm..."
-                        className="w-full px-3.5 py-2.5 bg-white border border-stone-200 rounded-xl font-medium text-xs text-stone-800 focus:border-stone-400 focus:ring-2 focus:ring-stone-100 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* TAB 3: PHÂN LOẠI MÀU & MUA SỈ */}
-                {productModalTab === 'VARIANTS_WHOLESALE' && (
-                  <div className="space-y-4 animate-fade-in">
-                    {/* Phân loại màu sắc */}
+                    {/* 2. Phân loại màu sắc */}
                     <div className="p-4 rounded-xl bg-white border border-stone-200 space-y-3">
                       <div className="flex items-center justify-between">
                         <div>
@@ -4062,7 +4261,7 @@ export default function AdminPage() {
                             <span>Phân Loại Màu Sắc &amp; Tồn Kho</span>
                           </h4>
                           <p className="text-[11px] text-stone-400">
-                            Nếu sản phẩm có nhiều phân loại hoặc màu sắc, thêm danh sách bên dưới
+                            Nếu sản phẩm có nhiều màu sắc/phiên bản, thêm danh sách bên dưới
                           </p>
                         </div>
                         <button
@@ -4152,204 +4351,6 @@ export default function AdminPage() {
                                 }}
                                 className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-stone-100 transition shrink-0 mt-3 cursor-pointer"
                                 title="Xóa phân loại"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Quy Cách Đặt Hàng (Min Qty & Step Qty) */}
-                    <div className="p-4 rounded-xl bg-stone-50/80 border border-stone-200 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-stone-800 text-xs flex items-center gap-1.5">
-                          <Boxes className="w-4 h-4 text-stone-600" />
-                          <span>Quy Cách Mua &amp; Số Lượng Tối Thiểu</span>
-                        </span>
-                        <span className="text-[11px] text-stone-400">Giới hạn số lượng mua lẻ</span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="font-semibold text-stone-700 block text-xs">
-                            Mua tối thiểu (Min Qty):
-                          </label>
-                          <input
-                            type="number"
-                            min={1}
-                            value={editingProduct.minOrderQuantity || 1}
-                            onChange={(e) => setEditingProduct({ ...editingProduct, minOrderQuantity: Math.max(1, Number(e.target.value)) })}
-                            className="w-full px-3 py-1.5 bg-white border border-stone-200 rounded-xl font-bold text-stone-800 text-xs"
-                          />
-                          <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                            <button
-                              type="button"
-                              onClick={() => setEditingProduct({ ...editingProduct, minOrderQuantity: 1, stepQuantity: 1 })}
-                              className="px-2 py-0.5 text-[10px] font-semibold rounded bg-stone-200 hover:bg-stone-300 text-stone-700 cursor-pointer"
-                            >
-                              Lẻ (1)
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setEditingProduct({ ...editingProduct, minOrderQuantity: 10, stepQuantity: 10 })}
-                              className="px-2 py-0.5 text-[10px] font-semibold rounded bg-stone-200 hover:bg-stone-300 text-stone-700 cursor-pointer"
-                            >
-                              10 cái
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setEditingProduct({ ...editingProduct, minOrderQuantity: 50, stepQuantity: 50 })}
-                              className="px-2 py-0.5 text-[10px] font-semibold rounded bg-stone-200 hover:bg-stone-300 text-stone-700 cursor-pointer"
-                            >
-                              Bịch 50
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setEditingProduct({ ...editingProduct, minOrderQuantity: 100, stepQuantity: 100 })}
-                              className="px-2 py-0.5 text-[10px] font-semibold rounded bg-stone-200 hover:bg-stone-300 text-stone-700 cursor-pointer"
-                            >
-                              Bịch 100
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="font-semibold text-stone-700 block text-xs">
-                            Bước nhảy số lượng (Step Qty):
-                          </label>
-                          <input
-                            type="number"
-                            min={1}
-                            value={editingProduct.stepQuantity || 1}
-                            onChange={(e) => setEditingProduct({ ...editingProduct, stepQuantity: Math.max(1, Number(e.target.value)) })}
-                            className="w-full px-3 py-1.5 bg-white border border-stone-200 rounded-xl font-bold text-stone-800 text-xs"
-                          />
-                          <p className="text-[10px] text-stone-500 mt-1">
-                            {editingProduct.stepQuantity && editingProduct.stepQuantity > 1
-                              ? `Tăng/giảm theo bước nhảy ${editingProduct.stepQuantity} cái/lần.`
-                              : 'Tăng/giảm từng chiếc 1.'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Bảng mốc giá sỉ */}
-                    <div className="p-4 rounded-xl bg-white border border-stone-200 space-y-3">
-                      <div className="flex items-center justify-between flex-wrap gap-2">
-                        <div>
-                          <h4 className="font-bold text-stone-800 flex items-center gap-1.5 text-xs">
-                            <Tag className="w-4 h-4 text-stone-600" />
-                            <span>Bảng Mốc Giá Sỉ Bậc Thang</span>
-                          </h4>
-                          <p className="text-[11px] text-stone-400">
-                            Khách mua đạt số lượng sẽ tự động áp dụng mức giá sỉ tương ứng
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <button
-                            type="button"
-                            onClick={applyShopCustomTemplate}
-                            className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 transition flex items-center gap-1 cursor-pointer"
-                          >
-                            <Sparkles className="w-3.5 h-3.5 text-stone-600" />
-                            <span>Mẫu có sẵn</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const currentTiers = editingProduct.comboTiers || [];
-                              const lastMin = currentTiers.length > 0 ? currentTiers[currentTiers.length - 1].minQuantity * 2 : 10;
-                              const base = Number(editingProduct.basePrice) || 2000;
-                              setEditingProduct({
-                                ...editingProduct,
-                                comboTiers: [
-                                  ...currentTiers,
-                                  {
-                                    minQuantity: lastMin,
-                                    unitPrice: Math.round(base * 0.9),
-                                    label: `Mốc ${lastMin} cái`,
-                                    badge: 'Sỉ',
-                                  },
-                                ],
-                              });
-                            }}
-                            className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 transition cursor-pointer"
-                          >
-                            + Thêm Mốc
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2 max-h-44 overflow-y-auto">
-                        {(editingProduct.comboTiers || []).length === 0 ? (
-                          <p className="text-stone-400 italic text-center py-3 text-xs">
-                            Chưa có mốc giá sỉ. Bấm &quot;Mẫu có sẵn&quot; hoặc &quot;+ Thêm Mốc&quot; để thiết lập.
-                          </p>
-                        ) : (
-                          (editingProduct.comboTiers || []).map((tier, idx) => (
-                            <div key={idx} className="flex flex-wrap sm:flex-nowrap items-center gap-2 p-2 rounded-xl bg-stone-50 border border-stone-200/80">
-                              <div className="w-24">
-                                <span className="text-[10px] text-stone-500 block">Từ số lượng:</span>
-                                <input
-                                  type="number"
-                                  min={1}
-                                  step="any"
-                                  value={tier.minQuantity}
-                                  onChange={(e) => {
-                                    const newTiers = [...(editingProduct.comboTiers || [])];
-                                    newTiers[idx] = { ...newTiers[idx], minQuantity: Number(e.target.value) };
-                                    setEditingProduct({ ...editingProduct, comboTiers: newTiers });
-                                  }}
-                                  className="w-full px-2 py-1 bg-white border border-stone-200 rounded-lg font-bold text-center text-xs"
-                                />
-                              </div>
-
-                              <div className="w-28">
-                                <span className="text-[10px] text-stone-500 block">Đơn giá sỉ:</span>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  step="any"
-                                  value={tier.unitPrice}
-                                  onChange={(e) => {
-                                    const newTiers = [...(editingProduct.comboTiers || [])];
-                                    newTiers[idx] = { ...newTiers[idx], unitPrice: Number(e.target.value) };
-                                    setEditingProduct({ ...editingProduct, comboTiers: newTiers });
-                                  }}
-                                  className={`w-full px-2 py-1 border rounded-lg font-bold text-center text-xs ${
-                                    Number(editingProduct.costPrice) > 0 && Number(tier.unitPrice) > 0 && Number(tier.unitPrice) < Number(editingProduct.costPrice)
-                                      ? 'bg-amber-50 border-amber-300 text-amber-800'
-                                      : 'bg-white border-stone-200 text-rose-600'
-                                  }`}
-                                />
-                              </div>
-
-                              <div className="flex-1 min-w-[120px]">
-                                <span className="text-[10px] text-stone-500 block">Tên mốc hiển thị:</span>
-                                <input
-                                  type="text"
-                                  value={tier.label}
-                                  onChange={(e) => {
-                                    const newTiers = [...(editingProduct.comboTiers || [])];
-                                    newTiers[idx] = { ...newTiers[idx], label: e.target.value };
-                                    setEditingProduct({ ...editingProduct, comboTiers: newTiers });
-                                  }}
-                                  placeholder="VD: Mốc 50 cái..."
-                                  className="w-full px-2.5 py-1 bg-white border border-stone-200 rounded-lg font-medium text-xs"
-                                />
-                              </div>
-
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const newTiers = (editingProduct.comboTiers || []).filter((_, i) => i !== idx);
-                                  setEditingProduct({ ...editingProduct, comboTiers: newTiers });
-                                }}
-                                className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-stone-100 transition shrink-0 mt-3 cursor-pointer"
-                                title="Xóa mốc này"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
