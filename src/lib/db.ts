@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { calculateShippingFee } from '@/lib/utils';
+import { supabase } from '@/lib/supabase';
 const READONLY_DB_FILE = path.join(process.cwd(), 'data', 'database.json');
 const IS_SERVERLESS = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
 const WRITABLE_DB_FILE = IS_SERVERLESS ? path.join('/tmp', 'database.json') : READONLY_DB_FILE;
@@ -1786,6 +1787,179 @@ function writeDb(data: DetailedDatabaseSchema) {
 // EXPORTED DATABASE ENGINE WITH RELATIONAL METHODS
 // ==========================================
 
+// ==========================================
+// SUPABASE HELPERS & MAPPERS
+// ==========================================
+
+function mapCategoryFromSupabase(row: any): Category {
+  return {
+    id: row.id,
+    code: row.code || '',
+    name: row.name,
+    slug: row.slug || '',
+    icon: row.icon || '🌸',
+    description: row.description || '',
+    displayOrder: Number(row.display_order ?? 1),
+    isActive: row.is_active !== false,
+    createdAt: row.created_at || new Date().toISOString(),
+  };
+}
+
+function mapProductFromSupabase(row: any): Product {
+  return {
+    id: row.id,
+    sku: row.sku || '',
+    name: row.name,
+    slug: row.slug || '',
+    categoryId: row.category_id || '',
+    categoryName: row.category_name || '',
+    basePrice: Number(row.base_price || 0),
+    originalPrice: Number(row.original_price || 0),
+    costPrice: row.cost_price ? Number(row.cost_price) : undefined,
+    material: row.material || '',
+    dimensions: row.dimensions || '',
+    images: Array.isArray(row.images) ? row.images : [],
+    description: row.description || '',
+    isHot: Boolean(row.is_hot),
+    isNewArrival: Boolean(row.is_new_arrival),
+    isCustomizable: Boolean(row.is_customizable),
+    stock: Number(row.stock ?? 100),
+    soldCount: Number(row.sold_count ?? 0),
+    ratingAvg: Number(row.rating_avg ?? 5),
+    ratingCount: Number(row.rating_count ?? 0),
+    variants: Array.isArray(row.variants) ? row.variants : [],
+    comboTiers: Array.isArray(row.combo_tiers) ? row.combo_tiers : [],
+    packageOptions: Array.isArray(row.package_options) ? row.package_options : [],
+    minOrderQuantity: Number(row.min_order_quantity || 1),
+    stepQuantity: Number(row.step_quantity || 1),
+    isActive: row.is_active !== false,
+    createdAt: row.created_at || new Date().toISOString(),
+    updatedAt: row.updated_at || new Date().toISOString(),
+  };
+}
+
+function mapOrderFromSupabase(row: any): Order {
+  const cust = row.customer || {
+    fullName: row.customer_name || '',
+    phone: row.customer_phone || '',
+    address: row.customer_address || '',
+    city: row.customer_city || '',
+    note: '',
+  };
+  return {
+    id: row.id,
+    code: row.code,
+    customerId: row.customer_id || undefined,
+    customer: cust,
+    items: Array.isArray(row.items) ? row.items : [],
+    subtotal: Number(row.subtotal ?? row.subtotal_amount ?? 0),
+    subtotalAmount: Number(row.subtotal_amount ?? row.subtotal ?? 0),
+    comboDiscountAmount: Number(row.combo_discount_amount ?? 0),
+    discount: Number(row.discount ?? 0),
+    itemsTotalAmount: Number(row.items_total_amount ?? 0),
+    shippingFee: Number(row.shipping_fee ?? 0),
+    totalWeight: Number(row.total_weight ?? 0),
+    finalTotalAmount: Number(row.final_total_amount ?? row.total_amount ?? 0),
+    totalAmount: Number(row.total_amount ?? row.final_total_amount ?? 0),
+    paymentMethod: row.payment_method || 'COD',
+    paymentStatus: row.payment_status || 'UNPAID',
+    orderStatus: row.order_status || 'PENDING_CONFIRM',
+    carrierName: row.carrier_name || undefined,
+    trackingNumber: row.tracking_number || undefined,
+    logs: Array.isArray(row.logs) ? row.logs : [],
+    paidAt: row.paid_at || undefined,
+    shippedAt: row.shipped_at || undefined,
+    completedAt: row.completed_at || undefined,
+    createdAt: row.created_at || new Date().toISOString(),
+    updatedAt: row.updated_at || new Date().toISOString(),
+  };
+}
+
+function mapCustomerFromSupabase(row: any): Customer {
+  return {
+    id: row.id,
+    fullName: row.full_name,
+    phone: row.phone,
+    email: row.email || undefined,
+    password: row.password || undefined,
+    hasAccount: Boolean(row.has_account),
+    address: row.address || '',
+    city: row.city || '',
+    district: row.district || undefined,
+    savedAddresses: Array.isArray(row.saved_addresses) ? row.saved_addresses : [],
+    customerType: row.customer_type || 'NEW',
+    totalOrdersCount: Number(row.total_orders_count || 0),
+    totalSpent: Number(row.total_spent || 0),
+    lastOrderAt: row.last_order_at || undefined,
+    internalNotes: row.internal_notes || undefined,
+    createdAt: row.created_at || new Date().toISOString(),
+    updatedAt: row.updated_at || new Date().toISOString(),
+  };
+}
+
+function mapFeedbackFromSupabase(row: any): CustomerFeedback {
+  return {
+    id: row.id,
+    customerName: row.customer_name,
+    customerLocation: row.customer_location || undefined,
+    comment: row.comment,
+    rating: Number(row.rating || 5),
+    purchasedProduct: row.purchased_product || undefined,
+    avatarText: row.avatar_text || 'KH',
+    isActive: row.is_active !== false,
+    createdAt: row.created_at || new Date().toISOString(),
+  };
+}
+
+function mapSettingsFromSupabase(row: any, fallback: ShopSettings): ShopSettings {
+  const raw = row.raw_data || {};
+  return {
+    ...fallback,
+    ...raw,
+    shopName: row.shop_name ?? raw.shopName ?? fallback.shopName,
+    brandTitle: row.brand_title ?? raw.brandTitle ?? fallback.brandTitle,
+    slogan: row.slogan ?? raw.slogan ?? fallback.slogan,
+    hotline: row.hotline ?? raw.hotline ?? fallback.hotline,
+    zaloPhone: row.zalo_phone ?? raw.zaloPhone ?? fallback.zaloPhone,
+    zaloOfficialUrl: row.zalo_official_url ?? raw.zaloOfficialUrl ?? fallback.zaloOfficialUrl,
+    instagramUrl: row.instagram_url ?? raw.instagramUrl ?? fallback.instagramUrl,
+    instagramHandle: raw.instagramHandle ?? fallback.instagramHandle,
+    tiktokUrl: row.tiktok_url ?? raw.tiktokUrl ?? fallback.tiktokUrl,
+    tiktokHandle: raw.tiktokHandle ?? fallback.tiktokHandle,
+    heroTitle: row.hero_title ?? raw.heroTitle ?? fallback.heroTitle,
+    heroSubtitle: row.hero_subtitle ?? raw.heroSubtitle ?? fallback.heroSubtitle,
+    bannerText: row.banner_text ?? raw.bannerText ?? fallback.bannerText,
+    showFeedbacks: raw.showFeedbacks ?? fallback.showFeedbacks,
+    shopAddress: row.shop_address ?? raw.shopAddress ?? fallback.shopAddress,
+    workingHours: row.working_hours ?? raw.workingHours ?? fallback.workingHours,
+    freeShippingThreshold: Number(row.free_shipping_threshold ?? raw.freeShippingThreshold ?? fallback.freeShippingThreshold),
+    autoReplyTemplate: raw.autoReplyTemplate ?? fallback.autoReplyTemplate,
+    telegramBotToken: row.telegram_bot_token ?? raw.telegramBotToken ?? fallback.telegramBotToken,
+    telegramChatId: row.telegram_chat_id ?? raw.telegramChatId ?? fallback.telegramChatId,
+    enableTelegramNotify: row.enable_telegram_notify ?? raw.enableTelegramNotify ?? fallback.enableTelegramNotify,
+    websiteUrl: raw.websiteUrl ?? fallback.websiteUrl,
+    warehouseProvince: raw.warehouseProvince ?? fallback.warehouseProvince,
+    heroImage: raw.heroImage ?? fallback.heroImage,
+    heroImages: raw.heroImages ?? fallback.heroImages,
+    heroBadge: raw.heroBadge ?? fallback.heroBadge,
+    purchasePolicies: raw.purchasePolicies ?? fallback.purchasePolicies,
+    purchasePolicyDetail: raw.purchasePolicyDetail ?? fallback.purchasePolicyDetail,
+    customWholesaleTiers: raw.customWholesaleTiers ?? fallback.customWholesaleTiers,
+    prepaidFreeShipThreshold: Number(row.prepaid_free_ship_threshold ?? raw.prepaidFreeShipThreshold ?? fallback.prepaidFreeShipThreshold ?? 10000),
+    enablePrepaidFreeShip: row.enable_prepaid_free_ship ?? raw.enablePrepaidFreeShip ?? fallback.enablePrepaidFreeShip ?? true,
+    momoPhone: row.momo_phone ?? raw.momoPhone ?? fallback.momoPhone,
+    momoName: row.momo_name ?? raw.momoName ?? fallback.momoName,
+    momoQrImage: raw.momoQrImage ?? fallback.momoQrImage,
+    bankId: row.bank_id ?? raw.bankId ?? fallback.bankId,
+    bankAccount: row.bank_account ?? raw.bankAccount ?? fallback.bankAccount,
+    bankOwner: row.bank_owner ?? raw.bankOwner ?? fallback.bankOwner,
+  };
+}
+
+// ==========================================
+// EXPORTED CLOUD + LOCAL HYBRID DATABASE ENGINE
+// ==========================================
+
 export const db = {
   // RAW DATABASE
   raw: {
@@ -1795,15 +1969,44 @@ export const db = {
 
   // CATEGORIES TABLE
   categories: {
-    getAll(): Category[] {
+    async getAll(): Promise<Category[]> {
+      try {
+        const { data, error } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+        if (!error && Array.isArray(data) && data.length > 0) {
+          const list = data.map(mapCategoryFromSupabase);
+          const local = readDb();
+          local.categories = list;
+          return list;
+        }
+      } catch (err) {
+        console.warn('[Supabase categories.getAll fallback to local]:', err);
+      }
       const dbData = readDb();
       return (dbData.categories || []).filter((c) => c.isActive !== false).sort((a, b) => (a.displayOrder || 99) - (b.displayOrder || 99));
     },
-    getById(id: string): Category | undefined {
+
+    async getById(id: string): Promise<Category | undefined> {
+      try {
+        const { data, error } = await supabase
+          .from('categories')
+          .select('*')
+          .or(`id.eq.${id},slug.eq.${id}`)
+          .maybeSingle();
+        if (!error && data) {
+          return mapCategoryFromSupabase(data);
+        }
+      } catch (err) {
+        console.warn('[Supabase categories.getById fallback]:', err);
+      }
       const dbData = readDb();
       return (dbData.categories || []).find((c) => c.id === id || c.slug === id);
     },
-    create(data: Omit<Category, 'id' | 'createdAt' | 'isActive'> & { isActive?: boolean }): Category {
+
+    async create(data: Omit<Category, 'id' | 'createdAt' | 'isActive'> & { isActive?: boolean }): Promise<Category> {
       const dbData = readDb();
       if (!dbData.categories) dbData.categories = [];
       const timestamp = Date.now();
@@ -1821,9 +2024,26 @@ export const db = {
       };
       dbData.categories.push(newCategory);
       writeDb(dbData);
+
+      try {
+        await supabase.from('categories').upsert({
+          id: newCategory.id,
+          code: newCategory.code,
+          name: newCategory.name,
+          slug: newCategory.slug,
+          icon: newCategory.icon,
+          description: newCategory.description,
+          display_order: newCategory.displayOrder,
+          is_active: newCategory.isActive,
+          created_at: newCategory.createdAt,
+        });
+      } catch (err) {
+        console.warn('[Supabase categories.create error]:', err);
+      }
       return newCategory;
     },
-    update(id: string, updateData: Partial<Category>): Category | null {
+
+    async update(id: string, updateData: Partial<Category>): Promise<Category | null> {
       const dbData = readDb();
       if (!dbData.categories) return null;
       const index = dbData.categories.findIndex((c) => c.id === id);
@@ -1832,7 +2052,6 @@ export const db = {
         ...dbData.categories[index],
         ...updateData,
       };
-      // Cascade update categoryName to products if name changed
       if (updateData.name) {
         dbData.products.forEach((p) => {
           if (p.categoryId === id || (p as any).category === dbData.categories[index].slug) {
@@ -1841,29 +2060,82 @@ export const db = {
         });
       }
       writeDb(dbData);
+
+      try {
+        const item = dbData.categories[index];
+        await supabase.from('categories').upsert({
+          id: item.id,
+          code: item.code,
+          name: item.name,
+          slug: item.slug,
+          icon: item.icon,
+          description: item.description,
+          display_order: item.displayOrder,
+          is_active: item.isActive,
+          created_at: item.createdAt,
+        });
+      } catch (err) {
+        console.warn('[Supabase categories.update error]:', err);
+      }
       return dbData.categories[index];
     },
-    delete(id: string): boolean {
+
+    async delete(id: string): Promise<boolean> {
       const dbData = readDb();
       if (!dbData.categories) return false;
       const index = dbData.categories.findIndex((c) => c.id === id);
       if (index === -1) return false;
-      // Mark as inactive instead of deleting to preserve historical orders
       dbData.categories[index].isActive = false;
       writeDb(dbData);
+
+      try {
+        await supabase.from('categories').update({ is_active: false }).eq('id', id);
+      } catch (err) {
+        console.warn('[Supabase categories.delete error]:', err);
+      }
       return true;
     }
   },
 
   // PRODUCTS TABLE
   products: {
-    getAll(): Product[] {
+    async getAll(): Promise<Product[]> {
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
+        if (!error && Array.isArray(data) && data.length > 0) {
+          const list = data.map(mapProductFromSupabase);
+          const local = readDb();
+          local.products = list;
+          return list;
+        }
+      } catch (err) {
+        console.warn('[Supabase products.getAll fallback]:', err);
+      }
       return readDb().products.filter((p) => p.isActive);
     },
-    getById(idOrSlug: string): Product | undefined {
+
+    async getById(idOrSlug: string): Promise<Product | undefined> {
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .or(`id.eq.${idOrSlug},slug.eq.${idOrSlug}`)
+          .eq('is_active', true)
+          .maybeSingle();
+        if (!error && data) {
+          return mapProductFromSupabase(data);
+        }
+      } catch (err) {
+        console.warn('[Supabase products.getById fallback]:', err);
+      }
       return readDb().products.find((p) => (p.id === idOrSlug || p.slug === idOrSlug) && p.isActive);
     },
-    create(data: Omit<Product, 'id' | 'sku' | 'slug' | 'createdAt' | 'updatedAt' | 'isActive'>): Product {
+
+    async create(data: Omit<Product, 'id' | 'sku' | 'slug' | 'createdAt' | 'updatedAt' | 'isActive'>): Promise<Product> {
       const dbData = readDb();
       const randomSkuNum = Math.floor(10 + Math.random() * 90);
       const newProduct: Product = {
@@ -1877,9 +2149,45 @@ export const db = {
       };
       dbData.products.unshift(newProduct);
       writeDb(dbData);
+
+      try {
+        await supabase.from('products').upsert({
+          id: newProduct.id,
+          sku: newProduct.sku,
+          name: newProduct.name,
+          slug: newProduct.slug,
+          category_id: newProduct.categoryId,
+          category_name: newProduct.categoryName,
+          base_price: newProduct.basePrice,
+          original_price: newProduct.originalPrice,
+          cost_price: newProduct.costPrice || null,
+          material: newProduct.material || '',
+          dimensions: newProduct.dimensions || '',
+          images: newProduct.images || [],
+          description: newProduct.description || '',
+          is_hot: newProduct.isHot,
+          is_new_arrival: newProduct.isNewArrival,
+          is_customizable: newProduct.isCustomizable,
+          stock: newProduct.stock,
+          sold_count: newProduct.soldCount,
+          rating_avg: newProduct.ratingAvg,
+          rating_count: newProduct.ratingCount,
+          variants: newProduct.variants || [],
+          combo_tiers: newProduct.comboTiers || [],
+          package_options: newProduct.packageOptions || [],
+          min_order_quantity: newProduct.minOrderQuantity || 1,
+          step_quantity: newProduct.stepQuantity || 1,
+          is_active: newProduct.isActive,
+          created_at: newProduct.createdAt,
+          updated_at: newProduct.updatedAt,
+        });
+      } catch (err) {
+        console.warn('[Supabase products.create error]:', err);
+      }
       return newProduct;
     },
-    update(id: string, updateData: Partial<Product>): Product | null {
+
+    async update(id: string, updateData: Partial<Product>): Promise<Product | null> {
       const dbData = readDb();
       const index = dbData.products.findIndex((p) => p.id === id);
       if (index === -1) return null;
@@ -1889,32 +2197,97 @@ export const db = {
         updatedAt: new Date().toISOString(),
       };
       writeDb(dbData);
+
+      try {
+        const p = dbData.products[index];
+        await supabase.from('products').upsert({
+          id: p.id,
+          sku: p.sku,
+          name: p.name,
+          slug: p.slug,
+          category_id: p.categoryId,
+          category_name: p.categoryName,
+          base_price: p.basePrice,
+          original_price: p.originalPrice,
+          cost_price: p.costPrice || null,
+          material: p.material || '',
+          dimensions: p.dimensions || '',
+          images: p.images || [],
+          description: p.description || '',
+          is_hot: p.isHot,
+          is_new_arrival: p.isNewArrival,
+          is_customizable: p.isCustomizable,
+          stock: p.stock,
+          sold_count: p.soldCount,
+          rating_avg: p.ratingAvg,
+          rating_count: p.ratingCount,
+          variants: p.variants || [],
+          combo_tiers: p.comboTiers || [],
+          package_options: p.packageOptions || [],
+          min_order_quantity: p.minOrderQuantity || 1,
+          step_quantity: p.stepQuantity || 1,
+          is_active: p.isActive,
+          created_at: p.createdAt,
+          updated_at: p.updatedAt,
+        });
+      } catch (err) {
+        console.warn('[Supabase products.update error]:', err);
+      }
       return dbData.products[index];
     },
-    delete(id: string): boolean {
+
+    async delete(id: string): Promise<boolean> {
       const dbData = readDb();
       const index = dbData.products.findIndex((p) => p.id === id);
       if (index === -1) return false;
-      // Soft-delete: mark inactive or remove
       dbData.products.splice(index, 1);
       writeDb(dbData);
+
+      try {
+        await supabase.from('products').update({ is_active: false }).eq('id', id);
+      } catch (err) {
+        console.warn('[Supabase products.delete error]:', err);
+      }
       return true;
     }
   },
 
   // CUSTOMERS TABLE
   customers: {
-    getAll(): Customer[] {
+    async getAll(): Promise<Customer[]> {
+      try {
+        const { data, error } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
+        if (!error && Array.isArray(data) && data.length > 0) {
+          return data.map(mapCustomerFromSupabase);
+        }
+      } catch (err) {
+        console.warn('[Supabase customers.getAll fallback]:', err);
+      }
       return readDb().customers || [];
     },
-    getById(id: string): Customer | undefined {
+
+    async getById(id: string): Promise<Customer | undefined> {
+      try {
+        const { data, error } = await supabase.from('customers').select('*').eq('id', id).maybeSingle();
+        if (!error && data) return mapCustomerFromSupabase(data);
+      } catch (err) {
+        console.warn('[Supabase customers.getById fallback]:', err);
+      }
       return (readDb().customers || []).find((c) => c.id === id);
     },
-    findByPhone(phone: string): Customer | undefined {
+
+    async findByPhone(phone: string): Promise<Customer | undefined> {
       const cleanPhone = phone.replace(/[^0-9]/g, '');
+      try {
+        const { data, error } = await supabase.from('customers').select('*').eq('phone', cleanPhone).maybeSingle();
+        if (!error && data) return mapCustomerFromSupabase(data);
+      } catch (err) {
+        console.warn('[Supabase customers.findByPhone fallback]:', err);
+      }
       return (readDb().customers || []).find((c) => c.phone.replace(/[^0-9]/g, '') === cleanPhone);
     },
-    register(data: { fullName: string; phone: string; password?: string; address?: string; city?: string; email?: string }): { customer: Customer; error?: string } {
+
+    async register(data: { fullName: string; phone: string; password?: string; address?: string; city?: string; email?: string }): Promise<{ customer: Customer; error?: string }> {
       const dbData = readDb();
       if (!dbData.customers) dbData.customers = [];
       const cleanPhone = data.phone.replace(/[^0-9]/g, '');
@@ -1927,7 +2300,6 @@ export const db = {
         if (existing.hasAccount && existing.password) {
           return { customer: null as any, error: 'Số điện thoại này đã được đăng ký tài khoản. Vui lòng đăng nhập!' };
         }
-        // If they previously checked out as Guest, upgrade them to registered account!
         existing.fullName = data.fullName || existing.fullName;
         existing.password = data.password || existing.password;
         existing.address = data.address || existing.address;
@@ -1936,6 +2308,20 @@ export const db = {
         existing.hasAccount = true;
         existing.updatedAt = new Date().toISOString();
         writeDb(dbData);
+
+        try {
+          await supabase.from('customers').upsert({
+            id: existing.id,
+            full_name: existing.fullName,
+            phone: existing.phone,
+            password: existing.password,
+            email: existing.email || '',
+            address: existing.address || '',
+            city: existing.city || '',
+            has_account: true,
+            updated_at: existing.updatedAt,
+          });
+        } catch (e) {}
         return { customer: existing };
       }
 
@@ -1956,18 +2342,45 @@ export const db = {
       };
       dbData.customers.unshift(newCustomer);
       writeDb(dbData);
+
+      try {
+        await supabase.from('customers').upsert({
+          id: newCustomer.id,
+          full_name: newCustomer.fullName,
+          phone: newCustomer.phone,
+          password: newCustomer.password,
+          email: newCustomer.email,
+          has_account: true,
+          address: newCustomer.address,
+          city: newCustomer.city,
+          customer_type: newCustomer.customerType,
+          total_orders_count: 0,
+          total_spent: 0,
+          created_at: newCustomer.createdAt,
+          updated_at: newCustomer.updatedAt,
+        });
+      } catch (e) {}
       return { customer: newCustomer };
     },
-    login(phone: string, password?: string): { customer: Customer | null; error?: string } {
+
+    async login(phone: string, password?: string): Promise<{ customer: Customer | null; error?: string }> {
       const cleanPhone = phone.replace(/[^0-9]/g, '');
-      const dbData = readDb();
-      const customer = (dbData.customers || []).find((c) => c.phone.replace(/[^0-9]/g, '') === cleanPhone);
+      let customer: Customer | undefined;
+
+      try {
+        const { data, error } = await supabase.from('customers').select('*').eq('phone', cleanPhone).maybeSingle();
+        if (!error && data) customer = mapCustomerFromSupabase(data);
+      } catch (e) {}
+
+      if (!customer) {
+        const dbData = readDb();
+        customer = (dbData.customers || []).find((c) => c.phone.replace(/[^0-9]/g, '') === cleanPhone);
+      }
 
       if (!customer) {
         return { customer: null, error: 'Số điện thoại chưa từng đặt hàng hoặc đăng ký tại shop!' };
       }
 
-      // If customer has account with password, verify password
       if (customer.hasAccount && customer.password) {
         if (password && customer.password !== password) {
           return { customer: null, error: 'Mật khẩu không chính xác! Vui lòng thử lại.' };
@@ -1976,7 +2389,8 @@ export const db = {
 
       return { customer };
     },
-    saveOrUpdateAddress(customerIdOrPhone: string, addr: { address: string; district?: string; city?: string; isDefault?: boolean }): Customer | null {
+
+    async saveOrUpdateAddress(customerIdOrPhone: string, addr: { address: string; district?: string; city?: string; isDefault?: boolean }): Promise<Customer | null> {
       const dbData = readDb();
       if (!dbData.customers) return null;
       const clean = customerIdOrPhone.replace(/[^0-9]/g, '');
@@ -1984,7 +2398,6 @@ export const db = {
       if (!cust) return null;
 
       if (!cust.savedAddresses) cust.savedAddresses = [];
-
       const makeDefault = addr.isDefault !== false || !cust.address || cust.savedAddresses.length === 0;
       const addrSpecific = (addr.address || '').trim();
       const addrDistrict = (addr.district || '').trim();
@@ -2018,9 +2431,20 @@ export const db = {
 
       cust.updatedAt = new Date().toISOString();
       writeDb(dbData);
+
+      try {
+        await supabase.from('customers').update({
+          address: cust.address,
+          district: cust.district,
+          city: cust.city,
+          saved_addresses: cust.savedAddresses,
+          updated_at: cust.updatedAt,
+        }).eq('id', cust.id);
+      } catch (e) {}
       return cust;
     },
-    update(id: string, updateData: Partial<Customer>): Customer | null {
+
+    async update(id: string, updateData: Partial<Customer>): Promise<Customer | null> {
       const dbData = readDb();
       if (!dbData.customers) return null;
       const index = dbData.customers.findIndex((c) => c.id === id);
@@ -2032,9 +2456,30 @@ export const db = {
         updatedAt: new Date().toISOString(),
       };
       writeDb(dbData);
+
+      try {
+        const c = dbData.customers[index];
+        await supabase.from('customers').upsert({
+          id: c.id,
+          full_name: c.fullName,
+          phone: c.phone,
+          email: c.email || '',
+          password: c.password || '',
+          has_account: c.hasAccount,
+          address: c.address || '',
+          district: c.district || '',
+          city: c.city || '',
+          saved_addresses: c.savedAddresses || [],
+          customer_type: c.customerType || 'NEW',
+          total_orders_count: c.totalOrdersCount || 0,
+          total_spent: c.totalSpent || 0,
+          updated_at: c.updatedAt,
+        });
+      } catch (e) {}
       return dbData.customers[index];
     },
-    findOrCreate(customerData: { fullName: string; phone: string; address: string; city?: string }): Customer {
+
+    async findOrCreate(customerData: { fullName: string; phone: string; address: string; city?: string }): Promise<Customer> {
       const dbData = readDb();
       if (!dbData.customers) dbData.customers = [];
       const cleanPhone = customerData.phone.replace(/[^0-9]/g, '');
@@ -2063,53 +2508,112 @@ export const db = {
       };
       dbData.customers.unshift(newCustomer);
       writeDb(dbData);
+
+      try {
+        await supabase.from('customers').upsert({
+          id: newCustomer.id,
+          full_name: newCustomer.fullName,
+          phone: newCustomer.phone,
+          address: newCustomer.address,
+          city: newCustomer.city,
+          customer_type: newCustomer.customerType,
+          total_orders_count: 0,
+          total_spent: 0,
+          has_account: false,
+          created_at: newCustomer.createdAt,
+          updated_at: newCustomer.updatedAt,
+        });
+      } catch (e) {}
       return newCustomer;
     }
   },
 
   // ORDERS TABLE
   orders: {
-    getAll(): Order[] {
+    async getAll(): Promise<Order[]> {
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (!error && Array.isArray(data) && data.length > 0) {
+          const list = data.map(mapOrderFromSupabase);
+          const local = readDb();
+          local.orders = list;
+          return list;
+        }
+      } catch (err) {
+        console.warn('[Supabase orders.getAll fallback]:', err);
+      }
       return readDb().orders || [];
     },
-    getById(idOrCode: string): Order | undefined {
+
+    async getById(idOrCode: string): Promise<Order | undefined> {
       if (!idOrCode) return undefined;
       const clean = idOrCode.replace(/^#/, '').trim().toLowerCase();
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .or(`id.ilike.${clean},code.ilike.${clean}`)
+          .maybeSingle();
+        if (!error && data) return mapOrderFromSupabase(data);
+      } catch (err) {
+        console.warn('[Supabase orders.getById fallback]:', err);
+      }
       return (readDb().orders || []).find((o) => 
         (o.id && o.id.toLowerCase() === clean) || 
         (o.code && o.code.replace(/^#/, '').toLowerCase() === clean)
       );
     },
-    getByPhone(phone: string): Order[] {
+
+    async getByPhone(phone: string): Promise<Order[]> {
       const cleanPhone = phone.replace(/[^0-9]/g, '');
       if (!cleanPhone) return [];
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('customer_phone', cleanPhone)
+          .order('created_at', { ascending: false });
+        if (!error && Array.isArray(data) && data.length > 0) {
+          return data.map(mapOrderFromSupabase);
+        }
+      } catch (err) {
+        console.warn('[Supabase orders.getByPhone fallback]:', err);
+      }
       return (readDb().orders || []).filter((o) => (o.customer?.phone || '').replace(/[^0-9]/g, '') === cleanPhone)
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     },
-    lookup(query: string, customerId?: string): Order[] {
+
+    async lookup(query: string, customerId?: string): Promise<Order[]> {
       const raw = (query || '').trim();
       const q = raw.toLowerCase().replace(/^#/, '');
       const cleanDigits = raw.replace(/[^0-9]/g, '');
-      const dbData = readDb();
-      const orders = dbData.orders || [];
-      const customers = dbData.customers || [];
+      
+      let orders: Order[] = [];
+      try {
+        const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+        if (!error && Array.isArray(data) && data.length > 0) {
+          orders = data.map(mapOrderFromSupabase);
+        }
+      } catch (e) {}
 
+      if (orders.length === 0) {
+        orders = readDb().orders || [];
+      }
+
+      const customers = readDb().customers || [];
       const cust = customerId ? customers.find((c) => c.id === customerId) : undefined;
       const custPhone = cust ? (cust.phone || '').replace(/[^0-9]/g, '') : '';
 
       return orders.filter((o) => {
-        // Mode 1: Logged-in customer search / load all
         if (customerId) {
           const oPhone = (o.customer?.phone || '').replace(/[^0-9]/g, '');
           const isOwnOrder = (o.customerId && o.customerId === customerId) ||
                              (custPhone && oPhone === custPhone);
-
           if (!isOwnOrder) return false;
-
-          // If no search keyword, return all orders for this customer
           if (!raw) return true;
-
-          // If search keyword is given, filter within their orders
           const oCode = (o.code || '').toLowerCase().replace(/^#/, '');
           const oId = (o.id || '').toLowerCase().replace(/^#/, '');
           const oReceiverName = (o.customer?.fullName || '').toLowerCase();
@@ -2125,21 +2629,19 @@ export const db = {
           );
         }
 
-        // Mode 2: Guest lookup (by phone or order code)
         if (!raw) return false;
         const oPhone = (o.customer?.phone || '').replace(/[^0-9]/g, '');
         const oCode = (o.code || '').toLowerCase().replace(/^#/, '');
         const oId = (o.id || '').toLowerCase().replace(/^#/, '');
 
-        // Match by phone if query has at least 4 digits
         if (cleanDigits.length >= 4 && oPhone.includes(cleanDigits)) return true;
-        // Match by order code (e.g. OM-1234 or 1234)
         if (oCode.includes(q)) return true;
         if (oId.includes(q)) return true;
         return false;
       }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     },
-    create(orderInput: {
+
+    async create(orderInput: {
       customerId?: string;
       customer: { fullName: string; phone: string; address: string; city?: string; note?: string };
       items: any[];
@@ -2149,29 +2651,19 @@ export const db = {
       totalAmount?: number;
       totalWeight?: number;
       paymentMethod?: 'ZALO_CONFIRM' | 'COD' | 'BANK' | 'MOMO';
-    }): Order {
+    }): Promise<Order> {
       const dbData = readDb();
-      if (!dbData.orders || !Array.isArray(dbData.orders)) {
-        dbData.orders = [];
-      }
-      if (!dbData.customers || !Array.isArray(dbData.customers)) {
-        dbData.customers = [];
-      }
-      
-      // 1. Generate Random Order Code OM-XXXX
-      const randomCode = `OM-${Math.floor(1000 + Math.random() * 9000)}`;
+      if (!dbData.orders) dbData.orders = [];
+      if (!dbData.customers) dbData.customers = [];
 
-      // Xác định customerId liên kết (Ưu tiên ID từ tài khoản đang đăng nhập, nếu không thì đối soát SĐT)
+      const randomCode = `OM-${Math.floor(1000 + Math.random() * 9000)}`;
       const cleanPhone = (orderInput.customer?.phone || '').replace(/[^0-9]/g, '');
       let linkedCustomerId = orderInput.customerId;
       if (!linkedCustomerId && cleanPhone) {
         const matchingCust = (dbData.customers || []).find((c) => (c.phone || '').replace(/[^0-9]/g, '') === cleanPhone);
-        if (matchingCust) {
-          linkedCustomerId = matchingCust.id;
-        }
+        if (matchingCust) linkedCustomerId = matchingCust.id;
       }
-      
-      // 2. Map Items with SKU and detail calculation
+
       const mappedItems: OrderItem[] = (orderInput.items || []).map((it, idx) => {
         const prod = it.product || {};
         const originalUnitPrice = Number(prod.basePrice || it.originalUnitPrice || it.unitPrice || 0);
@@ -2201,14 +2693,10 @@ export const db = {
         };
       });
 
-      // Tổng tiền theo giá bán lẻ từng con
       const retailSubtotal = mappedItems.reduce((s, i) => s + (i.originalUnitPrice * i.quantity), 0);
-      // Tổng chiết khấu combo / sỉ
       const discount = mappedItems.reduce((s, i) => s + i.savingsAmount, 0);
-      // Tiền hàng thực tế sau khi giảm
       const itemsTotal = mappedItems.reduce((s, i) => s + i.totalPrice, 0);
 
-      // Tính tổng cân nặng thực tế kiện hàng
       const computedWeight = mappedItems.reduce((sum, item) => {
         const prod = (orderInput.items || []).find((it: any) => (it.product?.id || it.productId) === item.productId)?.product;
         const w = Number(prod?.weight || 50);
@@ -2216,15 +2704,14 @@ export const db = {
       }, 0);
       const totalWeight = Number(orderInput.totalWeight) > 0 ? Number(orderInput.totalWeight) : computedWeight;
 
-      // BẢO MẬT & KIỂM TRA CHÍNH SÁCH FREESHIP TỪ MÁY CHỦ (ANTI-TAMPERING):
       const settings: any = dbData.settings || {};
-      const prepaidFreeShipThreshold = Number(settings.prepaidFreeShipThreshold) || 1000000;
+      const prepaidFreeShipThreshold = Number(settings.prepaidFreeShipThreshold) || 10000;
       const isPrepaid = orderInput.paymentMethod === 'BANK' || orderInput.paymentMethod === 'MOMO';
       const isEligiblePrepaidFreeship = isPrepaid && itemsTotal >= prepaidFreeShipThreshold && settings.enablePrepaidFreeShip !== false;
 
       let calculatedShippingFee = 0;
       if (isEligiblePrepaidFreeship) {
-        calculatedShippingFee = 0; // Đủ điều kiện miễn phí vận chuyển khi thanh toán trước
+        calculatedShippingFee = 0;
       } else {
         const { shippingFee: spxFee } = calculateShippingFee(totalWeight, itemsTotal);
         calculatedShippingFee = spxFee;
@@ -2270,7 +2757,6 @@ export const db = {
         updatedAt: new Date().toISOString(),
       };
 
-      // Tự động lưu địa chỉ & cập nhật thống kê tài khoản khách hàng
       const existingCust = linkedCustomerId
         ? (dbData.customers || []).find((c) => c.id === linkedCustomerId)
         : cleanPhone
@@ -2284,7 +2770,6 @@ export const db = {
 
       if (existingCust) {
         if (!existingCust.savedAddresses) existingCust.savedAddresses = [];
-
         const isFirstOrder = !existingCust.address || existingCust.savedAddresses.length === 0;
         const makeDefault = setAsDefault || isFirstOrder;
 
@@ -2322,10 +2807,45 @@ export const db = {
 
       dbData.orders.unshift(newOrder);
       writeDb(dbData);
+
+      try {
+        const itemsSummary = mappedItems.map(i => `${i.productName || 'Sản phẩm'} (x${i.quantity || 1})`).join(', ');
+        await supabase.from('orders').upsert({
+          id: newOrder.id,
+          code: newOrder.code,
+          customer_id: newOrder.customerId || null,
+          customer_name: newOrder.customer?.fullName || '',
+          customer_phone: newOrder.customer?.phone || '',
+          customer_address: newOrder.customer?.address || '',
+          customer_city: newOrder.customer?.city || '',
+          items_summary: itemsSummary,
+          subtotal: newOrder.subtotal,
+          subtotal_amount: newOrder.subtotalAmount,
+          combo_discount_amount: newOrder.comboDiscountAmount,
+          discount: newOrder.comboDiscountAmount,
+          items_total_amount: newOrder.itemsTotalAmount,
+          shipping_fee: newOrder.shippingFee,
+          total_weight: newOrder.totalWeight,
+          final_total_amount: newOrder.finalTotalAmount,
+          total_amount: newOrder.totalAmount,
+          payment_method: newOrder.paymentMethod,
+          payment_status: newOrder.paymentStatus,
+          order_status: newOrder.orderStatus,
+          carrier_name: newOrder.carrierName || 'SPX Express',
+          items: newOrder.items,
+          customer: newOrder.customer,
+          logs: newOrder.logs,
+          created_at: newOrder.createdAt,
+          updated_at: newOrder.updatedAt,
+        });
+      } catch (err) {
+        console.warn('[Supabase orders.create upsert error]:', err);
+      }
+
       return newOrder;
     },
 
-    upsert(order: Order): Order {
+    async upsert(order: Order): Promise<Order> {
       const dbData = readDb();
       if (!dbData.orders) dbData.orders = [];
       const cleanId = (order.id || '').replace(/^#/, '').trim().toLowerCase();
@@ -2340,16 +2860,50 @@ export const db = {
           ...order,
           updatedAt: new Date().toISOString(),
         };
-        writeDb(dbData);
-        return dbData.orders[index];
       } else {
         dbData.orders.unshift(order);
-        writeDb(dbData);
-        return order;
       }
+      writeDb(dbData);
+
+      try {
+        const itemsSummary = (order.items || []).map(i => `${i.productName || 'Sản phẩm'} (x${i.quantity || 1})`).join(', ');
+        await supabase.from('orders').upsert({
+          id: order.id,
+          code: order.code,
+          customer_id: order.customerId || null,
+          customer_name: order.customer?.fullName || '',
+          customer_phone: order.customer?.phone || '',
+          customer_address: order.customer?.address || '',
+          customer_city: order.customer?.city || '',
+          items_summary: itemsSummary,
+          subtotal: order.subtotal || 0,
+          subtotal_amount: order.subtotalAmount || 0,
+          combo_discount_amount: order.comboDiscountAmount || 0,
+          discount: order.discount || 0,
+          items_total_amount: order.itemsTotalAmount || 0,
+          shipping_fee: order.shippingFee || 0,
+          total_weight: order.totalWeight || 0,
+          final_total_amount: order.finalTotalAmount || order.totalAmount || 0,
+          total_amount: order.totalAmount || 0,
+          payment_method: order.paymentMethod || 'COD',
+          payment_status: order.paymentStatus || 'UNPAID',
+          order_status: order.orderStatus || 'PENDING_CONFIRM',
+          carrier_name: order.carrierName || '',
+          tracking_number: order.trackingNumber || '',
+          items: order.items || [],
+          customer: order.customer || {},
+          logs: order.logs || [],
+          paid_at: order.paidAt || null,
+          shipped_at: order.shippedAt || null,
+          completed_at: order.completedAt || null,
+          created_at: order.createdAt,
+          updated_at: order.updatedAt,
+        });
+      } catch (e) {}
+      return order;
     },
 
-    upsertBatch(ordersList: Order[]): Order[] {
+    async upsertBatch(ordersList: Order[]): Promise<Order[]> {
       const dbData = readDb();
       if (!dbData.orders) dbData.orders = [];
       ordersList.forEach((order) => {
@@ -2370,10 +2924,49 @@ export const db = {
         }
       });
       writeDb(dbData);
+
+      try {
+        const rows = ordersList.map(order => {
+          const itemsSummary = (order.items || []).map(i => `${i.productName || 'Sản phẩm'} (x${i.quantity || 1})`).join(', ');
+          return {
+            id: order.id,
+            code: order.code,
+            customer_id: order.customerId || null,
+            customer_name: order.customer?.fullName || '',
+            customer_phone: order.customer?.phone || '',
+            customer_address: order.customer?.address || '',
+            customer_city: order.customer?.city || '',
+            items_summary: itemsSummary,
+            subtotal: order.subtotal || 0,
+            subtotal_amount: order.subtotalAmount || 0,
+            combo_discount_amount: order.comboDiscountAmount || 0,
+            discount: order.discount || 0,
+            items_total_amount: order.itemsTotalAmount || 0,
+            shipping_fee: order.shippingFee || 0,
+            total_weight: order.totalWeight || 0,
+            final_total_amount: order.finalTotalAmount || order.totalAmount || 0,
+            total_amount: order.totalAmount || 0,
+            payment_method: order.paymentMethod || 'COD',
+            payment_status: order.paymentStatus || 'UNPAID',
+            order_status: order.orderStatus || 'PENDING_CONFIRM',
+            carrier_name: order.carrierName || '',
+            tracking_number: order.trackingNumber || '',
+            items: order.items || [],
+            customer: order.customer || {},
+            logs: order.logs || [],
+            paid_at: order.paidAt || null,
+            shipped_at: order.shippedAt || null,
+            completed_at: order.completedAt || null,
+            created_at: order.createdAt || new Date().toISOString(),
+            updated_at: order.updatedAt || new Date().toISOString(),
+          };
+        });
+        await supabase.from('orders').upsert(rows);
+      } catch (e) {}
       return dbData.orders;
     },
 
-    updateStatus(orderId: string, status?: OrderStatus, paymentStatus?: PaymentStatus, carrierName?: string, trackingNumber?: string, shippingFee?: number, fallbackOrder?: Order): Order | null {
+    async updateStatus(orderId: string, status?: OrderStatus, paymentStatus?: PaymentStatus, carrierName?: string, trackingNumber?: string, shippingFee?: number, fallbackOrder?: Order): Promise<Order | null> {
       const dbData = readDb();
       if (!dbData.orders) dbData.orders = [];
       const cleanId = (orderId || '').replace(/^#/, '').trim().toLowerCase();
@@ -2383,7 +2976,6 @@ export const db = {
       );
 
       if (index === -1 && fallbackOrder) {
-        // Auto-recover order if sent from client
         dbData.orders.unshift(fallbackOrder);
         index = 0;
       }
@@ -2431,33 +3023,125 @@ export const db = {
         timestamp: new Date().toISOString(),
       });
       writeDb(dbData);
+
+      try {
+        const o = dbData.orders[index];
+        await supabase.from('orders').upsert({
+          id: o.id,
+          code: o.code,
+          customer_id: o.customerId || null,
+          customer_name: o.customer?.fullName || '',
+          customer_phone: o.customer?.phone || '',
+          customer_address: o.customer?.address || '',
+          customer_city: o.customer?.city || '',
+          shipping_fee: o.shippingFee,
+          final_total_amount: o.finalTotalAmount,
+          total_amount: o.totalAmount,
+          payment_status: o.paymentStatus,
+          order_status: o.orderStatus,
+          carrier_name: o.carrierName || '',
+          tracking_number: o.trackingNumber || '',
+          logs: o.logs,
+          paid_at: o.paidAt || null,
+          shipped_at: o.shippedAt || null,
+          completed_at: o.completedAt || null,
+          updated_at: o.updatedAt,
+        });
+      } catch (e) {}
+
       return dbData.orders[index];
     }
   },
 
   // SETTINGS TABLE
   settings: {
-    get(): ShopSettings {
+    async get(): Promise<ShopSettings> {
+      try {
+        const { data, error } = await supabase
+          .from('settings')
+          .select('*')
+          .eq('id', 'default')
+          .maybeSingle();
+        if (!error && data) {
+          const fallback = readDb().settings;
+          const merged = mapSettingsFromSupabase(data, fallback);
+          const local = readDb();
+          local.settings = merged;
+          return merged;
+        }
+      } catch (err) {
+        console.warn('[Supabase settings.get fallback]:', err);
+      }
       return readDb().settings;
     },
-    update(newSettings: Partial<ShopSettings>): ShopSettings {
+
+    async update(newSettings: Partial<ShopSettings>): Promise<ShopSettings> {
       const dbData = readDb();
       dbData.settings = {
         ...dbData.settings,
         ...newSettings,
       };
       writeDb(dbData);
+
+      try {
+        const s = dbData.settings;
+        await supabase.from('settings').upsert({
+          id: 'default',
+          shop_name: s.shopName,
+          brand_title: s.brandTitle,
+          slogan: s.slogan,
+          hotline: s.hotline,
+          zalo_phone: s.zaloPhone,
+          zalo_official_url: s.zaloOfficialUrl,
+          instagram_url: s.instagramUrl,
+          tiktok_url: s.tiktokUrl,
+          hero_title: s.heroTitle,
+          hero_subtitle: s.heroSubtitle,
+          banner_text: s.bannerText,
+          shop_address: s.shopAddress,
+          working_hours: s.workingHours,
+          free_shipping_threshold: s.freeShippingThreshold,
+          prepaid_free_ship_threshold: s.prepaidFreeShipThreshold,
+          enable_prepaid_free_ship: s.enablePrepaidFreeShip !== false,
+          telegram_bot_token: s.telegramBotToken || '',
+          telegram_chat_id: s.telegramChatId || '',
+          enable_telegram_notify: s.enableTelegramNotify !== false,
+          bank_id: s.bankId || '',
+          bank_account: s.bankAccount || '',
+          bank_owner: s.bankOwner || '',
+          momo_phone: s.momoPhone || '',
+          momo_name: s.momoName || '',
+          raw_data: s,
+          updated_at: new Date().toISOString(),
+        });
+      } catch (err) {
+        console.warn('[Supabase settings.update error]:', err);
+      }
+
       return dbData.settings;
     }
   },
 
   // FEEDBACKS TABLE
   feedbacks: {
-    getAll(): CustomerFeedback[] {
+    async getAll(): Promise<CustomerFeedback[]> {
+      try {
+        const { data, error } = await supabase
+          .from('feedbacks')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
+        if (!error && Array.isArray(data) && data.length > 0) {
+          return data.map(mapFeedbackFromSupabase);
+        }
+      } catch (err) {
+        console.warn('[Supabase feedbacks.getAll fallback]:', err);
+      }
       const dbData = readDb();
       return (dbData.feedbacks || []).filter((f) => f.isActive);
     },
-    create(data: Omit<CustomerFeedback, 'id' | 'createdAt' | 'isActive'>): CustomerFeedback {
+
+    async create(data: Omit<CustomerFeedback, 'id' | 'createdAt' | 'isActive'>): Promise<CustomerFeedback> {
       const dbData = readDb();
       if (!dbData.feedbacks) dbData.feedbacks = [];
       const newFb: CustomerFeedback = {
@@ -2469,9 +3153,25 @@ export const db = {
       };
       dbData.feedbacks.unshift(newFb);
       writeDb(dbData);
+
+      try {
+        await supabase.from('feedbacks').upsert({
+          id: newFb.id,
+          customer_name: newFb.customerName,
+          customer_location: newFb.customerLocation || '',
+          comment: newFb.comment,
+          rating: newFb.rating,
+          purchased_product: newFb.purchasedProduct || '',
+          avatar_text: newFb.avatarText,
+          is_active: newFb.isActive,
+          created_at: newFb.createdAt,
+        });
+      } catch (e) {}
+
       return newFb;
     },
-    update(id: string, data: Partial<CustomerFeedback>): CustomerFeedback | null {
+
+    async update(id: string, data: Partial<CustomerFeedback>): Promise<CustomerFeedback | null> {
       const dbData = readDb();
       if (!dbData.feedbacks) return null;
       const index = dbData.feedbacks.findIndex((f) => f.id === id);
@@ -2481,15 +3181,36 @@ export const db = {
         ...data,
       };
       writeDb(dbData);
+
+      try {
+        const fb = dbData.feedbacks[index];
+        await supabase.from('feedbacks').upsert({
+          id: fb.id,
+          customer_name: fb.customerName,
+          customer_location: fb.customerLocation || '',
+          comment: fb.comment,
+          rating: fb.rating,
+          purchased_product: fb.purchasedProduct || '',
+          avatar_text: fb.avatarText,
+          is_active: fb.isActive,
+        });
+      } catch (e) {}
+
       return dbData.feedbacks[index];
     },
-    delete(id: string): boolean {
+
+    async delete(id: string): Promise<boolean> {
       const dbData = readDb();
       if (!dbData.feedbacks) return false;
       const index = dbData.feedbacks.findIndex((f) => f.id === id);
       if (index === -1) return false;
       dbData.feedbacks.splice(index, 1);
       writeDb(dbData);
+
+      try {
+        await supabase.from('feedbacks').delete().eq('id', id);
+      } catch (e) {}
+
       return true;
     }
   }

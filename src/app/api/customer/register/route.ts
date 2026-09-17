@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Mật khẩu cần tối thiểu 4 ký tự' }, { status: 400 });
     }
 
-    const res = db.customers.register({
+    const res = await db.customers.register({
       fullName: fullName.trim(),
       phone: phone.trim(),
       password: password.trim(),

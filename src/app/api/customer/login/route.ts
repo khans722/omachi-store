@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Vui lòng nhập số điện thoại' }, { status: 400 });
     }
 
-    const res = db.customers.login(phone.trim(), password ? password.trim() : undefined);
+    const res = await db.customers.login(phone.trim(), password ? password.trim() : undefined);
 
     if (res.error || !res.customer) {
       return NextResponse.json({ success: false, error: res.error || 'Đăng nhập thất bại' }, { status: 401 });

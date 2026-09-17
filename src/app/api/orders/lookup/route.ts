@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Vui lòng nhập số điện thoại hoặc mã đơn hàng để tra cứu' }, { status: 400 });
     }
 
-    const orders = db.orders.lookup(query, customerId);
+    const orders = await db.orders.lookup(query, customerId);
 
     return NextResponse.json({
       success: true,

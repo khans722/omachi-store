@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Thiếu thông tin tra cứu khách hàng' }, { status: 400 });
     }
 
-    const customer = id ? db.customers.getById(id) : db.customers.findByPhone(phone!);
+    const customer = id ? await db.customers.getById(id) : await db.customers.findByPhone(phone!);
     if (!customer) {
       return NextResponse.json({ success: false, error: 'Không tìm thấy thông tin khách hàng' }, { status: 404 });
     }
@@ -34,7 +34,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Thiếu ID khách hàng' }, { status: 400 });
     }
 
-    const currentCustomer = db.customers.getById(id);
+    const currentCustomer = await db.customers.getById(id);
     if (!currentCustomer) {
       return NextResponse.json({ success: false, error: 'Không tìm thấy khách hàng' }, { status: 404 });
     }
@@ -83,7 +83,7 @@ export async function PUT(req: NextRequest) {
       updateData.savedAddresses = list;
     }
 
-    const updated = db.customers.update(id, updateData);
+    const updated = await db.customers.update(id, updateData);
     if (!updated) {
       return NextResponse.json({ success: false, error: 'Cập nhật thông tin thất bại' }, { status: 500 });
     }

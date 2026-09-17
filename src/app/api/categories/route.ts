@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 
 export async function GET() {
   try {
-    const categories = db.categories.getAll();
+    const categories = await db.categories.getAll();
     return NextResponse.json({ success: true, data: categories });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Tên danh mục không được để trống' }, { status: 400 });
     }
 
-    const newCat = db.categories.create({
+    const newCat = await db.categories.create({
       name: body.name.trim(),
       icon: body.icon?.trim() || '🌸',
       description: body.description?.trim() || '',
@@ -39,7 +39,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Thiếu ID danh mục' }, { status: 400 });
     }
 
-    const updated = db.categories.update(body.id, {
+    const updated = await db.categories.update(body.id, {
       name: body.name?.trim(),
       icon: body.icon?.trim(),
       description: body.description?.trim(),
@@ -67,7 +67,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Thiếu ID danh mục' }, { status: 400 });
     }
 
-    const ok = db.categories.delete(id);
+    const ok = await db.categories.delete(id);
     if (!ok) {
       return NextResponse.json({ success: false, error: 'Không tìm thấy danh mục' }, { status: 404 });
     }

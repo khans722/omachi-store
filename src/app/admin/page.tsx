@@ -198,6 +198,55 @@ export default function AdminPage() {
   const [editingCategory, setEditingCategory] = useState<Partial<Category> | null>(null);
   const [savingCategory, setSavingCategory] = useState(false);
 
+  // Supabase Cloud Database state
+  const [supabaseSyncing, setSupabaseSyncing] = useState(false);
+  const [supabaseStatusMsg, setSupabaseStatusMsg] = useState('');
+  const [supabaseConnected, setSupabaseConnected] = useState<boolean | null>(null);
+
+  const handleSyncSupabase = async () => {
+    setSupabaseSyncing(true);
+    setSupabaseStatusMsg('Đang đồng bộ dữ liệu lên Supabase Cloud Database...');
+    try {
+      const res = await fetch('/api/admin/supabase-sync', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setSupabaseConnected(true);
+        setSupabaseStatusMsg(`✅ ${data.message}`);
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+      } else {
+        setSupabaseStatusMsg(`⚠️ ${data.error || 'Đồng bộ thất bại'}`);
+      }
+    } catch (err: any) {
+      setSupabaseStatusMsg(`❌ Lỗi kết nối: ${err.message || err}`);
+    } finally {
+      setSupabaseSyncing(false);
+    }
+  };
+
+  const handleCheckSupabase = async () => {
+    setSupabaseSyncing(true);
+    setSupabaseStatusMsg('Đang kiểm tra kết nối Supabase...');
+    try {
+      const res = await fetch('/api/admin/supabase-sync');
+      const data = await res.json();
+      if (data.success && data.tablesCreated) {
+        setSupabaseConnected(true);
+        setSupabaseStatusMsg(`✅ Supabase hoạt động hoàn hảo! (${data.stats?.ordersCount ?? 0} đơn, ${data.stats?.productsCount ?? 0} sản phẩm, ${data.stats?.categoriesCount ?? 0} danh mục)`);
+      } else if (data.connected && !data.tablesCreated) {
+        setSupabaseConnected(false);
+        setSupabaseStatusMsg('⚠️ Đã kết nối Supabase nhưng bảng chưa được tạo. Vui lòng dán file supabase-schema.sql vào Supabase SQL Editor và nhấn Run!');
+      } else {
+        setSupabaseConnected(false);
+        setSupabaseStatusMsg(`⚠️ ${data.error || 'Chưa thể kết nối tới Supabase'}`);
+      }
+    } catch (err: any) {
+      setSupabaseConnected(false);
+      setSupabaseStatusMsg(`❌ Lỗi: ${err.message || err}`);
+    } finally {
+      setSupabaseSyncing(false);
+    }
+  };
+
   // Feedback modal state
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [editingFeedback, setEditingFeedback] = useState<Partial<CustomerFeedback> | null>(null);
@@ -3763,6 +3812,70 @@ export default function AdminPage() {
                           className="w-full px-3 py-2 bg-white border border-sky-200 rounded-xl font-bold text-gray-800 focus:ring-2 focus:ring-sky-400 focus:outline-none uppercase"
                         />
                       </div>
+                    </div>
+                  </div>
+
+                  {/* 8. CƠ SỞ DỮ LIỆU ĐÁM MÂY SUPABASE (CLOUD DATABASE) */}
+                  <div className="p-4 bg-gradient-to-br from-emerald-50/50 via-teal-50/30 to-white rounded-2xl border-2 border-emerald-300 shadow-xs space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-black shadow-xs">⚡</span>
+                        <div>
+                          <h4 className="font-black text-emerald-950 text-xs flex items-center gap-1.5">
+                            <span>Cơ Sở Dữ Liệu Đám Mây Supabase (Cloud Database)</span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                              Lưu Trữ Vĩnh Viễn
+                            </span>
+                          </h4>
+                          <p className="text-[11px] text-emerald-800 font-medium mt-0.5">
+                            Đơn hàng, sản phẩm và cấu hình được bảo mật và đồng bộ tự động 24/7 lên Supabase PostgreSQL.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {supabaseStatusMsg && (
+                      <div className={`p-3 rounded-xl text-xs font-bold transition ${
+                        supabaseConnected === true
+                          ? 'bg-emerald-100 border border-emerald-300 text-emerald-900'
+                          : supabaseConnected === false
+                          ? 'bg-amber-100 border border-amber-300 text-amber-900'
+                          : 'bg-stone-100 border border-stone-200 text-stone-800'
+                      }`}>
+                        {supabaseStatusMsg}
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={handleSyncSupabase}
+                        disabled={supabaseSyncing}
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${supabaseSyncing ? 'animate-spin' : ''}`} />
+                        <span>{supabaseSyncing ? 'Đang Xử Lý...' : '⚡ Đồng Bộ Lên Supabase'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleCheckSupabase}
+                        disabled={supabaseSyncing}
+                        className="px-3.5 py-2 rounded-xl bg-white border border-emerald-300 hover:bg-emerald-50 text-emerald-800 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Kiểm Tra Kết Nối</span>
+                      </button>
+
+                      <a
+                        href="https://supabase.com/dashboard/project/idkppwrfxvxffsflibar/editor"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3.5 py-2 rounded-xl bg-white border border-stone-300 hover:bg-stone-50 text-stone-700 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer ml-auto"
+                      >
+                        <span>📊 Mở Supabase (Xem Dữ Liệu Như Excel)</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-stone-400" />
+                      </a>
                     </div>
                   </div>
 

@@ -6,7 +6,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const order = db.orders.getById(params.id);
+  const order = await db.orders.getById(params.id);
   if (!order) {
     return NextResponse.json({ success: false, message: 'Order not found' }, { status: 404 });
   }
@@ -20,7 +20,7 @@ export async function PATCH(
   try {
     const body = await req.json();
     const fallbackOrder = body.order || body.orderData;
-    const updated = db.orders.updateStatus(
+    const updated = await db.orders.updateStatus(
       params.id,
       body.orderStatus,
       body.paymentStatus,
@@ -36,7 +36,7 @@ export async function PATCH(
 
     // Send notification update in background
     const trigger = body.paymentStatus === 'PAID' ? 'PAYMENT_SUCCESS' : 'CONFIRMED';
-    const settings = db.settings.get();
+    const settings = await db.settings.get();
     sendOrderNotification(updated, settings, trigger).catch((err) => {
       console.error('[ASYNC ORDER UPDATE NOTIFICATION ERROR]:', err);
     });

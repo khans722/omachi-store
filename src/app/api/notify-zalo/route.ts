@@ -4,7 +4,7 @@ import { sendOrderNotification } from '@/lib/zalo';
 
 export async function POST(req: NextRequest) {
   try {
-    const orders = db.orders.getAll();
+    const orders = await db.orders.getAll();
     const latest = orders[0] || {
       id: 'test-order',
       code: 'OM-TEST',
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     };
 
     const body = await req.json().catch(() => ({}));
-    const currentSettings = db.settings.get();
+    const currentSettings = await db.settings.get();
     const settings = {
       ...currentSettings,
       ...(body.telegramBotToken ? { telegramBotToken: body.telegramBotToken } : {}),

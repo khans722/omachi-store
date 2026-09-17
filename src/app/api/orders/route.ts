@@ -3,12 +3,12 @@ import { db } from '@/lib/db';
 import { sendOrderNotification } from '@/lib/zalo';
 
 export async function GET() {
-  const orders = db.orders.getAll();
+  const orders = await db.orders.getAll();
   const now = Date.now();
   const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
   let hasChanges = false;
 
-  orders.forEach((o: any) => {
+  for (const o of orders as any[]) {
     if (
       (o.paymentMethod === 'BANK' || o.paymentMethod === 'MOMO') &&
       o.paymentStatus !== 'PAID' &&
@@ -16,16 +16,16 @@ export async function GET() {
     ) {
       const createdTime = new Date(o.createdAt).getTime();
       if (!isNaN(createdTime) && now - createdTime > TWENTY_FOUR_HOURS) {
-        db.orders.updateStatus(o.id, 'CANCELLED', 'UNPAID', undefined, undefined, undefined, {
+        await db.orders.updateStatus(o.id, 'CANCELLED', 'UNPAID', undefined, undefined, undefined, {
           ...o,
           cancelReason: 'Hệ thống tự động hủy do quá hạn 24h chưa chuyển khoản thanh toán'
         });
         hasChanges = true;
       }
     }
-  });
+  }
 
-  const finalOrders = hasChanges ? db.orders.getAll() : orders;
+  const finalOrders = hasChanges ? await db.orders.getAll() : orders;
   return NextResponse.json({ success: true, data: finalOrders });
 }
 
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     // Check if this is a sync request from Admin/Client
     if (body.syncOrders && Array.isArray(body.syncOrders)) {
-      const synced = db.orders.upsertBatch(body.syncOrders);
+      const synced = await db.orders.upsertBatch(body.syncOrders);
       return NextResponse.json({ success: true, data: synced });
     }
 
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'Số điện thoại không hợp lệ' }, { status: 400 });
     }
 
-    const newOrder = db.orders.create(body);
+    const newOrder = await db.orders.create(body);
 
     // Gửi thông báo về Telegram ngầm (Bất đồng bộ không chặn đơn của khách)
     // Giúp tốc độ đặt hàng cực nhanh < 0.1s thay vì phải đợi máy chủ Telegram phản hồi
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || req.nextUrl.host;
     const requestOrigin = host ? `${protocol}://${host}` : req.nextUrl.origin;
 
-    const settings = db.settings.get();
+    const settings = await db.settings.get();
     sendOrderNotification(newOrder, settings, 'NEW_ORDER', requestOrigin).catch((err) => {
       console.error('[ASYNC ORDER TELEGRAM NOTIFICATION ERROR]:', err);
     });
@@ -74,7 +74,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const fallbackOrder = body.order || body.orderData;
-    const updated = db.orders.updateStatus(
+    const updated = await db.orders.updateStatus(
       orderId,
       body.orderStatus,
       body.paymentStatus,
@@ -94,7 +94,7 @@ export async function PATCH(req: NextRequest) {
     const requestOrigin = host ? `${protocol}://${host}` : req.nextUrl.origin;
 
     const trigger = body.paymentStatus === 'PAID' ? 'PAYMENT_SUCCESS' : 'CONFIRMED';
-    const settings = db.settings.get();
+    const settings = await db.settings.get();
     sendOrderNotification(updated, settings, trigger, requestOrigin).catch((err) => {
       console.error('[ASYNC ORDER UPDATE NOTIFICATION ERROR]:', err);
     });
