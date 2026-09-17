@@ -1331,45 +1331,6 @@ export default function CheckoutPage() {
 
       {/* MAIN CONTAINER */}
       <form onSubmit={handleSubmitOrder} noValidate className="max-w-2xl mx-auto px-2 sm:px-4 py-2.5 space-y-2.5">
-        
-        {/* Freeship notification banner */}
-        {isPrepaidFreeshipEnabled && (
-          <div className={`p-3 rounded-xl border flex items-center justify-between gap-2 shadow-2xs ${
-            isOrderOverThreshold
-              ? 'bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border-emerald-200 text-emerald-900'
-              : 'bg-gradient-to-r from-amber-50 via-orange-50/50 to-amber-50 border-amber-200 text-stone-800'
-          }`}>
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-base sm:text-lg shrink-0">{isOrderOverThreshold ? '🎉' : '🎁'}</span>
-              <div className="text-xs min-w-0">
-                {isOrderOverThreshold ? (
-                  <div>
-                    <strong className="text-emerald-800 font-black block sm:inline">
-                      Đơn hàng từ {formatVND(FREESHIP_THRESHOLD)}: MIỄN PHÍ SHIP khi Chuyển Khoản / MoMo!
-                    </strong>
-                    <span className="text-[11px] text-emerald-700 sm:ml-1 block sm:inline font-medium">
-                      (Chọn VietQR hoặc Ví MoMo bên dưới để nhận cước 0đ)
-                    </span>
-                  </div>
-                ) : (
-                  <div>
-                    <strong className="text-stone-800 font-bold block sm:inline">
-                      Mua thêm {formatVND(missingForFreeship)} để được MIỄN PHÍ SHIP!
-                    </strong>
-                    <span className="text-[11px] text-stone-500 sm:ml-1 block sm:inline font-medium">
-                      (Áp dụng khi thanh toán VietQR hoặc Ví MoMo)
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-            {isOrderOverThreshold && (
-              <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white px-2 py-0.5 rounded-full shrink-0 shadow-2xs">
-                Freeship CK / MoMo
-              </span>
-            )}
-          </div>
-        )}
 
         {/* 2. SHOPEE ADDRESS CARD (Bì Thư Viền Ruy Băng) */}
         <div ref={addressSectionRef} className="bg-white rounded-lg shadow-2xs overflow-hidden border border-gray-100">
