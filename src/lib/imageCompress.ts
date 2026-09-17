@@ -5,16 +5,12 @@
  */
 export async function compressImage(
   file: File,
-  maxDimension = 1200,
-  quality = 0.82
+  maxDimension = 900,
+  quality = 0.8
 ): Promise<{ file: File; dataUrl: string }> {
   return new Promise((resolve) => {
-    // If not an image, return raw file and read as dataUrl
     if (!file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = () => resolve({ file, dataUrl: (reader.result as string) || '' });
-      reader.onerror = () => resolve({ file, dataUrl: '' });
-      reader.readAsDataURL(file);
+      resolve({ file, dataUrl: '' });
       return;
     }
 
@@ -43,52 +39,34 @@ export async function compressImage(
       const ctx = canvas.getContext('2d');
 
       if (!ctx) {
-        const reader = new FileReader();
-        reader.onload = () => resolve({ file, dataUrl: (reader.result as string) || '' });
-        reader.readAsDataURL(file);
+        resolve({ file, dataUrl: '' });
         return;
       }
 
       ctx.drawImage(img, 0, 0, width, height);
 
-      // Try webp, fallback to jpeg if not supported
-      let outputType = 'image/webp';
-      let dataUrl = '';
-      try {
-        dataUrl = canvas.toDataURL(outputType, quality);
-        if (!dataUrl.startsWith('data:image/webp')) {
-          outputType = 'image/jpeg';
-          dataUrl = canvas.toDataURL(outputType, quality);
-        }
-      } catch {
-        outputType = 'image/jpeg';
-        dataUrl = canvas.toDataURL(outputType, quality);
-      }
-
+      // Fast toBlob without expensive toDataURL strings
       canvas.toBlob(
         (blob) => {
           if (!blob) {
-            resolve({ file, dataUrl });
+            resolve({ file, dataUrl: '' });
             return;
           }
-          const ext = outputType === 'image/webp' ? '.webp' : '.jpg';
-          const cleanName = file.name.replace(/\.[^.]+$/, '') + ext;
+          const cleanName = file.name.replace(/\.[^.]+$/, '') + '.webp';
           const compressedFile = new File([blob], cleanName, {
-            type: outputType,
+            type: 'image/webp',
             lastModified: Date.now(),
           });
-          resolve({ file: compressedFile, dataUrl });
+          resolve({ file: compressedFile, dataUrl: URL.createObjectURL(blob) });
         },
-        outputType,
+        'image/webp',
         quality
       );
     };
 
     img.onerror = () => {
       URL.revokeObjectURL(objectUrl);
-      const reader = new FileReader();
-      reader.onload = () => resolve({ file, dataUrl: (reader.result as string) || '' });
-      reader.readAsDataURL(file);
+      resolve({ file, dataUrl: '' });
     };
 
     img.src = objectUrl;

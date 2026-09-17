@@ -31,14 +31,10 @@ export async function POST(request: Request) {
     const cleanBase = path.basename(file.name, ext).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 30);
     const filename = `charm_${Date.now()}_${cleanBase}${ext}`;
 
-    const mimeType = file.type || 'image/jpeg';
-    const base64Data = `data:${mimeType};base64,${buffer.toString('base64')}`;
-
     const IS_SERVERLESS = Boolean(
       process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT
     );
 
-    // Choose writable directory based on environment
     const uploadsDir = IS_SERVERLESS
       ? path.join('/tmp', 'uploads')
       : path.join(process.cwd(), 'public', 'uploads');
@@ -53,14 +49,13 @@ export async function POST(request: Request) {
       await fs.promises.writeFile(filePath, buffer);
     } catch (fsErr) {
       console.warn('File system write warning (falling back to dataUrl):', fsErr);
-      // On serverless or read-only filesystem, use dataUrl directly so upload NEVER breaks
-      publicUrl = base64Data;
+      const mimeType = file.type || 'image/webp';
+      publicUrl = `data:${mimeType};base64,${buffer.toString('base64')}`;
     }
 
     return NextResponse.json({
       success: true,
       url: publicUrl,
-      dataUrl: base64Data,
       filename: filename,
       size: buffer.length,
     });
