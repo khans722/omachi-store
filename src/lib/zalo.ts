@@ -7,7 +7,8 @@ import { formatVND } from './utils';
 export async function sendOrderNotification(
   order: Order,
   settings: ShopSettings,
-  trigger: 'NEW_ORDER' | 'PAYMENT_SUCCESS' | 'CONFIRMED' | 'SHIPPING'
+  trigger: 'NEW_ORDER' | 'PAYMENT_SUCCESS' | 'CONFIRMED' | 'SHIPPING',
+  requestOrigin?: string
 ) {
   const itemsText = (order.items || [])
     .map((item: any, idx: number) => {
@@ -21,9 +22,28 @@ export async function sendOrderNotification(
     })
     .join('\n');
 
-  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || (settings as any).websiteUrl || 'http://localhost:3000').replace(/\/$/, '');
-  const orderViewUrl = `${baseUrl}/order/${order.code || order.id}`;
-  const adminUrl = `${baseUrl}/admin`;
+  const envUrl = (process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '')).replace(/\/$/, '');
+  const configUrl = ((settings as any).websiteUrl || '').replace(/\/$/, '');
+  const reqUrl = (requestOrigin || '').replace(/\/$/, '');
+
+  // Tự động nhận diện domain thật khi đã deploy lên mạng (tránh tuyệt đối localhost khi chạy thực tế)
+  let baseUrl = '';
+  if (configUrl && !configUrl.includes('localhost')) {
+    baseUrl = configUrl;
+  } else if (reqUrl && !reqUrl.includes('localhost')) {
+    baseUrl = reqUrl;
+  } else if (envUrl) {
+    baseUrl = envUrl;
+  } else if (reqUrl) {
+    baseUrl = reqUrl;
+  } else if (configUrl) {
+    baseUrl = configUrl;
+  } else {
+    baseUrl = '';
+  }
+
+  const orderViewUrl = baseUrl ? `${baseUrl}/order/${order.code || order.id}` : `/order/${order.code || order.id}`;
+  const adminUrl = baseUrl ? `${baseUrl}/admin` : `/admin`;
 
   let title = '🌸 OMACHI - CÓ ĐƠN HÀNG MỚI! ✨';
   if (trigger === 'PAYMENT_SUCCESS') {

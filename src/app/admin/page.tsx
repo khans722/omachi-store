@@ -79,7 +79,7 @@ const DEFAULT_SETTINGS: ShopSettings = {
   telegramBotToken: '8643883325:AAFtYvON3zYNH6D8K1Mf8bTtHclR1ha92SQ',
   telegramChatId: '8941847464',
   enableTelegramNotify: true,
-  websiteUrl: 'http://localhost:3000',
+  websiteUrl: '',
   autoReplyTemplate: 'Chào bạn, Shop Omachi đã nhận được đơn hàng #{orderCode}. Shop sẽ kiểm tra mẫu và báo lại bạn ngay nhé!',
   heroImage: '/images/charm_feed_1.jpg',
   heroBadge: 'Ảnh thật tại tiệm 100% ✨',
@@ -1120,33 +1120,6 @@ export default function AdminPage() {
     } catch (err) {}
     
     setTimeout(() => setTestZaloStatus(''), 6000);
-  };
-
-  const handleSaveTelegramOnly = async () => {
-    try {
-      const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
-      const updated = {
-        ...settings,
-        telegramBotToken: (settings.telegramBotToken || '').trim(),
-        telegramChatId: (settings.telegramChatId || '').trim(),
-        websiteUrl: (settings.websiteUrl || '').trim() || currentOrigin,
-        enableTelegramNotify: settings.enableTelegramNotify !== false,
-      };
-      setSettings(updated);
-      const res = await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setActionSuccessMsg('Đã lưu cấu hình Telegram & Link Website thành công! 🎉');
-        setTimeout(() => setActionSuccessMsg(''), 3000);
-        confetti({ particleCount: 35, spread: 60 });
-      }
-    } catch (err) {
-      console.error('Lỗi khi lưu cấu hình Telegram:', err);
-    }
   };
 
   const handleTestTelegram = async () => {
@@ -3612,22 +3585,13 @@ export default function AdminPage() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={handleSaveTelegramOnly}
-                        className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer active:scale-98"
-                      >
-                        <span>💾 Lưu Cấu Hình</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleTestTelegram}
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer active:scale-98"
-                      >
-                        <span>🔔 Bắn Thử Tin</span>
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={handleTestTelegram}
+                      className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer active:scale-98"
+                    >
+                      <span>🔔 Bắn Thử Tin</span>
+                    </button>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -3665,7 +3629,7 @@ export default function AdminPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+                            const origin = typeof window !== 'undefined' ? window.location.origin : '';
                             setSettings({ ...settings, websiteUrl: origin });
                           }}
                           className="text-[10px] text-sky-600 hover:text-sky-800 font-bold hover:underline cursor-pointer flex items-center gap-1"
@@ -3675,7 +3639,7 @@ export default function AdminPage() {
                       </label>
                       <input
                         type="text"
-                        placeholder="VD: http://localhost:3000 (hoặc https://omachi.vn khi đưa lên mạng)"
+                        placeholder="Để trống để tự nhận diện domain khi chạy online, hoặc dán link shop..."
                         value={settings.websiteUrl || ''}
                         onChange={(e) => setSettings({ ...settings, websiteUrl: e.target.value })}
                         className="w-full px-3 py-2 bg-white border border-sky-200 rounded-xl font-mono text-[11px] text-gray-800"
@@ -3748,17 +3712,42 @@ export default function AdminPage() {
                     </div>
 
                     <div>
-                      <label className="font-bold text-gray-700 block mb-1 text-[11px]">
-                        Số tiền đơn hàng tối thiểu để được Freeship (VNĐ):
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-bold text-gray-700 text-[11px]">
+                          Số tiền đơn hàng tối thiểu để được Freeship (VNĐ):
+                        </label>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setSettings({ ...settings, prepaidFreeShipThreshold: 10000 })}
+                            className="px-2 py-0.5 rounded-md bg-purple-100 hover:bg-purple-200 text-purple-800 text-[10px] font-bold transition cursor-pointer"
+                          >
+                            10k (Test)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSettings({ ...settings, prepaidFreeShipThreshold: 500000 })}
+                            className="px-2 py-0.5 rounded-md bg-stone-100 hover:bg-stone-200 text-stone-700 text-[10px] font-bold transition cursor-pointer"
+                          >
+                            500k
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSettings({ ...settings, prepaidFreeShipThreshold: 1000000 })}
+                            className="px-2 py-0.5 rounded-md bg-stone-100 hover:bg-stone-200 text-stone-700 text-[10px] font-bold transition cursor-pointer"
+                          >
+                            1 Triệu
+                          </button>
+                        </div>
+                      </div>
                       <div className="flex items-center gap-2">
                         <input
                           type="number"
                           min={0}
-                          step={50000}
+                          step="any"
                           value={settings.prepaidFreeShipThreshold !== undefined ? settings.prepaidFreeShipThreshold : 1000000}
                           onChange={(e) => setSettings({ ...settings, prepaidFreeShipThreshold: Math.max(0, Number(e.target.value)) })}
-                          placeholder="VD: 1000000 (1 triệu đồng)"
+                          placeholder="VD: 10000 để test, hoặc 1000000"
                           className="flex-1 px-3 py-2 bg-white border border-purple-200 rounded-xl font-bold text-rose-600 text-sm focus:ring-2 focus:ring-purple-400 focus:outline-none"
                         />
                         <span className="text-xs text-gray-500 font-medium">VNĐ</span>

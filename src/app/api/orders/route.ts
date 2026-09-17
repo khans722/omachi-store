@@ -49,8 +49,12 @@ export async function POST(req: NextRequest) {
 
     // Gửi thông báo về Telegram ngầm (Bất đồng bộ không chặn đơn của khách)
     // Giúp tốc độ đặt hàng cực nhanh < 0.1s thay vì phải đợi máy chủ Telegram phản hồi
+    const protocol = req.headers.get('x-forwarded-proto') || (req.url.startsWith('https') ? 'https' : 'http');
+    const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || req.nextUrl.host;
+    const requestOrigin = host ? `${protocol}://${host}` : req.nextUrl.origin;
+
     const settings = db.settings.get();
-    sendOrderNotification(newOrder, settings, 'NEW_ORDER').catch((err) => {
+    sendOrderNotification(newOrder, settings, 'NEW_ORDER', requestOrigin).catch((err) => {
       console.error('[ASYNC ORDER TELEGRAM NOTIFICATION ERROR]:', err);
     });
 
@@ -85,9 +89,13 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Send notification update in background
+    const protocol = req.headers.get('x-forwarded-proto') || (req.url.startsWith('https') ? 'https' : 'http');
+    const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || req.nextUrl.host;
+    const requestOrigin = host ? `${protocol}://${host}` : req.nextUrl.origin;
+
     const trigger = body.paymentStatus === 'PAID' ? 'PAYMENT_SUCCESS' : 'CONFIRMED';
     const settings = db.settings.get();
-    sendOrderNotification(updated, settings, trigger).catch((err) => {
+    sendOrderNotification(updated, settings, trigger, requestOrigin).catch((err) => {
       console.error('[ASYNC ORDER UPDATE NOTIFICATION ERROR]:', err);
     });
 
