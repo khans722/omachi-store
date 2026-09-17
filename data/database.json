@@ -724,7 +724,7 @@
     "telegramBotToken": "8643883325:AAFtYvON3zYNH6D8K1Mf8bTtHclR1ha92SQ",
     "websiteUrl": "",
     "enableTelegramNotify": true,
-    "prepaidFreeShipThreshold": 1000000,
+    "prepaidFreeShipThreshold": 10000,
     "enablePrepaidFreeShip": true,
     "momoPhone": "0398445122",
     "momoName": "OMACHI HANDMADE STORE",

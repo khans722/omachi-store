@@ -1686,7 +1686,9 @@ const INITIAL_DATABASE: DetailedDatabaseSchema = {
     "telegramChatId": "8941847464",
     "telegramBotToken": "8643883325:AAFtYvON3zYNH6D8K1Mf8bTtHclR1ha92SQ",
     "websiteUrl": "",
-    "enableTelegramNotify": true
+    "enableTelegramNotify": true,
+    "prepaidFreeShipThreshold": 10000,
+    "enablePrepaidFreeShip": true
   }
 };
 

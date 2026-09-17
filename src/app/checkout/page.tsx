@@ -414,11 +414,20 @@ export default function CheckoutPage() {
   const [settings, setSettings] = useState<ShopSettings | null>(null);
 
   useEffect(() => {
+    let localSaved: any = null;
+    try {
+      const cached = localStorage.getItem('omachi_shop_settings');
+      if (cached) {
+        localSaved = JSON.parse(cached);
+        setSettings(localSaved);
+      }
+    } catch {}
+
     fetch('/api/settings')
       .then((r) => r.json())
       .then((res) => {
         if (res.success && res.data) {
-          setSettings(res.data);
+          setSettings({ ...res.data, ...(localSaved || {}) });
         }
       })
       .catch(() => {});

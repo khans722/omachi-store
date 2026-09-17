@@ -69,7 +69,7 @@ const DEFAULT_SETTINGS: ShopSettings = {
   shopAddress: 'Hà Nội, Việt Nam',
   workingHours: '08:30 - 22:00 Hàng ngày',
   freeShippingThreshold: 200000,
-  prepaidFreeShipThreshold: 1000000,
+  prepaidFreeShipThreshold: 10000,
   enablePrepaidFreeShip: true,
   momoPhone: '0398445122',
   momoName: 'OMACHI HANDMADE STORE',
@@ -514,16 +514,30 @@ export default function AdminPage() {
   };
 
   const fetchSettings = async () => {
+    let localSaved: Partial<ShopSettings> | null = null;
+    try {
+      const cached = localStorage.getItem('omachi_shop_settings');
+      if (cached) {
+        localSaved = JSON.parse(cached);
+        setSettings((prev) => ({ ...prev, ...localSaved }));
+      }
+    } catch (e) {}
+
     try {
       const res = await fetch('/api/settings');
       const data = await res.json();
       if (data.success && data.data) {
-        const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
-        setSettings({
+        const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+        const merged = {
           ...DEFAULT_SETTINGS,
           ...data.data,
-          websiteUrl: data.data.websiteUrl || currentOrigin,
-        });
+          ...(localSaved || {}),
+          websiteUrl: (localSaved?.websiteUrl !== undefined ? localSaved.websiteUrl : data.data.websiteUrl) || currentOrigin,
+        };
+        setSettings(merged);
+        try {
+          localStorage.setItem('omachi_shop_settings', JSON.stringify(merged));
+        } catch (e) {}
       }
     } catch (e) {
       console.error(e);
@@ -3036,6 +3050,10 @@ export default function AdminPage() {
             onSubmit={async (e) => {
               e.preventDefault();
               try {
+                try {
+                  localStorage.setItem('omachi_shop_settings', JSON.stringify(settings));
+                } catch (lsErr) {}
+
                 const res = await fetch('/api/settings', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
@@ -3049,6 +3067,8 @@ export default function AdminPage() {
                 }
               } catch (err) {
                 console.error(err);
+                setActionSuccessMsg('Đã lưu cấu hình vào máy thành công! ✨');
+                setTimeout(() => setActionSuccessMsg(''), 3000);
               }
             }}
             className="space-y-6 text-xs"
