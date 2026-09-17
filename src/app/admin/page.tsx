@@ -127,7 +127,6 @@ export default function AdminPage() {
   const [revenuePaymentFilter, setRevenuePaymentFilter] = useState<'all' | 'PAID' | 'UNPAID'>('all');
   const [orderSearch, setOrderSearch] = useState<string>('');
   const [testZaloStatus, setTestZaloStatus] = useState<string>('');
-  const [testTelegramStatus, setTestTelegramStatus] = useState<{ type: 'loading' | 'success' | 'error'; message: string } | null>(null);
   const [showTelegramGuide, setShowTelegramGuide] = useState(false);
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string>('');
   const [shippingFeeInputs, setShippingFeeInputs] = useState<{ [orderId: string]: string }>({});
@@ -1122,67 +1121,7 @@ export default function AdminPage() {
     setTimeout(() => setTestZaloStatus(''), 6000);
   };
 
-  const handleTestTelegram = async () => {
-    if (!settings.telegramBotToken || !settings.telegramChatId) {
-      alert('Vui lòng nhập đầy đủ Telegram Bot Token và Chat ID trước khi bấm gửi thử!');
-      return;
-    }
-    setTestTelegramStatus({
-      type: 'loading',
-      message: '⏳ Đang kết nối máy chủ Telegram để bắn tin thử...',
-    });
 
-    try {
-      // Tự động lưu luôn token, chat id và websiteUrl để không bao giờ bị reset
-      const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
-      const effectiveUrl = (settings.websiteUrl || '').trim() || currentOrigin;
-      fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...settings,
-          telegramBotToken: settings.telegramBotToken.trim(),
-          telegramChatId: settings.telegramChatId.trim(),
-          websiteUrl: effectiveUrl,
-          enableTelegramNotify: settings.enableTelegramNotify !== false,
-        }),
-      }).catch(() => {});
-
-      const res = await fetch('/api/notify-zalo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          telegramBotToken: settings.telegramBotToken.trim(),
-          telegramChatId: settings.telegramChatId.trim(),
-          websiteUrl: effectiveUrl,
-          enableTelegramNotify: true,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setTestTelegramStatus({
-          type: 'success',
-          message: '🎉 Bắn tin thành công 100%! Bạn hãy mở Telegram trên điện thoại xem có tin nhắn và rung chuông "Ting ting" không nhé! 🔔',
-        });
-      } else {
-        const rawErr = data.error || 'Lỗi gửi tin nhắn';
-        let tip = '';
-        if (rawErr.toLowerCase().includes('chat not found') || rawErr.toLowerCase().includes('blocked') || rawErr.toLowerCase().includes('unauthorized') || rawErr.toLowerCase().includes('forbidden')) {
-          tip = ' 👉 LƯU Ý: Bạn cần mở Bot trên Telegram và bấm nút START trước, đồng thời kiểm tra lại đúng dãy số Chat ID!';
-        }
-        setTestTelegramStatus({
-          type: 'error',
-          message: `❌ Telegram báo lỗi: "${rawErr}".${tip}`,
-        });
-      }
-    } catch (err) {
-      setTestTelegramStatus({
-        type: 'error',
-        message: '❌ Lỗi kết nối mạng khi gửi thử tin nhắn Telegram.',
-      });
-    }
-    setTimeout(() => setTestTelegramStatus(null), 12000);
-  };
 
   // IF NOT AUTHENTICATED -> PIN LOGIN
   if (!isAuthenticated) {
@@ -3573,25 +3512,16 @@ export default function AdminPage() {
 
                 {/* 6. TELEGRAM BOT NOTIFICATIONS */}
                 <div className="bg-gradient-to-r from-sky-50 via-blue-50 to-indigo-50/40 p-5 rounded-2xl border border-sky-200 shadow-2xs space-y-4">
-                  <div className="flex items-center justify-between pb-3 border-b border-sky-100 flex-wrap gap-2">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-2xl">🤖</span>
-                      <div>
-                        <h4 className="font-black text-sky-900 text-xs sm:text-sm">
-                          6. Thông Báo Đơn Hàng Tự Động Qua Telegram
-                        </h4>
-                        <p className="text-[11px] text-sky-700">
-                          Điện thoại rung chuông &quot;Ting ting&quot; ngay sau 0.1s mỗi khi có đơn mới
-                        </p>
-                      </div>
+                  <div className="flex items-center gap-2.5 pb-3 border-b border-sky-100">
+                    <span className="text-2xl">🤖</span>
+                    <div>
+                      <h4 className="font-black text-sky-900 text-xs sm:text-sm">
+                        6. Thông Báo Đơn Hàng Tự Động Qua Telegram
+                      </h4>
+                      <p className="text-[11px] text-sky-700">
+                        Điện thoại rung chuông &quot;Ting ting&quot; ngay sau 0.1s mỗi khi có đơn mới
+                      </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleTestTelegram}
-                      className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer active:scale-98"
-                    >
-                      <span>🔔 Bắn Thử Tin</span>
-                    </button>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -3624,22 +3554,12 @@ export default function AdminPage() {
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="font-bold text-gray-700 block mb-1 flex items-center justify-between">
-                        <span>Link Website Của Shop (Gắn vào nút Xem Đơn trên Telegram):</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const origin = typeof window !== 'undefined' ? window.location.origin : '';
-                            setSettings({ ...settings, websiteUrl: origin });
-                          }}
-                          className="text-[10px] text-sky-600 hover:text-sky-800 font-bold hover:underline cursor-pointer flex items-center gap-1"
-                        >
-                          <span>⚡ Lấy link web hiện tại</span>
-                        </button>
+                      <label className="font-bold text-gray-700 block mb-1">
+                        Link Website Của Shop (Gắn vào nút Xem Đơn trên Telegram):
                       </label>
                       <input
                         type="text"
-                        placeholder="Để trống để tự nhận diện domain khi chạy online, hoặc dán link shop..."
+                        placeholder="Để trống để tự động nhận diện theo tên miền web của bạn..."
                         value={settings.websiteUrl || ''}
                         onChange={(e) => setSettings({ ...settings, websiteUrl: e.target.value })}
                         className="w-full px-3 py-2 bg-white border border-sky-200 rounded-xl font-mono text-[11px] text-gray-800"
@@ -3658,21 +3578,6 @@ export default function AdminPage() {
                       <span>Kích hoạt tính năng tự động nổ thông báo về điện thoại</span>
                     </label>
                   </div>
-
-                  {/* Render testTelegramStatus */}
-                  {testTelegramStatus && (
-                    <div
-                      className={`p-3 rounded-xl border text-xs font-medium animate-fade-in ${
-                        testTelegramStatus.type === 'loading'
-                          ? 'bg-sky-50 border-sky-200 text-sky-800'
-                          : testTelegramStatus.type === 'success'
-                          ? 'bg-emerald-50 border-emerald-200 text-emerald-800 font-bold'
-                          : 'bg-rose-50 border-rose-200 text-rose-800'
-                      }`}
-                    >
-                      {testTelegramStatus.message}
-                    </div>
-                  )}
                 </div>
 
               </div>
