@@ -3686,33 +3686,10 @@ export default function AdminPage() {
                     </div>
 
                     <div>
-                      <div className="flex items-center justify-between mb-1">
+                      <div className="mb-1">
                         <label className="font-bold text-gray-700 text-[11px]">
                           Số tiền đơn hàng tối thiểu để được Freeship (VNĐ):
                         </label>
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setSettings({ ...settings, prepaidFreeShipThreshold: 10000 })}
-                            className="px-2 py-0.5 rounded-md bg-purple-100 hover:bg-purple-200 text-purple-800 text-[10px] font-bold transition cursor-pointer"
-                          >
-                            10k (Test)
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setSettings({ ...settings, prepaidFreeShipThreshold: 500000 })}
-                            className="px-2 py-0.5 rounded-md bg-stone-100 hover:bg-stone-200 text-stone-700 text-[10px] font-bold transition cursor-pointer"
-                          >
-                            500k
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setSettings({ ...settings, prepaidFreeShipThreshold: 1000000 })}
-                            className="px-2 py-0.5 rounded-md bg-stone-100 hover:bg-stone-200 text-stone-700 text-[10px] font-bold transition cursor-pointer"
-                          >
-                            1 Triệu
-                          </button>
-                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <input
