@@ -8,9 +8,8 @@ import { formatVND, calculateSmartUnitPrice } from '@/lib/utils';
 import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
 import { flyToCart } from '@/lib/flyToCart';
-import { ShoppingBag, Star, ArrowLeft, Plus, Minus, MessageCircle, Check, AlertCircle, ChevronRight, Zap } from 'lucide-react';
+import { ShoppingBag, Star, ArrowLeft, Plus, Minus, MessageCircle, Check, AlertCircle, ChevronRight, ChevronDown, Zap } from 'lucide-react';
 import Link from 'next/link';
-import SmartPricingBar from '@/components/SmartPricingBar';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -28,12 +27,13 @@ export default function ProductDetailPage() {
   const [warningToast, setWarningToast] = useState<string | null>(null);
   const variantSectionRef = useRef<HTMLDivElement>(null);
 
-  const [quantity, setQuantity] = useState<number>(1);
+  const [quantity, setQuantity] = useState<number>(initialFound?.minOrderQuantity || 1);
   const [customNote, setCustomNote] = useState<string>('');
   const [selectedImage, setSelectedImage] = useState<string>(
     initialFound?.images?.[0] || '/uploads/charm_1789432914386_1789371730804_1528911961217344.jpg'
   );
   const [isAddedToast, setIsAddedToast] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   // Shopee Mobile Sheet Modal State
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
@@ -190,12 +190,17 @@ export default function ProductDetailPage() {
     return calculateSmartUnitPrice(product.basePrice, quantity, product.comboTiers);
   }, [product?.basePrice, quantity, product?.comboTiers]);
 
+  const sortedComboTiers = useMemo(() => {
+    if (!product?.comboTiers || product.comboTiers.length === 0) return [];
+    return [...product.comboTiers].sort((a, b) => a.minQuantity - b.minQuantity);
+  }, [product?.comboTiers]);
+
   const unitPrice = smartPricing.unitPrice;
   const totalPrice = unitPrice * quantity;
   const totalItemCount = quantity;
 
-  const minQty = product?.minOrderQuantity && product.minOrderQuantity > 1 ? product.minOrderQuantity : 1;
-  const stepQty = product?.stepQuantity && product.stepQuantity > 1 ? product.stepQuantity : 1;
+  const minQty = Math.max(1, Number(product?.minOrderQuantity || 1));
+  const stepQty = Math.max(1, Number(product?.stepQuantity || 1));
 
   const totalStockCount =
     product.variants && product.variants.length > 0
@@ -215,6 +220,21 @@ export default function ProductDetailPage() {
 
     if (selectedVariant && (selectedVariant.stock ?? 0) <= 0) {
       setWarningToast(`⚠️ Mẫu "${selectedVariant.name}" hiện đã hết hàng, vui lòng chọn mẫu khác nhé!`);
+      setTimeout(() => setWarningToast(null), 3000);
+      return false;
+    }
+
+    if (quantity < minQty) {
+      setWarningToast(`⚠️ Sản phẩm này bán sỉ tối thiểu từ ${minQty} cái!`);
+      setQuantity(minQty);
+      setTimeout(() => setWarningToast(null), 3000);
+      return false;
+    }
+
+    if (stepQty > 1 && (quantity - minQty) % stepQty !== 0) {
+      const adjusted = Math.max(minQty, Math.round((quantity - minQty) / stepQty) * stepQty + minQty);
+      setQuantity(adjusted);
+      setWarningToast(`⚠️ Số lượng mua phải là bội số của ${stepQty} cái!`);
       setTimeout(() => setWarningToast(null), 3000);
       return false;
     }
@@ -357,47 +377,74 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          {/* Price Tag (Theme Styled) - 1688 Wholesale Standard */}
-          <div className={`p-4 rounded-2xl border ${curr.priceBg} space-y-2`}>
-            <div className="flex items-baseline justify-between flex-wrap gap-2">
-              <div className="flex items-baseline gap-2">
-                <span className={`text-2xl sm:text-3xl font-black ${curr.priceText}`}>{formatVND(unitPrice)}</span>
-                <span className="text-xs text-gray-500 font-bold">/chiếc (cái)</span>
-                {product.originalPrice && product.originalPrice > unitPrice && (
+          {/* Price Tag (Theme Styled) - Clean 1688 / Shopee Standard */}
+          <div className={`p-4 rounded-2xl border ${curr.priceBg} space-y-3`}>
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className={`text-2xl sm:text-3xl font-black ${curr.priceText}`}>{formatVND(unitPrice)}</span>
+              <span className="text-xs text-gray-500 font-bold">/chiếc (cái)</span>
+
+              {smartPricing.discountPercent > 0 ? (
+                <>
+                  <span className="text-xs font-black text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-lg">
+                    -{smartPricing.discountPercent}%
+                  </span>
+                  <span className="text-sm text-gray-400 line-through">
+                    {formatVND(product.basePrice || product.originalPrice || 0)}
+                  </span>
+                </>
+              ) : (
+                product.originalPrice && product.originalPrice > unitPrice && (
                   <span className="text-xs text-gray-400 line-through">
                     {formatVND(product.originalPrice)}
                   </span>
-                )}
-              </div>
-
-              {smartPricing.appliedTier ? (
-                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs px-3 py-1 rounded-full font-extrabold shadow-sm animate-pulse">
-                  <Zap className="w-3.5 h-3.5" />
-                  <span>Đã áp giá sỉ: {smartPricing.appliedTier.label}</span>
-                </span>
-              ) : (
-                <span className="text-xs font-bold text-gray-500 bg-white/80 px-2.5 py-1 rounded-full border border-gray-200">
-                  Giá bán lẻ (Mua nhiều tự động giảm)
-                </span>
+                )
               )}
             </div>
 
-            {smartPricing.savings > 0 && (
-              <div className="text-xs font-semibold text-emerald-700 bg-emerald-100/70 px-2.5 py-1 rounded-lg inline-flex items-center gap-1.5">
-                <span>🎉 Tiết kiệm <strong>{formatVND(smartPricing.savings)}</strong> khi mua số lượng {quantity} cái!</span>
+            {/* Bảng Thang Giá Sỉ Tĩnh Chuẩn 1688 (Rõ ràng, tinh tế, không nút bấm nhảy múa) */}
+            {sortedComboTiers.length > 0 && (
+              <div className="pt-2.5 border-t border-stone-200/60">
+                <div className="text-[11px] text-gray-500 font-bold mb-1.5 flex items-center justify-between">
+                  <span>BẢNG GIÁ SỈ THEO SỐ LƯỢNG (CHUẨN 1688):</span>
+                </div>
+                <div className="grid grid-flow-col auto-cols-fr gap-1.5 sm:gap-2">
+                  {sortedComboTiers.map((tier, idx) => {
+                    const next = sortedComboTiers[idx + 1];
+                    const label = next ? `${tier.minQuantity} - ${next.minQuantity - 1} cái` : `≥ ${tier.minQuantity} cái`;
+                    const isActive = next
+                      ? quantity >= tier.minQuantity && quantity < next.minQuantity
+                      : quantity >= tier.minQuantity;
+
+                    const base = product?.basePrice || tier.unitPrice;
+                    const disc = base > tier.unitPrice ? Math.round(((base - tier.unitPrice) / base) * 100) : 0;
+
+                    return (
+                      <div
+                        key={tier.minQuantity}
+                        className={`p-2 sm:p-2.5 rounded-xl text-center transition-all ${
+                          isActive
+                            ? 'bg-white border-2 border-stone-800 shadow-xs ring-2 ring-stone-200/80'
+                            : 'bg-white/60 border border-stone-200/80'
+                        }`}
+                      >
+                        <div className={`text-[10px] sm:text-[11px] font-semibold ${isActive ? 'text-gray-900 font-bold' : 'text-gray-500'}`}>
+                          {label}
+                        </div>
+                        <div className={`text-xs sm:text-sm font-black mt-0.5 ${isActive ? curr.priceText : 'text-gray-800'}`}>
+                          {formatVND(tier.unitPrice)}
+                        </div>
+                        {disc > 0 && (
+                          <div className="text-[9px] sm:text-[10px] font-bold text-rose-500 mt-0.5">
+                            -{disc}%
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
-
-          {/* 1688 Auto Tier Pricing Bar */}
-          {product.comboTiers && product.comboTiers.length > 0 && (
-            <SmartPricingBar
-              basePrice={product.basePrice}
-              quantity={quantity}
-              comboTiers={product.comboTiers}
-              onQuantityChange={(newQty) => setQuantity(newQty)}
-            />
-          )}
 
           {/* 📱 TRÊN MOBILE: Nút Shopee "Chọn Phân Loại & Số Lượng" (Click mở Bottom Sheet Drawer) */}
           <button
@@ -613,38 +660,62 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          {/* Description & Specifications */}
-          <div className="pt-4 border-t border-stone-200/80 space-y-3 text-xs text-gray-600 leading-relaxed">
-            <h4 className="font-bold text-gray-800">Thông tin chi tiết sản phẩm:</h4>
-
-            <div className={`grid grid-cols-2 gap-2 p-3 rounded-2xl border text-[11px] ${curr.infoCardBg}`}>
-              {product.sku && (
-                <div>
-                  <span className="text-gray-400 block">Mã SKU:</span>
-                  <strong className="font-mono text-gray-800">{product.sku}</strong>
-                </div>
-              )}
-              {product.material && (
-                <div>
-                  <span className="text-gray-400 block">Chất liệu:</span>
-                  <strong className="text-gray-800">{product.material}</strong>
-                </div>
-              )}
-              {product.dimensions && (
-                <div>
-                  <span className="text-gray-400 block">Kích thước:</span>
-                  <strong className="text-gray-800">{product.dimensions}</strong>
-                </div>
-              )}
-              <div className="bg-white/80 p-2 rounded-xl border border-stone-200/60">
-                <span className="text-gray-500 block font-medium">📦 Tồn kho sẵn:</span>
-                <strong className="text-emerald-700 font-extrabold text-xs">
-                  {(product.stock || 0).toLocaleString('vi-VN')} sản phẩm
-                </strong>
+          {/* Collapsible Description & Specifications */}
+          <div className="pt-3 border-t border-stone-200/80">
+            <button
+              type="button"
+              onClick={() => setIsDetailsOpen(!isDetailsOpen)}
+              className="w-full flex items-center justify-between py-2.5 px-3.5 rounded-xl bg-stone-50 hover:bg-stone-100/80 border border-stone-200/70 transition cursor-pointer group"
+            >
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-gray-800 text-xs group-hover:text-stone-700">
+                  Thông tin chi tiết sản phẩm
+                </span>
+                <span className="text-[10px] text-gray-400 font-medium">
+                  {isDetailsOpen ? '(Thu gọn)' : '(Bấm để xem chi tiết)'}
+                </span>
               </div>
-            </div>
+              <ChevronDown
+                className={`w-4 h-4 text-gray-400 group-hover:text-gray-700 transition-transform duration-200 ${
+                  isDetailsOpen ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
 
-            <p className="pt-1">{product.description}</p>
+            {isDetailsOpen && (
+              <div className="pt-3 space-y-3 text-xs text-gray-600 leading-relaxed animate-in fade-in duration-200">
+                <div className={`grid grid-cols-2 gap-2 p-3 rounded-2xl border text-[11px] ${curr.infoCardBg}`}>
+                  {product.sku && (
+                    <div>
+                      <span className="text-gray-400 block">Mã SKU:</span>
+                      <strong className="font-mono text-gray-800">{product.sku}</strong>
+                    </div>
+                  )}
+                  {product.material && (
+                    <div>
+                      <span className="text-gray-400 block">Chất liệu:</span>
+                      <strong className="text-gray-800">{product.material}</strong>
+                    </div>
+                  )}
+                  {product.dimensions && (
+                    <div>
+                      <span className="text-gray-400 block">Kích thước:</span>
+                      <strong className="text-gray-800">{product.dimensions}</strong>
+                    </div>
+                  )}
+                  <div className="bg-white/80 p-2 rounded-xl border border-stone-200/60">
+                    <span className="text-gray-500 block font-medium">📦 Tồn kho sẵn:</span>
+                    <strong className="text-emerald-700 font-extrabold text-xs">
+                      {(product.stock || 0).toLocaleString('vi-VN')} sản phẩm
+                    </strong>
+                  </div>
+                </div>
+
+                {product.description && (
+                  <p className="pt-1 text-gray-600">{product.description}</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -717,10 +788,22 @@ export default function ProductDetailPage() {
                 <img src={selectedImage} alt={product.name} className="w-full h-full object-cover object-center" />
               </div>
               <div className="flex-1 min-w-0 pr-8 pt-0.5">
-                <p className={`text-xl font-black leading-tight ${curr.priceText}`}>
-                  {formatVND(unitPrice)}
-                  <span className="text-xs font-normal text-gray-400 ml-1">/cái</span>
-                </p>
+                <div className="flex items-baseline gap-1.5 flex-wrap">
+                  <p className={`text-xl font-black leading-tight ${curr.priceText}`}>
+                    {formatVND(unitPrice)}
+                    <span className="text-xs font-normal text-gray-400 ml-1">/cái</span>
+                  </p>
+                  {smartPricing.discountPercent > 0 && (
+                    <>
+                      <span className="text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.2 rounded">
+                        -{smartPricing.discountPercent}%
+                      </span>
+                      <span className="text-[11px] text-gray-400 line-through">
+                        {formatVND(product.basePrice || product.originalPrice || 0)}
+                      </span>
+                    </>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500 mt-1">
                   Kho: <strong className="text-gray-800 font-bold">{maxAvailable.toLocaleString('vi-VN')}</strong>
                 </p>
@@ -742,6 +825,36 @@ export default function ProductDetailPage() {
 
             {/* Scrollable Options in Drawer */}
             <div className="p-4 space-y-4 overflow-y-auto max-h-[55vh]">
+              {/* Bảng giá sỉ chuẩn 1688 trong Drawer */}
+              {sortedComboTiers.length > 0 && (
+                <div className="pb-2 border-b border-gray-100">
+                  <span className="text-[10px] text-gray-400 font-bold block mb-1.5">BẢNG GIÁ SỈ (1688):</span>
+                  <div className="grid grid-flow-col auto-cols-fr gap-1.5 text-center">
+                    {sortedComboTiers.map((tier, idx) => {
+                      const next = sortedComboTiers[idx + 1];
+                      const label = next ? `${tier.minQuantity}-${next.minQuantity - 1}c` : `≥${tier.minQuantity}c`;
+                      const isActive = next
+                        ? quantity >= tier.minQuantity && quantity < next.minQuantity
+                        : quantity >= tier.minQuantity;
+                      return (
+                        <div
+                          key={tier.minQuantity}
+                          className={`p-1.5 rounded-lg border text-center ${
+                            isActive
+                              ? 'bg-white border-2 border-stone-800 font-bold shadow-2xs'
+                              : 'bg-stone-50 border-stone-200 text-stone-600'
+                          }`}
+                        >
+                          <div className="text-[9px] text-gray-500">{label}</div>
+                          <div className={`text-[11px] font-black mt-0.5 ${isActive ? curr.priceText : 'text-gray-800'}`}>
+                            {formatVND(tier.unitPrice)}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               {/* Group 1: Màu sắc / Phân loại */}
               {product.variants && product.variants.length > 0 && (
                 <div className="space-y-2">
@@ -816,20 +929,8 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* 1688 Auto Tier Pricing Bar inside Mobile Drawer */}
-              {product.comboTiers && product.comboTiers.length > 0 && (
-                <div className="pt-2 border-t border-gray-100">
-                  <SmartPricingBar
-                    basePrice={product.basePrice}
-                    quantity={quantity}
-                    comboTiers={product.comboTiers}
-                    onQuantityChange={(newQty) => setQuantity(newQty)}
-                  />
-                </div>
-              )}
-
-              {/* Group 2: Số lượng mua & Mốc sỉ nhanh */}
-              <div className="space-y-2.5 pt-2 border-t border-gray-100">
+              {/* Group 2: Số lượng mua */}
+              <div className="space-y-2 pt-2 border-t border-gray-100">
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-xs font-bold text-gray-700 block">Số lượng mua:</span>
@@ -840,47 +941,48 @@ export default function ProductDetailPage() {
                   <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
                     <button
                       type="button"
-                      disabled={quantity <= 1}
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      disabled={quantity <= minQty}
+                      onClick={() => setQuantity(Math.max(minQty, quantity - stepQty))}
                       className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-40"
+                      title={stepQty > 1 ? `Giảm ${stepQty} cái` : 'Giảm 1'}
                     >
                       <Minus className="w-3.5 h-3.5" />
                     </button>
                     <input
                       type="number"
-                      min="1"
+                      min={minQty}
+                      step={stepQty}
                       value={quantity}
-                      onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        if (!isNaN(val)) setQuantity(val);
+                      }}
+                      onBlur={() => {
+                        let finalVal = Math.max(minQty, quantity);
+                        if (stepQty > 1) {
+                          finalVal = Math.round(finalVal / stepQty) * stepQty;
+                          if (finalVal < minQty) finalVal = minQty;
+                        }
+                        setQuantity(Math.min(product?.stock || 9999, finalVal));
+                      }}
                       className="w-14 h-8 text-center text-xs font-black text-gray-800 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                     <button
                       type="button"
-                      onClick={() => setQuantity(quantity + 1)}
+                      onClick={() => setQuantity(Math.min(product?.stock || 9999, quantity + stepQty))}
                       className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-40"
+                      title={stepQty > 1 ? `Tăng ${stepQty} cái` : 'Tăng 1'}
                     >
                       <Plus className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
 
-                {/* Quick preset buttons on Mobile */}
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[10px] text-gray-400 font-semibold">Mốc sỉ nhanh:</span>
-                  {[1, 10, 50, 100, 200].map((qtyPreset) => (
-                    <button
-                      key={qtyPreset}
-                      type="button"
-                      onClick={() => setQuantity(qtyPreset)}
-                      className={`px-2.5 py-1 text-xs font-bold rounded-lg transition ${
-                        quantity === qtyPreset
-                          ? curr.chipActive
-                          : 'bg-stone-100 text-stone-700 active:bg-stone-200'
-                      }`}
-                    >
-                      {qtyPreset} cái
-                    </button>
-                  ))}
-                </div>
+                {(minQty > 1 || stepQty > 1) && (
+                  <p className="text-[10px] text-amber-700 font-semibold bg-amber-50 border border-amber-200/60 px-2 py-1 rounded-lg">
+                    ⚠️ Sản phẩm bán sỉ tối thiểu từ {minQty} cái{stepQty > 1 ? ` (bội số ${stepQty} cái/lần)` : ''}
+                  </p>
+                )}
               </div>
 
               {/* Group 4: Custom Note */}

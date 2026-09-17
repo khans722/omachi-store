@@ -127,13 +127,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     packageOption?: ProductPackageOption,
     openDrawer = false
   ) => {
+    const minQty = Math.max(1, Number(product.minOrderQuantity) || 1);
+    const stepQty = Math.max(1, Number(product.stepQuantity) || 1);
+    let validQuantity = Math.max(minQty, quantity);
+    if (validQuantity > minQty && (validQuantity - minQty) % stepQty !== 0) {
+      validQuantity = minQty + Math.ceil((validQuantity - minQty) / stepQty) * stepQty;
+    }
+
     setItems((prevItems) => {
       const cartItemId = `${product.id}-${variant?.id || 'default'}-${packageOption?.id || 'standard'}`;
       const existingIndex = prevItems.findIndex((item) => item.id === cartItemId);
 
-      let newQuantity = quantity;
+      let newQuantity = validQuantity;
       if (existingIndex > -1) {
-        newQuantity = prevItems[existingIndex].quantity + quantity;
+        newQuantity = prevItems[existingIndex].quantity + validQuantity;
       }
 
       const rawItem: CartItem = {
@@ -173,13 +180,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     customNote?: string,
     packageOption?: ProductPackageOption
   ) => {
+    const minQty = Math.max(1, Number(product.minOrderQuantity) || 1);
+    const stepQty = Math.max(1, Number(product.stepQuantity) || 1);
+    let validQuantity = Math.max(minQty, quantity);
+    if (validQuantity > minQty && (validQuantity - minQty) % stepQty !== 0) {
+      validQuantity = minQty + Math.ceil((validQuantity - minQty) / stepQty) * stepQty;
+    }
+
     const targetId = `${product.id}-${variant?.id || 'default'}-${packageOption?.id || 'standard'}`;
 
     setItems((prevItems) => {
       // Chuẩn Shopee: Bỏ chọn các món khác trong giỏ, chỉ tick chọn món bấm Mua Ngay để thanh toán
       const unselectedOthers: CartItem[] = prevItems.map((it) => ({ ...it, selected: false }));
       const existingIndex = unselectedOthers.findIndex((item) => item.id === targetId);
-      const totalQty = existingIndex > -1 ? unselectedOthers[existingIndex].quantity + quantity : quantity;
+      const totalQty = existingIndex > -1 ? unselectedOthers[existingIndex].quantity + validQuantity : validQuantity;
 
       const targetItem: CartItem = {
         id: targetId,
@@ -217,10 +231,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems((prevItems) => {
       const updated = prevItems.map((item) => {
         if (item.id === cartItemId) {
+          const minQty = Math.max(1, Number(item.product.minOrderQuantity) || 1);
+          const clampedQty = Math.max(minQty, newQuantity);
           return {
             ...item,
-            quantity: newQuantity,
-            totalPrice: item.unitPrice * newQuantity,
+            quantity: clampedQty,
+            totalPrice: item.unitPrice * clampedQty,
           };
         }
         return item;

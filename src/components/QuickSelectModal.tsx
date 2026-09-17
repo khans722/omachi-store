@@ -25,8 +25,8 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(
     product.variants && product.variants.length > 0 ? product.variants[0] : undefined
   );
-  const minQty = product.minOrderQuantity && product.minOrderQuantity > 1 ? product.minOrderQuantity : 1;
-  const stepQty = product.stepQuantity && product.stepQuantity > 1 ? product.stepQuantity : 1;
+  const minQty = Math.max(1, Number(product.minOrderQuantity || 1));
+  const stepQty = Math.max(1, Number(product.stepQuantity || 1));
 
   const [quantity, setQuantity] = useState(minQty);
   const [errorMsg, setErrorMsg] = useState('');
@@ -34,8 +34,9 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
   // Reset when product changes or modal opens
   useEffect(() => {
     if (isOpen) {
+      const initialMin = Math.max(1, Number(product.minOrderQuantity || 1));
       setSelectedVariant(product.variants && product.variants.length > 0 ? product.variants[0] : undefined);
-      setQuantity(product.minOrderQuantity && product.minOrderQuantity > 1 ? product.minOrderQuantity : 1);
+      setQuantity(initialMin);
       setErrorMsg('');
     }
   }, [isOpen, product]);
@@ -102,6 +103,17 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
       setErrorMsg('Mẫu này tạm thời hết hàng!');
       return;
     }
+    if (quantity < minQty) {
+      setErrorMsg(`Sản phẩm này bán tối thiểu từ ${minQty} cái!`);
+      setQuantity(minQty);
+      return;
+    }
+    if (stepQty > 1 && (quantity - minQty) % stepQty !== 0) {
+      const adjusted = Math.max(minQty, Math.round((quantity - minQty) / stepQty) * stepQty + minQty);
+      setQuantity(adjusted);
+      setErrorMsg(`Số lượng mua phải là bội số của ${stepQty} cái!`);
+      return;
+    }
 
     // Hiệu ứng ảnh sản phẩm bay uốn lượn vào giỏ hàng
     flyToCart(previewImgRef.current || (e?.currentTarget as HTMLElement), displayImage);
@@ -117,6 +129,17 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
     }
     if (availableStock <= 0) {
       setErrorMsg('Mẫu này tạm thời hết hàng!');
+      return;
+    }
+    if (quantity < minQty) {
+      setErrorMsg(`Sản phẩm này bán tối thiểu từ ${minQty} cái!`);
+      setQuantity(minQty);
+      return;
+    }
+    if (stepQty > 1 && (quantity - minQty) % stepQty !== 0) {
+      const adjusted = Math.max(minQty, Math.round((quantity - minQty) / stepQty) * stepQty + minQty);
+      setQuantity(adjusted);
+      setErrorMsg(`Số lượng mua phải là bội số của ${stepQty} cái!`);
       return;
     }
     // Chuẩn Shopee: Bỏ chọn các món khác trong giỏ, chỉ mua đúng món này và đi tới checkout
@@ -183,6 +206,28 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
                 return null;
               })()}
             </div>
+
+            {/* 1688 Wholesale Tiers Hint */}
+            {product.comboTiers && product.comboTiers.length > 0 && (
+              <div className="mt-1 flex items-center gap-1 flex-wrap text-[10px]">
+                <span className="font-bold text-stone-600">Giá sỉ:</span>
+                {product.comboTiers.map((t) => {
+                  const isCurrent = quantity >= t.minQuantity;
+                  return (
+                    <span
+                      key={t.minQuantity}
+                      className={`px-1.5 py-0.5 rounded font-bold transition ${
+                        isCurrent
+                          ? 'bg-stone-800 text-white shadow-2xs'
+                          : 'bg-stone-100 text-stone-600'
+                      }`}
+                    >
+                      ≥{t.minQuantity}c: {formatVND(t.unitPrice)}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Stock */}
             <div className="mt-1 text-[11px] text-stone-500 flex items-center gap-1.5">

@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ShoppingBag, Search, Package, Sparkles, User, LogOut, ChevronDown } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import { ShoppingBag, Search, Package, Sparkles, User, LogOut, ChevronDown, ArrowLeft } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useCustomer } from '@/context/CustomerContext';
@@ -15,6 +15,8 @@ export default function Navbar() {
   const { theme } = useTheme();
   const { customer, openAuthModal, logout } = useCustomer();
   const router = useRouter();
+  const pathname = usePathname();
+  const isAdmin = pathname?.startsWith('/admin');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [bannerText, setBannerText] = useState('Tiệm Phụ Kiện Handmade Omachi • Nhận xâu vòng tay, kẹp tóc & charm pastel theo yêu cầu ✨');
@@ -123,8 +125,148 @@ export default function Navbar() {
             <OmachiLogo size="md" />
           </Link>
 
-          {/* Desktop Search Bar - Cùng độ rộng và căn chỉnh đồng trục với ô tìm kiếm bộ sưu tập */}
-          <div className="hidden md:flex flex-1 max-w-md mx-4">
+          {/* Desktop Search Bar - Cùng độ rộng và căn chỉnh đồng trục với ô tìm kiếm bộ sưu tập (Ẩn khi ở Admin) */}
+          {isAdmin ? (
+            <div className="flex-1 flex items-center justify-center">
+              <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-rose-50 text-rose-600 border border-rose-200 shadow-2xs">
+                ✨ TRANG QUẢN TRỊ OMACHI
+              </span>
+            </div>
+          ) : (
+            <div className="hidden md:flex flex-1 max-w-md mx-4">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSearchSubmit();
+                }}
+                className="relative w-full"
+              >
+                <input
+                  type="text"
+                  placeholder="Tìm theo tên charm, kẹp nơ, hạt cườm..."
+                  value={searchTerm}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  className={`w-full h-10 pl-10 pr-8 text-xs sm:text-sm ${curr.searchBg} border rounded-full focus:outline-none focus:ring-1 focus:bg-white text-stone-800 transition`}
+                />
+                <Search className={`w-4 h-4 ${curr.searchIcon} absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none`} />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => handleSearchChange('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-0.5 text-xs font-bold"
+                  >
+                    ✕
+                  </button>
+                )}
+              </form>
+            </div>
+          )}
+
+          {/* Right Actions */}
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 ml-auto justify-end">
+            <ThemeSwitcher />
+
+            {isAdmin ? (
+              <Link
+                href="/"
+                className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 text-xs font-bold text-stone-700 hover:text-stone-900 bg-white hover:bg-stone-50 rounded-full border border-stone-200 transition shadow-2xs shrink-0"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Về Cửa Hàng</span>
+                <span className="sm:hidden">Cửa hàng</span>
+              </Link>
+            ) : (
+              <>
+                {/* Order Lookup Link - Luôn hiển thị trên cả điện thoại và máy tính */}
+                <Link
+                  href="/tra-cuu-don-hang"
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold sm:font-medium ${curr.orderBtn} rounded-full border transition shadow-2xs shrink-0`}
+                  title="Tra cứu hành trình đơn hàng"
+                >
+                  <Package className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span className="text-[11px] sm:text-xs">Tra cứu</span>
+                </Link>
+
+                {/* Customer Account Button / Dropdown */}
+                {!customer ? (
+                  <button
+                    type="button"
+                    onClick={() => openAuthModal('login')}
+                    className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-stone-700 hover:text-stone-900 bg-white hover:bg-stone-50 rounded-full border border-stone-200 transition shadow-2xs cursor-pointer"
+                    title="Đăng nhập / Đăng ký tài khoản"
+                  >
+                    <User className="w-3.5 h-3.5 text-stone-500" />
+                    <span className="hidden md:inline">Đăng nhập</span>
+                  </button>
+                ) : (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-medium text-stone-800 bg-stone-100 hover:bg-stone-200 rounded-full border border-stone-200 transition shadow-2xs cursor-pointer"
+                    >
+                      <span className="w-5 h-5 rounded-full bg-stone-900 text-white text-[10px] font-bold flex items-center justify-center">
+                        {customer.fullName ? customer.fullName.charAt(0).toUpperCase() : 'U'}
+                      </span>
+                      <span className="hidden md:inline max-w-[90px] truncate">{customer.fullName?.split(' ').pop() || 'Tài khoản'}</span>
+                      <ChevronDown className="w-3 h-3 text-stone-500" />
+                    </button>
+
+                    {isUserMenuOpen && (
+                      <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-stone-200 py-2 z-50 animate-fade-in text-xs">
+                        <div className="px-3.5 py-2 border-b border-stone-100">
+                          <p className="font-semibold text-stone-900 truncate">{customer.fullName}</p>
+                          <p className="text-[11px] text-stone-400 font-mono">{customer.phone}</p>
+                        </div>
+
+                        <Link
+                          href="/tra-cuu-don-hang"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="w-full text-left px-3.5 py-2 hover:bg-stone-50 text-stone-700 font-medium flex items-center gap-2 transition"
+                        >
+                          <Package className="w-3.5 h-3.5 text-stone-500" />
+                          <span>Đơn hàng của tôi</span>
+                        </Link>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            logout();
+                          }}
+                          className="w-full text-left px-3.5 py-2 hover:bg-rose-50 text-rose-600 font-medium flex items-center gap-2 transition border-t border-stone-100 cursor-pointer"
+                        >
+                          <LogOut className="w-3.5 h-3.5" />
+                          <span>Đăng xuất</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Cart Button - Shopee Full Screen Page */}
+                <Link
+                  href="/cart"
+                  id="navbar-cart-btn"
+                  className={`relative flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2.5 ${curr.cartBtn} rounded-full shadow-sm text-xs font-semibold transition transform active:scale-95 cursor-pointer`}
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  <span className="hidden sm:inline">Giỏ hàng</span>
+                  {totalItems > 0 && (
+                    <span className={`min-w-[20px] h-5 px-1.5 ${curr.cartBadge} font-bold text-[10px] rounded-full flex items-center justify-center shrink-0`}>
+                      {totalItems > 99 ? '99+' : totalItems}
+                    </span>
+                  )}
+                </Link>
+              </>
+            )}
+          </div>
+
+        </div>
+
+        {/* Mobile Search Bar - Tìm kiếm mặt hàng trên điện thoại (Ẩn khi ở Admin) */}
+        {!isAdmin && (
+          <div className="md:hidden pb-2.5 pt-0.5">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -134,141 +276,24 @@ export default function Navbar() {
             >
               <input
                 type="text"
-                placeholder="Tìm theo tên charm, kẹp nơ, hạt cườm..."
+                placeholder="🔍 Tìm vòng charm, kẹp tóc hoa, phụ kiện..."
                 value={searchTerm}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className={`w-full h-10 pl-10 pr-8 text-xs sm:text-sm ${curr.searchBg} border rounded-full focus:outline-none focus:ring-1 focus:bg-white text-stone-800 transition`}
+                className={`w-full pl-9 pr-8 py-2 text-xs ${curr.searchBg} border rounded-full focus:outline-none focus:ring-1 focus:bg-white text-stone-800 transition shadow-2xs font-medium`}
               />
-              <Search className={`w-4 h-4 ${curr.searchIcon} absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none`} />
+              <Search className={`w-3.5 h-3.5 ${curr.searchIcon} absolute left-3 top-1/2 -translate-y-1/2`} />
               {searchTerm && (
                 <button
                   type="button"
                   onClick={() => handleSearchChange('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-0.5 text-xs font-bold"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-0.5 text-xs font-bold"
                 >
                   ✕
                 </button>
               )}
             </form>
           </div>
-
-          {/* Right Actions */}
-          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 ml-auto justify-end">
-            {/* Order Lookup Link - Luôn hiển thị trên cả điện thoại và máy tính */}
-            <Link
-              href="/tra-cuu-don-hang"
-              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold sm:font-medium ${curr.orderBtn} rounded-full border transition shadow-2xs shrink-0`}
-              title="Tra cứu hành trình đơn hàng"
-            >
-              <Package className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span className="text-[11px] sm:text-xs">Tra cứu</span>
-            </Link>
-
-            <ThemeSwitcher />
-
-            {/* Customer Account Button / Dropdown */}
-            {!customer ? (
-              <button
-                type="button"
-                onClick={() => openAuthModal('login')}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-stone-700 hover:text-stone-900 bg-white hover:bg-stone-50 rounded-full border border-stone-200 transition shadow-2xs cursor-pointer"
-                title="Đăng nhập / Đăng ký tài khoản"
-              >
-                <User className="w-3.5 h-3.5 text-stone-500" />
-                <span className="hidden md:inline">Đăng nhập</span>
-              </button>
-            ) : (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-medium text-stone-800 bg-stone-100 hover:bg-stone-200 rounded-full border border-stone-200 transition shadow-2xs cursor-pointer"
-                >
-                  <span className="w-5 h-5 rounded-full bg-stone-900 text-white text-[10px] font-bold flex items-center justify-center">
-                    {customer.fullName ? customer.fullName.charAt(0).toUpperCase() : 'U'}
-                  </span>
-                  <span className="hidden md:inline max-w-[90px] truncate">{customer.fullName?.split(' ').pop() || 'Tài khoản'}</span>
-                  <ChevronDown className="w-3 h-3 text-stone-500" />
-                </button>
-
-                {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-stone-200 py-2 z-50 animate-fade-in text-xs">
-                    <div className="px-3.5 py-2 border-b border-stone-100">
-                      <p className="font-semibold text-stone-900 truncate">{customer.fullName}</p>
-                      <p className="text-[11px] text-stone-400 font-mono">{customer.phone}</p>
-                    </div>
-
-                    <Link
-                      href="/tra-cuu-don-hang"
-                      onClick={() => setIsUserMenuOpen(false)}
-                      className="w-full text-left px-3.5 py-2 hover:bg-stone-50 text-stone-700 font-medium flex items-center gap-2 transition"
-                    >
-                      <Package className="w-3.5 h-3.5 text-stone-500" />
-                      <span>Đơn hàng của tôi</span>
-                    </Link>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsUserMenuOpen(false);
-                        logout();
-                      }}
-                      className="w-full text-left px-3.5 py-2 hover:bg-rose-50 text-rose-600 font-medium flex items-center gap-2 transition border-t border-stone-100 cursor-pointer"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                      <span>Đăng xuất</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Cart Button - Shopee Full Screen Page */}
-            <Link
-              href="/cart"
-              id="navbar-cart-btn"
-              className={`relative flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2.5 ${curr.cartBtn} rounded-full shadow-sm text-xs font-semibold transition transform active:scale-95 cursor-pointer`}
-            >
-              <ShoppingBag className="w-4 h-4" />
-              <span className="hidden sm:inline">Giỏ hàng</span>
-              {totalItems > 0 && (
-                <span className={`min-w-[20px] h-5 px-1.5 ${curr.cartBadge} font-bold text-[10px] rounded-full flex items-center justify-center shrink-0`}>
-                  {totalItems > 99 ? '99+' : totalItems}
-                </span>
-              )}
-            </Link>
-          </div>
-
-        </div>
-
-        {/* Mobile Search Bar - Tìm kiếm mặt hàng trên điện thoại */}
-        <div className="md:hidden pb-2.5 pt-0.5">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSearchSubmit();
-            }}
-            className="relative w-full"
-          >
-            <input
-              type="text"
-              placeholder="🔍 Tìm vòng charm, kẹp tóc hoa, phụ kiện..."
-              value={searchTerm}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className={`w-full pl-9 pr-8 py-2 text-xs ${curr.searchBg} border rounded-full focus:outline-none focus:ring-1 focus:bg-white text-stone-800 transition shadow-2xs font-medium`}
-            />
-            <Search className={`w-3.5 h-3.5 ${curr.searchIcon} absolute left-3 top-1/2 -translate-y-1/2`} />
-            {searchTerm && (
-              <button
-                type="button"
-                onClick={() => handleSearchChange('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-0.5 text-xs font-bold"
-              >
-                ✕
-              </button>
-            )}
-          </form>
-        </div>
+        )}
       </div>
     </header>
   );

@@ -106,6 +106,8 @@ export let productsStore: Product[] = [
         "discountPercent": 8
       }
     ],
+    "minOrderQuantity": 10,
+    "stepQuantity": 10,
     "isActive": true,
     "createdAt": "2026-01-10T08:00:00.000Z",
     "updatedAt": "2026-09-15T00:42:22.811Z",
