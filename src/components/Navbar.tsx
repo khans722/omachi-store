@@ -270,7 +270,7 @@ export default function Navbar() {
             >
               <input
                 type="text"
-                placeholder="🔍 Tìm vòng charm, kẹp tóc hoa, phụ kiện..."
+                placeholder="Tìm vòng charm, kẹp tóc hoa, phụ kiện..."
                 value={searchTerm}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 className={`w-full pl-9 pr-8 py-2 text-xs ${curr.searchBg} border rounded-full focus:outline-none focus:ring-1 focus:bg-white text-stone-800 transition shadow-2xs font-medium`}

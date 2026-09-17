@@ -1513,7 +1513,7 @@ export default function AdminPage() {
                 <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="🔍 Tìm mã đơn, tên, SĐT..."
+                  placeholder="Tìm mã đơn, tên, SĐT, địa chỉ..."
                   value={orderSearch}
                   onChange={(e) => setOrderSearch(e.target.value)}
                   className="w-full pl-8 pr-7 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:bg-white focus:border-rose-400 font-medium text-gray-800 transition"

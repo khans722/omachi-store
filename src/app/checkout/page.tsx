@@ -92,12 +92,16 @@ function SearchableDropdown({
       if (typeof opt === 'string') {
         const raw = opt.toLowerCase();
         const unaccented = removeVietnameseTones(opt);
-        return { value: opt, label: opt, subLabel: undefined, searchKey: `${raw} ${unaccented}` };
+        const stripped = raw.replace(/^(tỉnh|thành phố|tp\.?|quận|huyện|thị xã|tx\.?|phường|xã|thị trấn|tt\.?)\s+/i, '');
+        const strippedUnacc = removeVietnameseTones(stripped);
+        return { value: opt, label: opt, subLabel: undefined, searchKey: `${raw} ${unaccented} ${stripped} ${strippedUnacc}` };
       }
-      const rawText = [opt.label || opt.value, opt.subLabel, ...(opt.aliases || [])].filter(Boolean).join(' ');
+      const rawText = [opt.label || opt.value, ...(opt.aliases || [])].filter(Boolean).join(' ');
       const raw = rawText.toLowerCase();
       const unaccented = removeVietnameseTones(rawText);
-      return { value: opt.value, label: opt.label || opt.value, subLabel: opt.subLabel, searchKey: `${raw} ${unaccented}` };
+      const stripped = raw.replace(/^(tỉnh|thành phố|tp\.?|quận|huyện|thị xã|tx\.?|phường|xã|thị trấn|tt\.?)\s+/i, '');
+      const strippedUnacc = removeVietnameseTones(stripped);
+      return { value: opt.value, label: opt.label || opt.value, subLabel: undefined, searchKey: `${raw} ${unaccented} ${stripped} ${strippedUnacc}` };
     });
   }, [options]);
 
@@ -105,7 +109,15 @@ function SearchableDropdown({
     if (!search.trim()) return normalizedOptions;
     const qRaw = search.toLowerCase().trim();
     const qUnaccented = removeVietnameseTones(search);
-    return normalizedOptions.filter((opt) => opt.searchKey.includes(qRaw) || opt.searchKey.includes(qUnaccented));
+    const qStripped = qRaw.replace(/^(tỉnh|thành phố|tp\.?|quận|huyện|thị xã|tx\.?|phường|xã|thị trấn|tt\.?)\s+/i, '').trim();
+    const qStrippedUnacc = removeVietnameseTones(qStripped);
+    return normalizedOptions.filter(
+      (opt) =>
+        opt.searchKey.includes(qRaw) ||
+        opt.searchKey.includes(qUnaccented) ||
+        (qStripped && opt.searchKey.includes(qStripped)) ||
+        (qStrippedUnacc && opt.searchKey.includes(qStrippedUnacc))
+    );
   }, [normalizedOptions, search]);
 
 
@@ -180,12 +192,12 @@ function SearchableDropdown({
             <input
               ref={searchInputRef}
               type="text"
-              placeholder={searchPlaceholder || '🔍 Gõ tìm nhanh...'}
+              placeholder={searchPlaceholder || 'Gõ tìm nhanh...'}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-7 pr-6 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:bg-white focus:border-rose-400 font-medium text-gray-800"
             />
-            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-[11px]">
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-[11px] pointer-events-none">
               🔍
             </span>
             {search && (
@@ -221,11 +233,6 @@ function SearchableDropdown({
                   >
                     <div className="truncate pr-1">
                       <span className="truncate block font-bold text-gray-900">{opt.label}</span>
-                      {opt.subLabel && (
-                        <span className="text-[10px] text-gray-400 font-normal block truncate">
-                          {opt.subLabel}
-                        </span>
-                      )}
                     </div>
                     {isSelected && <span className="text-rose-600 font-bold text-xs shrink-0 ml-1">✓</span>}
                   </button>
@@ -250,6 +257,73 @@ function SearchableDropdown({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function OrderCountdownTimer({ createdAt }: { createdAt?: string }) {
+  const [timeLeft, setTimeLeft] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
+  const [isExpired, setIsExpired] = useState(false);
+
+  useEffect(() => {
+    const baseTime = createdAt ? new Date(createdAt).getTime() : Date.now();
+    const target = baseTime + 24 * 60 * 60 * 1000;
+
+    const update = () => {
+      const diff = target - Date.now();
+      if (diff <= 0) {
+        setIsExpired(true);
+        setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
+      } else {
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        setTimeLeft({ hours, minutes, seconds });
+      }
+    };
+
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [createdAt]);
+
+  if (isExpired) {
+    return (
+      <div className="bg-rose-50 border border-rose-200 rounded-xl p-2.5 text-xs text-rose-700 font-bold flex items-center justify-center gap-1.5">
+        <span>⚠️ Đã quá thời hạn 24 giờ thanh toán (Đơn hàng đã tự động hủy)</span>
+      </div>
+    );
+  }
+
+  if (!timeLeft) return null;
+
+  const pad = (n: number) => String(n).padStart(2, '0');
+
+  return (
+    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center space-y-1.5 shadow-2xs">
+      <div className="text-[11px] font-bold text-amber-800 flex items-center justify-center gap-1.5">
+        <span className="animate-pulse">⏳</span>
+        <span>Thời gian còn lại để hoàn tất thanh toán:</span>
+      </div>
+      <div className="flex items-center justify-center gap-2 font-mono text-xl font-black text-amber-900">
+        <div className="bg-white px-2.5 py-1 rounded-md shadow-xs border border-amber-200 text-center">
+          <span>{pad(timeLeft.hours)}</span>
+          <span className="block text-[8px] font-sans font-medium text-gray-500 uppercase tracking-tight">Giờ</span>
+        </div>
+        <span className="text-amber-500 font-bold">:</span>
+        <div className="bg-white px-2.5 py-1 rounded-md shadow-xs border border-amber-200 text-center">
+          <span>{pad(timeLeft.minutes)}</span>
+          <span className="block text-[8px] font-sans font-medium text-gray-500 uppercase tracking-tight">Phút</span>
+        </div>
+        <span className="text-amber-500 font-bold">:</span>
+        <div className="bg-white px-2.5 py-1 rounded-md shadow-xs border border-amber-200 text-center">
+          <span>{pad(timeLeft.seconds)}</span>
+          <span className="block text-[8px] font-sans font-medium text-gray-500 uppercase tracking-tight">Giây</span>
+        </div>
+      </div>
+      <p className="text-[10px] text-amber-700 font-medium">
+        Sau 24 giờ kể từ lúc đặt hàng, đơn chưa thanh toán sẽ tự động hủy trên hệ thống.
+      </p>
     </div>
   );
 }
@@ -583,8 +657,6 @@ export default function CheckoutPage() {
     return VIETNAM_PROVINCES.map((p) => ({
       value: p.name,
       label: p.name,
-      subLabel: p.subLabel,
-      aliases: p.formerProvinces,
     }));
   }, []);
 
@@ -601,12 +673,14 @@ export default function CheckoutPage() {
     return VIETNAM_PROVINCES.find(
       (p) =>
         p.name.toLowerCase() === clean ||
-        (p.formerProvinces && p.formerProvinces.some((fp) => fp.toLowerCase() === clean))
+        p.name.toLowerCase().includes(clean) ||
+        clean.includes(p.name.toLowerCase())
     );
   }, [selectedProvince]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
+  const [hasNotifiedPaid, setHasNotifiedPaid] = useState(false);
 
   const validateForm = (): boolean => {
     const errors: typeof fieldErrors = {};
@@ -786,8 +860,9 @@ export default function CheckoutPage() {
     }
   };
 
-  // MÀN HÌNH ĐÃ TẠO ĐƠN THÀNH CÔNG
+  // MÀN HÌNH ĐÃ TẠO ĐƠN THÀNH CÔNG / CHỜ THANH TOÁN
   if (createdOrder) {
+    const isPrepaidOrder = createdOrder.paymentMethod === 'BANK' || createdOrder.paymentMethod === 'MOMO';
     const zaloShopPhone = (settings?.zaloPhone || '0375408256').replace(/[^0-9]/g, '');
     const prefilledMsg = encodeURIComponent(
       `Chào shop Omachi! Mình vừa đặt đơn #${createdOrder.code} (${createdOrder.items.reduce((s: number, i: any) => s + i.quantity, 0)} món). Mình nhắn qua để shop tư vấn thêm nhé! 💕`
@@ -797,21 +872,45 @@ export default function CheckoutPage() {
     return (
       <div className="py-8 max-w-lg mx-auto space-y-4 font-sans px-3">
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 text-center space-y-4">
-          <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl shadow-xs">
-            ✨
-          </div>
+          {isPrepaidOrder ? (
+            <div className="space-y-2.5">
+              <div className="w-14 h-14 mx-auto rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-2xl shadow-xs border border-amber-200">
+                ⏳
+              </div>
 
-          <div className="space-y-1">
-            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-              ĐẶT HÀNG THÀNH CÔNG
-            </span>
-            <h2 className="text-xl font-black text-gray-900 pt-1.5">
-              Mã Đơn: #{createdOrder.code}
-            </h2>
-            <p className="text-xs text-gray-500">
-              Cảm ơn bạn <strong>{createdOrder.customer.fullName}</strong> đã đặt hàng tại Omachi!
-            </p>
-          </div>
+              <div className="space-y-1">
+                <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-3 py-1 rounded-full border border-amber-200 inline-block">
+                  ĐANG CHỜ THANH TOÁN (HẠN 24H)
+                </span>
+                <h2 className="text-xl font-black text-gray-900 pt-1">
+                  Mã Đơn: #{createdOrder.code}
+                </h2>
+                <p className="text-xs text-gray-500">
+                  Chào <strong>{createdOrder.customer.fullName}</strong>! Vui lòng quét mã bên dưới để thanh toán đơn hàng nhé!
+                </p>
+              </div>
+
+              <OrderCountdownTimer createdAt={createdOrder.createdAt} />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl shadow-xs">
+                ✨
+              </div>
+
+              <div className="space-y-1">
+                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 inline-block">
+                  ĐẶT HÀNG THÀNH CÔNG
+                </span>
+                <h2 className="text-xl font-black text-gray-900 pt-1.5">
+                  Mã Đơn: #{createdOrder.code}
+                </h2>
+                <p className="text-xs text-gray-500">
+                  Cảm ơn bạn <strong>{createdOrder.customer.fullName}</strong> đã đặt hàng tại Omachi!
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Shopee Style Compact Receipt */}
           <div className="p-3.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-left space-y-2">
@@ -1100,6 +1199,38 @@ export default function CheckoutPage() {
           </div>
 
           <div className="space-y-2 pt-1">
+            {isPrepaidOrder && !hasNotifiedPaid && (
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await fetch('/api/orders', {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        id: createdOrder.id,
+                        paymentStatus: 'PAID'
+                      })
+                    });
+                    setHasNotifiedPaid(true);
+                    confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+                  } catch {
+                    setHasNotifiedPaid(true);
+                  }
+                }}
+                className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer"
+              >
+                <span>✅ Tôi Đã Chuyển Khoản Xong</span>
+              </button>
+            )}
+
+            {hasNotifiedPaid && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-emerald-800 text-xs font-bold flex items-center justify-center gap-2 animate-fade-in">
+                <span>🎉</span>
+                <span>Đã ghi nhận thanh toán! Shop sẽ đối soát và xuất kho gửi bạn sớm nhất.</span>
+              </div>
+            )}
+
             <Link
               href="/"
               className={`w-full py-3 rounded-xl ${curr.btnPrimary} font-bold text-xs sm:text-sm shadow-sm flex items-center justify-center gap-1.5 transition active:scale-98`}
@@ -1327,7 +1458,7 @@ export default function CheckoutPage() {
                     label="Tỉnh / Thành phố"
                     required
                     placeholder="Chọn Tỉnh / TP..."
-                    searchPlaceholder="🔍 Tìm tỉnh thành (VD: Bắc Ninh, Hà Nội...)"
+                    searchPlaceholder="Tìm tỉnh thành (VD: Bắc Giang, Hà Nội...)"
                     value={selectedProvince}
                     onChange={(prov) => {
                       setSelectedProvince(prov);
@@ -1353,7 +1484,7 @@ export default function CheckoutPage() {
                         ? 'Đang tải danh sách...'
                         : 'Chọn Phường / Xã...'
                     }
-                    searchPlaceholder="🔍 Gõ tìm xã, phường..."
+                    searchPlaceholder="Gõ tìm xã, phường, thị trấn..."
                     value={selectedWard}
                     onChange={(ward) => {
                       setSelectedWard(ward);

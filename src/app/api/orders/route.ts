@@ -4,7 +4,29 @@ import { sendOrderNotification } from '@/lib/zalo';
 
 export async function GET() {
   const orders = db.orders.getAll();
-  return NextResponse.json({ success: true, data: orders });
+  const now = Date.now();
+  const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+  let hasChanges = false;
+
+  orders.forEach((o: any) => {
+    if (
+      (o.paymentMethod === 'BANK' || o.paymentMethod === 'MOMO') &&
+      o.paymentStatus !== 'PAID' &&
+      o.orderStatus === 'PENDING'
+    ) {
+      const createdTime = new Date(o.createdAt).getTime();
+      if (!isNaN(createdTime) && now - createdTime > TWENTY_FOUR_HOURS) {
+        db.orders.updateStatus(o.id, 'CANCELLED', 'UNPAID', undefined, undefined, undefined, {
+          ...o,
+          cancelReason: 'Hệ thống tự động hủy do quá hạn 24h chưa chuyển khoản thanh toán'
+        });
+        hasChanges = true;
+      }
+    }
+  });
+
+  const finalOrders = hasChanges ? db.orders.getAll() : orders;
+  return NextResponse.json({ success: true, data: finalOrders });
 }
 
 export async function POST(req: NextRequest) {

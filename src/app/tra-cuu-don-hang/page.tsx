@@ -683,7 +683,7 @@ function OrderLookupContent() {
                 type="text"
                 value={filterKeyword}
                 onChange={(e) => setFilterKeyword(e.target.value)}
-                placeholder="🔍 Lọc nhanh theo Mã đơn (VD: 1234), tên người nhận hoặc tên sản phẩm..."
+                placeholder="Lọc nhanh theo Mã đơn (VD: 1234), tên người nhận hoặc tên sản phẩm..."
                 className="w-full pl-11 pr-10 py-3 bg-white border border-gray-200 rounded-2xl text-xs sm:text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-rose-400 shadow-2xs"
               />
               <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
