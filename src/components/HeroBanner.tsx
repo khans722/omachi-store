@@ -96,16 +96,16 @@ export default function HeroBanner({ settings }: HeroBannerProps) {
           </div>
 
           {/* Chubby Bubble Pastel Main Heading */}
-          <h1 className="font-bubble text-xl sm:text-3xl lg:text-[40px] font-extrabold leading-tight tracking-normal select-none">
+          <h1 className="font-bubble text-3xl sm:text-5xl lg:text-[48px] font-extrabold leading-[1.2] tracking-normal select-none">
             {title.includes('&') ? (
               <>
-                <span className={`${curr.titleLine1} drop-shadow-[0_2px_8px_rgba(255,255,255,0.8)]`}>
+                <span className={`block ${curr.titleLine1} drop-shadow-[0_2px_8px_rgba(255,255,255,0.8)]`}>
                   {title.split('&')[0].trim()}
                 </span>
-                <span className={`inline-block sm:mt-1 ${curr.titleLine2} ml-1 sm:ml-0 drop-shadow-[0_2px_8px_rgba(255,255,255,0.8)]`}>
+                <span className={`inline-block mt-1 ${curr.titleLine2} drop-shadow-[0_2px_8px_rgba(255,255,255,0.8)]`}>
                   &amp; {title.split('&')[1].trim()}
                 </span>
-                <span className="inline-block ml-1 text-base sm:text-2xl lg:text-3xl animate-bounce-slow">✨</span>
+                <span className="inline-block ml-2 text-2xl sm:text-4xl animate-bounce-slow">✨</span>
               </>
             ) : (
               <span className={curr.titleLine1}>{title}</span>
