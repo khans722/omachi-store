@@ -211,6 +211,7 @@ export interface ShopSettings {
   telegramBotToken?: string;
   telegramChatId?: string;
   enableTelegramNotify?: boolean;
+  websiteUrl?: string;
   warehouseProvince?: string;
   heroImage?: string;
   heroImages?: string[];
@@ -1683,7 +1684,9 @@ const INITIAL_DATABASE: DetailedDatabaseSchema = {
       "/uploads/charm_1789442857219_1789435799334_1528911961217344.jpg"
     ],
     "telegramChatId": "8941847464",
-    "telegramBotToken": "8643883325:AAFtYvON3zYNH6D8K1Mf8bTtHclR1ha92SQ"
+    "telegramBotToken": "8643883325:AAFtYvON3zYNH6D8K1Mf8bTtHclR1ha92SQ",
+    "websiteUrl": "http://localhost:3000",
+    "enableTelegramNotify": true
   }
 };
 

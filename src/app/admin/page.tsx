@@ -76,6 +76,10 @@ const DEFAULT_SETTINGS: ShopSettings = {
   bankId: 'MB',
   bankAccount: '0398445122',
   bankOwner: 'OMACHI STORE',
+  telegramBotToken: '8643883325:AAFtYvON3zYNH6D8K1Mf8bTtHclR1ha92SQ',
+  telegramChatId: '8941847464',
+  enableTelegramNotify: true,
+  websiteUrl: 'http://localhost:3000',
   autoReplyTemplate: 'Chào bạn, Shop Omachi đã nhận được đơn hàng #{orderCode}. Shop sẽ kiểm tra mẫu và báo lại bạn ngay nhé!',
   heroImage: '/images/charm_feed_1.jpg',
   heroBadge: 'Ảnh thật tại tiệm 100% ✨',
@@ -515,7 +519,12 @@ export default function AdminPage() {
       const res = await fetch('/api/settings');
       const data = await res.json();
       if (data.success && data.data) {
-        setSettings({ ...DEFAULT_SETTINGS, ...data.data });
+        const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+        setSettings({
+          ...DEFAULT_SETTINGS,
+          ...data.data,
+          websiteUrl: data.data.websiteUrl || currentOrigin,
+        });
       }
     } catch (e) {
       console.error(e);
@@ -1113,6 +1122,33 @@ export default function AdminPage() {
     setTimeout(() => setTestZaloStatus(''), 6000);
   };
 
+  const handleSaveTelegramOnly = async () => {
+    try {
+      const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+      const updated = {
+        ...settings,
+        telegramBotToken: (settings.telegramBotToken || '').trim(),
+        telegramChatId: (settings.telegramChatId || '').trim(),
+        websiteUrl: (settings.websiteUrl || '').trim() || currentOrigin,
+        enableTelegramNotify: settings.enableTelegramNotify !== false,
+      };
+      setSettings(updated);
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActionSuccessMsg('Đã lưu cấu hình Telegram & Link Website thành công! 🎉');
+        setTimeout(() => setActionSuccessMsg(''), 3000);
+        confetti({ particleCount: 35, spread: 60 });
+      }
+    } catch (err) {
+      console.error('Lỗi khi lưu cấu hình Telegram:', err);
+    }
+  };
+
   const handleTestTelegram = async () => {
     if (!settings.telegramBotToken || !settings.telegramChatId) {
       alert('Vui lòng nhập đầy đủ Telegram Bot Token và Chat ID trước khi bấm gửi thử!');
@@ -1124,13 +1160,28 @@ export default function AdminPage() {
     });
 
     try {
+      // Tự động lưu luôn token, chat id và websiteUrl để không bao giờ bị reset
+      const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+      const effectiveUrl = (settings.websiteUrl || '').trim() || currentOrigin;
+      fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...settings,
+          telegramBotToken: settings.telegramBotToken.trim(),
+          telegramChatId: settings.telegramChatId.trim(),
+          websiteUrl: effectiveUrl,
+          enableTelegramNotify: settings.enableTelegramNotify !== false,
+        }),
+      }).catch(() => {});
+
       const res = await fetch('/api/notify-zalo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           telegramBotToken: settings.telegramBotToken.trim(),
           telegramChatId: settings.telegramChatId.trim(),
-          websiteUrl: settings.websiteUrl ? settings.websiteUrl.trim() : undefined,
+          websiteUrl: effectiveUrl,
           enableTelegramNotify: true,
         }),
       });
@@ -3549,15 +3600,33 @@ export default function AdminPage() {
 
                 {/* 6. TELEGRAM BOT NOTIFICATIONS */}
                 <div className="bg-gradient-to-r from-sky-50 via-blue-50 to-indigo-50/40 p-5 rounded-2xl border border-sky-200 shadow-2xs space-y-4">
-                  <div className="flex items-center gap-2.5 pb-3 border-b border-sky-100">
-                    <span className="text-2xl">🤖</span>
-                    <div>
-                      <h4 className="font-black text-sky-900 text-xs sm:text-sm">
-                        6. Thông Báo Đơn Hàng Tự Động Qua Telegram
-                      </h4>
-                      <p className="text-[11px] text-sky-700">
-                        Điện thoại rung chuông &quot;Ting ting&quot; ngay sau 0.1s mỗi khi có đơn mới
-                      </p>
+                  <div className="flex items-center justify-between pb-3 border-b border-sky-100 flex-wrap gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-2xl">🤖</span>
+                      <div>
+                        <h4 className="font-black text-sky-900 text-xs sm:text-sm">
+                          6. Thông Báo Đơn Hàng Tự Động Qua Telegram
+                        </h4>
+                        <p className="text-[11px] text-sky-700">
+                          Điện thoại rung chuông &quot;Ting ting&quot; ngay sau 0.1s mỗi khi có đơn mới
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleSaveTelegramOnly}
+                        className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer active:scale-98"
+                      >
+                        <span>💾 Lưu Cấu Hình</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleTestTelegram}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer active:scale-98"
+                      >
+                        <span>🔔 Bắn Thử Tin</span>
+                      </button>
                     </div>
                   </div>
 
@@ -3593,7 +3662,16 @@ export default function AdminPage() {
                     <div className="sm:col-span-2">
                       <label className="font-bold text-gray-700 block mb-1 flex items-center justify-between">
                         <span>Link Website Của Shop (Gắn vào nút Xem Đơn trên Telegram):</span>
-                        <span className="text-[10px] font-normal text-gray-400">Mặc định: http://localhost:3000</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+                            setSettings({ ...settings, websiteUrl: origin });
+                          }}
+                          className="text-[10px] text-sky-600 hover:text-sky-800 font-bold hover:underline cursor-pointer flex items-center gap-1"
+                        >
+                          <span>⚡ Lấy link web hiện tại</span>
+                        </button>
                       </label>
                       <input
                         type="text"
@@ -3616,6 +3694,21 @@ export default function AdminPage() {
                       <span>Kích hoạt tính năng tự động nổ thông báo về điện thoại</span>
                     </label>
                   </div>
+
+                  {/* Render testTelegramStatus */}
+                  {testTelegramStatus && (
+                    <div
+                      className={`p-3 rounded-xl border text-xs font-medium animate-fade-in ${
+                        testTelegramStatus.type === 'loading'
+                          ? 'bg-sky-50 border-sky-200 text-sky-800'
+                          : testTelegramStatus.type === 'success'
+                          ? 'bg-emerald-50 border-emerald-200 text-emerald-800 font-bold'
+                          : 'bg-rose-50 border-rose-200 text-rose-800'
+                      }`}
+                    >
+                      {testTelegramStatus.message}
+                    </div>
+                  )}
                 </div>
 
               </div>

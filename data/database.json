@@ -722,6 +722,8 @@
     ],
     "telegramChatId": "8941847464",
     "telegramBotToken": "8643883325:AAFtYvON3zYNH6D8K1Mf8bTtHclR1ha92SQ",
+    "websiteUrl": "http://localhost:3000",
+    "enableTelegramNotify": true,
     "prepaidFreeShipThreshold": 1000000,
     "enablePrepaidFreeShip": true,
     "momoPhone": "0398445122",
