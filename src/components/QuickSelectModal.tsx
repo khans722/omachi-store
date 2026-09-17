@@ -302,47 +302,6 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
                 </button>
               </div>
             </div>
-
-            {/* Quick Presets: Tinh gọn chỉ 2 nút +10 và +100 cộng dồn theo bội số */}
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] text-stone-400 font-medium">Cộng nhanh:</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setQuantity((q) => {
-                    if (q <= 1) return 10;
-                    return Math.min(availableStock || 9999, q + 10);
-                  });
-                }}
-                className="px-3 py-1.5 text-xs font-bold rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-200 active:scale-95 transition cursor-pointer"
-                title="Bấm để cộng thêm 10 cái"
-              >
-                +10 cái
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setQuantity((q) => {
-                    if (q <= 1) return 100;
-                    return Math.min(availableStock || 9999, q + 100);
-                  });
-                }}
-                className="px-3 py-1.5 text-xs font-bold rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-200 active:scale-95 transition cursor-pointer"
-                title="Bấm để cộng thêm 100 cái"
-              >
-                +100 cái
-              </button>
-
-              {quantity > 1 && (
-                <button
-                  type="button"
-                  onClick={() => setQuantity(1)}
-                  className="text-[11px] text-stone-400 hover:text-stone-600 underline ml-auto cursor-pointer"
-                >
-                  Về 1 cái
-                </button>
-              )}
-            </div>
           </div>
         </div>
 

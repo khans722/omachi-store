@@ -512,53 +512,11 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Desktop Quantity & 1688 Quick Tier Selector */}
-            <div className="p-4 rounded-2xl bg-stone-50/70 border border-stone-200/80 space-y-3">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <span className="text-xs text-gray-700 font-bold">Số Lượng Mua:</span>
-                
-                {/* Quick Multiplier Buttons (+10, +100) */}
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[10px] text-gray-400 font-semibold">Cộng nhanh:</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setQuantity((q) => {
-                        if (q <= 1) return 10;
-                        return Math.min(product.stock || 9999, q + 10);
-                      });
-                    }}
-                    className="px-2.5 py-1 text-xs font-bold rounded-lg bg-white border border-stone-200 text-stone-700 hover:border-stone-400 hover:bg-stone-50 active:scale-95 transition"
-                    title="Bấm để cộng thêm 10 cái"
-                  >
-                    +10 cái
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setQuantity((q) => {
-                        if (q <= 1) return 100;
-                        return Math.min(product.stock || 9999, q + 100);
-                      });
-                    }}
-                    className="px-2.5 py-1 text-xs font-bold rounded-lg bg-white border border-stone-200 text-stone-700 hover:border-stone-400 hover:bg-stone-50 active:scale-95 transition"
-                    title="Bấm để cộng thêm 100 cái"
-                  >
-                    +100 cái
-                  </button>
-                  {quantity > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => setQuantity(1)}
-                      className="text-[10px] text-stone-400 hover:text-stone-600 underline ml-1 cursor-pointer"
-                    >
-                      Về 1
-                    </button>
-                  )}
-                </div>
-              </div>
+            {/* Desktop Quantity Stepper */}
+            <div className="p-4 rounded-2xl bg-stone-50/70 border border-stone-200/80 flex items-center justify-between">
+              <span className="text-xs text-gray-700 font-bold">Số Lượng Mua:</span>
 
-              <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
                 <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white shadow-2xs">
                   <button
                     type="button"
