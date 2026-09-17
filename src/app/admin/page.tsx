@@ -1766,8 +1766,8 @@ export default function AdminPage() {
                 const estimatedProfit = prod.costPrice ? prod.basePrice - prod.costPrice : null;
 
                 return (
-                  <div key={prod.id} className="p-4 rounded-2xl border border-pink-100 bg-pink-50/20 space-y-3 relative group flex flex-col justify-between hover:border-pink-200 transition">
-                    <div className="space-y-3">
+                  <div key={prod.id} className="p-3 sm:p-4 rounded-2xl border border-pink-100 bg-pink-50/20 space-y-2.5 sm:space-y-3 relative group flex flex-col justify-between hover:border-pink-200 transition">
+                    <div className="space-y-2.5 sm:space-y-3">
                       <div className="flex items-start gap-3">
                         <img
                           src={prod.images?.[0] || '/images/charm_feed_1.jpg'}
@@ -1776,7 +1776,7 @@ export default function AdminPage() {
                             e.currentTarget.onerror = null;
                             e.currentTarget.src = '/images/charm_feed_1.jpg';
                           }}
-                          className="w-18 h-18 sm:w-20 sm:h-20 object-cover rounded-xl border border-pink-200 shrink-0 bg-white"
+                          className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-xl border border-pink-200 shrink-0 bg-white"
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
@@ -1794,9 +1794,9 @@ export default function AdminPage() {
                               </span>
                             )}
                           </div>
-                          <h4 className="text-xs font-black text-gray-800 mt-1 line-clamp-1">{prod.name}</h4>
+                          <h4 className="text-xs sm:text-sm font-black text-gray-800 mt-1 line-clamp-1">{prod.name}</h4>
                           
-                          <div className="flex items-center gap-3 mt-1 text-[11px]">
+                          <div className="flex items-center gap-2.5 flex-wrap mt-1 text-[11px]">
                             <span className="text-pink-600 font-bold">
                               Bán lẻ: {formatVND(prod.basePrice)}
                             </span>
@@ -1812,7 +1812,7 @@ export default function AdminPage() {
                             )}
                           </div>
 
-                          <div className="flex items-center gap-3 text-[10px] text-gray-500 mt-1">
+                          <div className="flex items-center gap-2 flex-wrap text-[10px] text-gray-500 mt-1">
                             <span>Chất liệu: <strong>{prod.material || 'Handmade'}</strong></span>
                             <span>•</span>
                             <span>Kích thước: <strong>{prod.dimensions || 'Free size'}</strong></span>
@@ -1822,23 +1822,23 @@ export default function AdminPage() {
 
                       {/* Color Variants Configuration Details */}
                       {prod.variants && prod.variants.length > 0 && (
-                        <div className="bg-white p-3 rounded-xl border border-pink-100 text-[11px] space-y-2">
-                          <p className="font-bold text-gray-700 flex items-center justify-between">
-                            <span className="flex items-center gap-1.5">
-                              <Palette className="w-3.5 h-3.5 text-pink-500" />
-                              <span>Chi tiết phân loại màu ({prod.variants.length} màu):</span>
+                        <div className="bg-white p-2.5 sm:p-3 rounded-xl border border-pink-100 text-[11px] space-y-2">
+                          <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+                            <span className="flex items-center gap-1.5 font-bold text-gray-700 text-xs">
+                              <Palette className="w-3.5 h-3.5 text-pink-500 shrink-0" />
+                              <span>Chi tiết phân loại ({prod.variants.length} màu):</span>
                             </span>
-                            <span className="text-xs font-black text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200">
+                            <span className="text-[10px] sm:text-xs font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
                               Tổng tồn kho: {(prod.stock || 0).toLocaleString('vi-VN')} cái
                             </span>
-                          </p>
-                          <div className="flex flex-wrap gap-2">
+                          </div>
+                          <div className="flex flex-wrap gap-1.5 sm:gap-2">
                             {prod.variants.map((v, i) => {
                               const vStock = v.stock ?? 0;
                               return (
                                 <div
                                   key={i}
-                                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] border ${
+                                  className={`flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-[10px] sm:text-[11px] border ${
                                     vStock <= 0
                                       ? 'bg-rose-50/70 border-rose-200 text-rose-700'
                                       : vStock <= 5
@@ -1847,10 +1847,10 @@ export default function AdminPage() {
                                   }`}
                                 >
                                   {v.colorHex && (
-                                    <span className="w-3 h-3 rounded-full border border-black/20 shrink-0" style={{ backgroundColor: v.colorHex }} />
+                                    <span className="w-2.5 h-2.5 rounded-full border border-black/20 shrink-0" style={{ backgroundColor: v.colorHex }} />
                                   )}
                                   <span className="font-bold">{v.name}</span>
-                                  <span className={`text-[10px] font-black px-1.5 py-0.2 rounded-md ${
+                                  <span className={`text-[9px] sm:text-[10px] font-black px-1.5 py-0.2 rounded-md ${
                                     vStock <= 0 ? 'bg-rose-200 text-rose-800' : 'bg-white/80 text-gray-800'
                                   }`}>
                                     {vStock <= 0 ? 'Hết hàng' : `Còn ${vStock.toLocaleString('vi-VN')}`}
@@ -1877,33 +1877,33 @@ export default function AdminPage() {
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-pink-100/60 mt-2">
+                    <div className="flex items-center justify-between pt-2 border-t border-pink-100/60 mt-2 flex-wrap gap-2">
                       <button
                         type="button"
                         onClick={() => {
                           setInventorySearch(prod.name);
                           setActiveTab('inventory');
                         }}
-                        className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 text-xs font-bold transition flex items-center gap-1 shadow-2xs"
+                        className="px-2.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 text-xs font-bold transition flex items-center gap-1 shadow-2xs"
                         title="Chuyển sang tab kho để nhập hàng thêm"
                       >
                         <Boxes className="w-3.5 h-3.5 text-purple-600" />
-                        <span>📦 Sang Nhập Kho</span>
+                        <span>📦 Nhập Kho</span>
                       </button>
 
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => handleOpenEditProduct(prod)}
-                          className="px-3 py-1.5 rounded-xl bg-white border border-pink-200 text-pink-700 hover:bg-pink-100 text-xs font-bold transition flex items-center gap-1 shadow-2xs"
+                          className="px-2.5 py-1.5 rounded-xl bg-white border border-pink-200 text-pink-700 hover:bg-pink-100 text-xs font-bold transition flex items-center gap-1 shadow-2xs"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
-                          <span>Sửa Cấu Hình</span>
+                          <span>Sửa</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDeleteProduct(prod.id, prod.name)}
-                          className="px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 text-xs font-bold transition flex items-center gap-1"
+                          className="px-2.5 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 text-xs font-bold transition flex items-center gap-1"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                           <span>Xóa</span>
@@ -2106,7 +2106,7 @@ export default function AdminPage() {
                         <img
                           src={prod.images?.[0] || '/uploads/charm_1789432914386_1789371730804_1528911961217344.jpg'}
                           alt={prod.name}
-                          className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl object-cover border border-pink-200 bg-white shrink-0"
+                          className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl object-cover border border-pink-200 bg-white shrink-0"
                         />
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -2239,8 +2239,8 @@ export default function AdminPage() {
 
       {/* TAB: CATEGORIES MANAGEMENT */}
       {activeTab === 'categories' && (
-        <div className="bg-white p-6 rounded-3xl border border-pink-100 shadow-xs space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="bg-white p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl border border-pink-100 shadow-xs space-y-4 sm:space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
             <div>
               <h3 className="text-base font-extrabold text-gray-800 flex items-center gap-2">
                 <Tag className="w-5 h-5 text-rose-500" />
@@ -2265,7 +2265,7 @@ export default function AdminPage() {
               const countProducts = products.filter(p => p.categoryId === cat.id || p.category === cat.slug || p.category === cat.id).length;
 
               return (
-                <div key={cat.id || idx} className="p-4 rounded-2xl border border-pink-100 bg-pink-50/20 hover:border-pink-200 transition space-y-3 flex flex-col justify-between">
+                <div key={cat.id || idx} className="p-3 sm:p-4 rounded-2xl border border-pink-100 bg-pink-50/20 hover:border-pink-200 transition space-y-3 flex flex-col justify-between">
                   <div className="space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2.5">
@@ -2326,7 +2326,7 @@ export default function AdminPage() {
 
       {/* TAB: FEEDBACKS / REVIEWS MANAGEMENT */}
       {activeTab === 'feedbacks' && (
-        <div className="bg-white p-6 rounded-3xl border border-pink-100 shadow-xs space-y-6">
+        <div className="bg-white p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl border border-pink-100 shadow-xs space-y-4 sm:space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-base font-extrabold text-gray-800 flex items-center gap-2">
