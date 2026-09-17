@@ -1,11 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
 import { formatVND } from '@/lib/utils';
+import { ShopSettings } from '@/types';
 import { 
   ShoppingBag, 
   Trash2, 
@@ -19,6 +20,19 @@ import {
 
 export default function CartPage() {
   const router = useRouter();
+  const [settings, setSettings] = useState<ShopSettings | null>(null);
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data) {
+          setSettings(data.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const {
     items,
     updateQuantity,
@@ -75,7 +89,7 @@ export default function CartPage() {
     selectedIds.forEach((id) => removeItem(id));
   };
 
-  const FREESHIP_THRESHOLD = 1000000;
+  const FREESHIP_THRESHOLD = Number(settings?.prepaidFreeShipThreshold) || 1000000;
   const isFreeshipEligible = selectedSubtotal >= FREESHIP_THRESHOLD;
   const missingForFreeship = Math.max(0, FREESHIP_THRESHOLD - selectedSubtotal);
   const freeshipProgress = Math.min(100, Math.round((selectedSubtotal / FREESHIP_THRESHOLD) * 100));
@@ -123,7 +137,7 @@ export default function CartPage() {
       </div>
 
       {/* FREESHIP PROMOTION PROGRESS BANNER */}
-      {items.length > 0 && (
+      {items.length > 0 && settings?.enablePrepaidFreeShip !== false && (
         <div className={`p-3 sm:p-3.5 rounded-xl border transition-all ${
           isFreeshipEligible
             ? 'bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border-emerald-200 shadow-xs'
@@ -139,13 +153,13 @@ export default function CartPage() {
                   isFreeshipEligible ? 'text-emerald-800' : 'text-stone-800'
                 }`}>
                   {isFreeshipEligible ? (
-                    <span>Đã đủ điều kiện <span className="text-emerald-600 underline decoration-emerald-400">MIỄN PHÍ SHIP</span> khi Chuyển Khoản!</span>
+                    <span>Đã đủ điều kiện <span className="text-emerald-600 underline decoration-emerald-400">MIỄN PHÍ SHIP</span> khi Chuyển Khoản hoặc MoMo!</span>
                   ) : (
-                    <span>Mua thêm <strong className="text-rose-600 font-black">{formatVND(missingForFreeship)}</strong> để được <strong className="text-emerald-700">MIỄN PHÍ SHIP</strong> khi Chuyển Khoản!</span>
+                    <span>Mua thêm <strong className="text-rose-600 font-black">{formatVND(missingForFreeship)}</strong> để được <strong className="text-emerald-700">MIỄN PHÍ SHIP</strong> khi Chuyển Khoản / MoMo!</span>
                   )}
                 </p>
                 <p className="text-[10px] sm:text-[11px] text-stone-500 font-medium">
-                  Áp dụng cho đơn hàng từ 1.000.000₫ thanh toán chuyển khoản toàn quốc
+                  Áp dụng cho đơn hàng từ {formatVND(FREESHIP_THRESHOLD)} thanh toán trước (Ngân hàng / MoMo) toàn quốc
                 </p>
               </div>
             </div>

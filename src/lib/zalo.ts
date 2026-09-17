@@ -44,10 +44,10 @@ ${order.customer.note ? `📝 Ghi chú: ${order.customer.note}\n` : ''}
 ${itemsText}
 
 💰 Tiền hàng: ${formatVND(order.subtotal || (order as any).subtotalAmount || (order.totalAmount - (order.shippingFee || 0)))}
-🚚 Phí ship: ${order.shippingFee ? formatVND(order.shippingFee) : '💬 Shop cân thực tế & báo khách qua Zalo'}
-💵 TỔNG TIỀN HÀNG: ${formatVND(order.totalAmount)} ${order.shippingFee ? '' : '(Chưa gồm ship)'}
-💳 Phương thức: ${order.paymentMethod === 'ZALO_CONFIRM' ? 'Thanh toán COD khi nhận hàng' : 'Thanh toán khi nhận (COD)'}
-📌 Trạng thái: ${order.shippingFee ? 'ĐÃ CÓ PHÍ SHIP' : 'CHỜ SHOP CÂN HÀNG & BÁO SHIP'}
+🚚 Phí ship: ${order.shippingFee === 0 ? '🎁 Miễn phí ship (0đ - Ưu đãi thanh toán)' : order.shippingFee ? formatVND(order.shippingFee) : '💬 Cân thực tế'}
+💵 TỔNG TIỀN: ${formatVND(order.totalAmount)}
+💳 Phương thức: ${order.paymentMethod === 'MOMO' ? '🟣 Ví MoMo (Chuyển tiền / Quét QR)' : order.paymentMethod === 'BANK' ? '💳 Chuyển khoản VietQR' : '💵 Thanh toán COD khi nhận'}
+📌 Trạng thái: ${order.shippingFee === 0 ? 'ĐÃ ĐƯỢC MIỄN PHÍ SHIP' : order.shippingFee ? 'ĐÃ CÓ PHÍ SHIP' : 'CHỜ SHOP CÂN HÀNG & BÁO SHIP'}
 
 ⏰ Thời gian: ${new Date(order.createdAt).toLocaleString('vi-VN')}
 ----------------------------------------

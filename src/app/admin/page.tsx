@@ -69,6 +69,13 @@ const DEFAULT_SETTINGS: ShopSettings = {
   shopAddress: 'Hà Nội, Việt Nam',
   workingHours: '08:30 - 22:00 Hàng ngày',
   freeShippingThreshold: 200000,
+  prepaidFreeShipThreshold: 1000000,
+  enablePrepaidFreeShip: true,
+  momoPhone: '0398445122',
+  momoName: 'OMACHI HANDMADE STORE',
+  bankId: 'MB',
+  bankAccount: '0398445122',
+  bankOwner: 'OMACHI STORE',
   autoReplyTemplate: 'Chào bạn, Shop Omachi đã nhận được đơn hàng #{orderCode}. Shop sẽ kiểm tra mẫu và báo lại bạn ngay nhé!',
   heroImage: '/images/charm_feed_1.jpg',
   heroBadge: 'Ảnh thật tại tiệm 100% ✨',
@@ -1585,18 +1592,24 @@ export default function AdminPage() {
 
                         {/* 3. Phương thức thanh toán khách chọn */}
                         <span className={`text-[11px] font-bold px-2 py-0.5 rounded-lg border ${
-                          order.paymentMethod === 'BANK'
+                          order.paymentMethod === 'MOMO'
+                            ? 'bg-pink-50 text-pink-700 border-pink-300'
+                            : order.paymentMethod === 'BANK'
                             ? 'bg-blue-50 text-blue-700 border-blue-200'
                             : 'bg-stone-50 text-stone-700 border-stone-200'
                         }`}>
-                          {order.paymentMethod === 'BANK' ? '💳 Chuyển khoản VietQR' : '💵 Thu tiền mặt COD'}
+                          {order.paymentMethod === 'MOMO'
+                            ? '🟣 Ví MoMo'
+                            : order.paymentMethod === 'BANK'
+                            ? '💳 Chuyển khoản VietQR'
+                            : '💵 Thu tiền mặt COD'}
                         </span>
 
-                        {/* 4. Huy hiệu đủ điều kiện Freeship nếu đơn >= 1tr */}
+                        {/* 4. Huy hiệu đủ điều kiện Freeship nếu đơn >= ngưỡng */}
                         {isOrderEligibleFreeship && (
                           <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
                             <span>✨</span>
-                            <span>ĐƠN ≥ 1TR (FREESHIP NẾU CK)</span>
+                            <span>ĐƠN ≥ ${formatVND(Number(settings.prepaidFreeShipThreshold) || 1000000)} (FREESHIP CK/MOMO)</span>
                           </span>
                         )}
                       </div>
@@ -3588,7 +3601,146 @@ export default function AdminPage() {
 
             </div>
 
-            {/* BIG SAVE BUTTON AT BOTTOM */}
+            {/* 7. CẤU HÌNH THANH TOÁN (MOMO, NGÂN HÀNG VIETQR) & FREESHIP */}
+                <div className="bg-gradient-to-r from-purple-50 via-pink-50 to-rose-50/40 p-5 rounded-2xl border border-purple-200 shadow-2xs space-y-4">
+                  <div className="flex items-center gap-2.5 pb-3 border-b border-purple-100">
+                    <span className="text-2xl">💳</span>
+                    <div>
+                      <h4 className="font-black text-purple-900 text-xs sm:text-sm">
+                        7. Cấu Hình Thanh Toán (MoMo &amp; VietQR) &amp; Ngưỡng Miễn Phí Ship
+                      </h4>
+                      <p className="text-[11px] text-purple-700">
+                        Thiết lập nhận tiền qua Ví MoMo, Ngân hàng và số tiền tối thiểu để được Freeship khi thanh toán trước
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Ngưỡng Freeship */}
+                  <div className="p-3.5 bg-white rounded-xl border border-purple-100 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="font-bold text-gray-800 text-xs flex items-center gap-1.5">
+                        <Truck className="w-4 h-4 text-emerald-600" />
+                        <span>Chính Sách Miễn Phí Vận Chuyển (Freeship Khi Thanh Toán Trước)</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer font-bold text-emerald-800 text-xs">
+                        <input
+                          type="checkbox"
+                          checked={settings.enablePrepaidFreeShip !== false}
+                          onChange={(e) => setSettings({ ...settings, enablePrepaidFreeShip: e.target.checked })}
+                          className="w-4 h-4 text-emerald-600 rounded"
+                        />
+                        <span>Bật chính sách này</span>
+                      </label>
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-gray-700 block mb-1 text-[11px]">
+                        Số tiền đơn hàng tối thiểu để được Freeship (VNĐ):
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={0}
+                          step={50000}
+                          value={settings.prepaidFreeShipThreshold !== undefined ? settings.prepaidFreeShipThreshold : 1000000}
+                          onChange={(e) => setSettings({ ...settings, prepaidFreeShipThreshold: Math.max(0, Number(e.target.value)) })}
+                          placeholder="VD: 1000000 (1 triệu đồng)"
+                          className="flex-1 px-3 py-2 bg-white border border-purple-200 rounded-xl font-bold text-rose-600 text-sm focus:ring-2 focus:ring-purple-400 focus:outline-none"
+                        />
+                        <span className="text-xs text-gray-500 font-medium">VNĐ</span>
+                      </div>
+                      <p className="text-[10px] text-gray-500 mt-1">
+                        Khi khách đặt đơn từ số tiền này và chọn <strong>Chuyển khoản Ngân hàng</strong> hoặc <strong>Ví MoMo</strong>, cước ship sẽ tự động chuyển thành <strong>0đ</strong>.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Cấu hình Ví MoMo */}
+                  <div className="p-3.5 bg-white rounded-xl border border-pink-200 space-y-2.5">
+                    <div className="flex items-center gap-1.5 font-bold text-gray-800 text-xs">
+                      <span className="w-5 h-5 rounded-md bg-[#A50064] text-white flex items-center justify-center text-[11px] font-black">M</span>
+                      <span>Thông Tin Ví Điện Tử MoMo Shop</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <label className="font-bold text-gray-700 block mb-1">Số Điện Thoại MoMo:</label>
+                        <input
+                          type="text"
+                          placeholder="VD: 0398445122"
+                          value={settings.momoPhone || ''}
+                          onChange={(e) => setSettings({ ...settings, momoPhone: e.target.value })}
+                          className="w-full px-3 py-2 bg-white border border-pink-200 rounded-xl font-bold text-gray-800 focus:ring-2 focus:ring-pink-400 focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-gray-700 block mb-1">Tên Chủ Tài Khoản MoMo:</label>
+                        <input
+                          type="text"
+                          placeholder="VD: OMACHI HANDMADE STORE"
+                          value={settings.momoName || ''}
+                          onChange={(e) => setSettings({ ...settings, momoName: e.target.value })}
+                          className="w-full px-3 py-2 bg-white border border-pink-200 rounded-xl font-bold text-gray-800 focus:ring-2 focus:ring-pink-400 focus:outline-none uppercase"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cấu hình Ngân Hàng VietQR */}
+                  <div className="p-3.5 bg-white rounded-xl border border-sky-200 space-y-2.5">
+                    <div className="flex items-center gap-1.5 font-bold text-gray-800 text-xs">
+                      <CreditCard className="w-4 h-4 text-sky-600" />
+                      <span>Thông Tin Tài Khoản Ngân Hàng (VietQR)</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                      <div>
+                        <label className="font-bold text-gray-700 block mb-1">Ngân Hàng:</label>
+                        <select
+                          value={settings.bankId || 'MB'}
+                          onChange={(e) => setSettings({ ...settings, bankId: e.target.value })}
+                          className="w-full px-2.5 py-2 bg-white border border-sky-200 rounded-xl font-bold text-gray-800 focus:ring-2 focus:ring-sky-400 focus:outline-none text-xs"
+                        >
+                          <option value="MB">MBBank (Quân Đội)</option>
+                          <option value="VCB">Vietcombank</option>
+                          <option value="TCB">Techcombank</option>
+                          <option value="ACB">ACB</option>
+                          <option value="VPB">VPBank</option>
+                          <option value="TPB">TPBank</option>
+                          <option value="BIDV">BIDV</option>
+                          <option value="VIB">VIB</option>
+                          <option value="AGR">Agribank</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-gray-700 block mb-1">Số Tài Khoản:</label>
+                        <input
+                          type="text"
+                          placeholder="VD: 0398445122"
+                          value={settings.bankAccount || ''}
+                          onChange={(e) => setSettings({ ...settings, bankAccount: e.target.value })}
+                          className="w-full px-3 py-2 bg-white border border-sky-200 rounded-xl font-bold text-gray-800 focus:ring-2 focus:ring-sky-400 focus:outline-none font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-gray-700 block mb-1">Tên Chủ Tài Khoản:</label>
+                        <input
+                          type="text"
+                          placeholder="VD: OMACHI STORE"
+                          value={settings.bankOwner || ''}
+                          onChange={(e) => setSettings({ ...settings, bankOwner: e.target.value })}
+                          className="w-full px-3 py-2 bg-white border border-sky-200 rounded-xl font-bold text-gray-800 focus:ring-2 focus:ring-sky-400 focus:outline-none uppercase"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* BIG SAVE BUTTON AT BOTTOM */}
             <div className="pt-4 border-t border-pink-100 flex items-center justify-end">
               <button
                 type="submit"

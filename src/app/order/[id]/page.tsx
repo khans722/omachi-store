@@ -301,8 +301,124 @@ export default function OrderTrackingPage() {
             {order.customer.note && (
               <p><strong>Ghi chú:</strong> {order.customer.note}</p>
             )}
-            <p><strong>Hình thức:</strong> {order.paymentMethod === 'ZALO_CONFIRM' ? 'Chốt đơn & thanh toán qua Zalo' : 'COD (Tiền mặt)'}</p>
+            <div className="flex items-center justify-between pt-1 border-t border-gray-100">
+              <span className="text-gray-500">Hình thức thanh toán:</span>
+              <strong className="text-gray-800">
+                {order.paymentMethod === 'MOMO'
+                  ? '🟣 Ví MoMo'
+                  : order.paymentMethod === 'BANK'
+                  ? '💳 Chuyển khoản VietQR'
+                  : order.paymentMethod === 'COD'
+                  ? '💵 COD (Tiền mặt khi nhận)'
+                  : 'Zalo xác nhận'}
+              </strong>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-500">Trạng thái:</span>
+              <strong className={order.paymentStatus === 'PAID' ? 'text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md font-bold' : 'text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md font-bold'}>
+                {order.paymentStatus === 'PAID' ? '✓ Đã thanh toán' : '⏳ Chưa thanh toán'}
+              </strong>
+            </div>
           </div>
+
+          {/* MoMo QR Box if Unpaid and MOMO */}
+          {order.paymentStatus !== 'PAID' && order.paymentMethod === 'MOMO' && (
+            <div className="bg-white p-5 rounded-3xl border-2 border-[#A50064]/30 shadow-xs space-y-3 text-xs">
+              <div className="flex items-center gap-2 pb-2 border-b border-pink-100">
+                <div className="w-7 h-7 rounded-lg bg-[#A50064] text-white font-black flex items-center justify-center text-xs shrink-0">
+                  M
+                </div>
+                <div>
+                  <h4 className="font-black text-[#A50064] uppercase text-xs">Thanh Toán Ví MoMo</h4>
+                  <p className="text-[11px] text-gray-500">Quét mã QR hoặc chuyển tiền ví MoMo</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center bg-pink-50/50 p-3 rounded-2xl border border-pink-100 text-center space-y-2">
+                <img
+                  src={
+                    settings?.momoQrImage ||
+                    `https://api.qrserver.com/v1/create-qr-code/?size=250x250&margin=8&data=${encodeURIComponent(
+                      `2|99|${(settings?.momoPhone || '0398445122').replace(/[^0-9]/g, '')}|||0|0|${order.totalAmount}|DH ${order.code}|transfer_p2p`
+                    )}`
+                  }
+                  alt="Mã QR MoMo"
+                  className="w-40 h-40 object-contain rounded-xl bg-white p-1 border border-pink-200"
+                />
+                <a
+                  href={`momo://?action=transfer&phone=${(settings?.momoPhone || '0398445122').replace(/[^0-9]/g, '')}&amount=${order.totalAmount}&comment=${encodeURIComponent(`DH ${order.code}`)}`}
+                  className="w-full py-2 bg-[#A50064] hover:bg-[#880052] text-white font-bold rounded-xl text-center shadow-xs"
+                >
+                  ⚡ Mở App MoMo Để Chuyển
+                </a>
+              </div>
+
+              <div className="space-y-1.5 pt-1 text-[11px]">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500">SĐT MoMo:</span>
+                  <strong className="font-mono text-gray-900">{settings?.momoPhone || '0398445122'}</strong>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500">Chủ ví:</span>
+                  <strong className="text-gray-900">{settings?.momoName || 'OMACHI HANDMADE STORE'}</strong>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500">Số tiền:</span>
+                  <strong className="text-rose-600 font-bold">{formatVND(order.totalAmount)}</strong>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500">Nội dung:</span>
+                  <strong className="text-[#A50064] font-mono font-black bg-pink-50 px-1.5 py-0.5 rounded border border-pink-200">DH {order.code}</strong>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* VietQR Box if Unpaid and BANK */}
+          {order.paymentStatus !== 'PAID' && order.paymentMethod === 'BANK' && (
+            <div className="bg-white p-5 rounded-3xl border-2 border-blue-200 shadow-xs space-y-3 text-xs">
+              <div className="flex items-center gap-2 pb-2 border-b border-blue-100">
+                <div className="w-7 h-7 rounded-lg bg-blue-600 text-white font-black flex items-center justify-center text-xs shrink-0">
+                  QR
+                </div>
+                <div>
+                  <h4 className="font-black text-blue-700 uppercase text-xs">Chuyển Khoản VietQR</h4>
+                  <p className="text-[11px] text-gray-500">Quét mã bằng app ngân hàng bất kỳ</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center bg-blue-50/40 p-3 rounded-2xl border border-blue-100 text-center space-y-2">
+                <img
+                  src={`https://img.vietqr.io/image/${settings?.bankId || 'MB'}-${settings?.bankAccount || '0398445122'}-compact2.png?amount=${order.totalAmount}&addInfo=${encodeURIComponent(`DH ${order.code}`)}&accountName=${encodeURIComponent(settings?.bankOwner || 'OMACHI STORE')}`}
+                  alt="VietQR"
+                  className="w-48 h-auto object-contain rounded-xl bg-white p-1 border border-blue-200"
+                />
+              </div>
+
+              <div className="space-y-1.5 pt-1 text-[11px]">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500">Ngân hàng:</span>
+                  <strong className="text-gray-900">{settings?.bankId || 'MB Bank'}</strong>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500">Số tài khoản:</span>
+                  <strong className="font-mono text-gray-900">{settings?.bankAccount || '0398445122'}</strong>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500">Chủ tài khoản:</span>
+                  <strong className="text-gray-900">{settings?.bankOwner || 'OMACHI STORE'}</strong>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500">Số tiền:</span>
+                  <strong className="text-rose-600 font-bold">{formatVND(order.totalAmount)}</strong>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500">Nội dung:</span>
+                  <strong className="text-blue-700 font-mono font-black bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">DH {order.code}</strong>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Quick Contact Help */}
           <div className="bg-pink-50/70 p-4 rounded-3xl border border-pink-200 text-xs text-pink-900 space-y-2">

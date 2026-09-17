@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { calculateShippingFee } from '@/lib/utils';
 const READONLY_DB_FILE = path.join(process.cwd(), 'data', 'database.json');
 const IS_SERVERLESS = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
 const WRITABLE_DB_FILE = IS_SERVERLESS ? path.join('/tmp', 'database.json') : READONLY_DB_FILE;
@@ -162,7 +163,7 @@ export interface Order {
   totalWeight?: number; // Tổng cân nặng (gram)
   finalTotalAmount: number; // Tổng thanh toán = tiền hàng + ship
   totalAmount: number; // Tương thích các component cũ
-  paymentMethod: 'ZALO_CONFIRM' | 'COD' | 'BANK';
+  paymentMethod: 'ZALO_CONFIRM' | 'COD' | 'BANK' | 'MOMO';
   paymentStatus: PaymentStatus;
   orderStatus: OrderStatus;
   trackingNumber?: string; // Mã vận đơn giao hàng
@@ -226,6 +227,14 @@ export interface ShopSettings {
     label: string;
     badge?: string;
   }[];
+  prepaidFreeShipThreshold?: number; // Ngưỡng freeship khi thanh toán trước (Chuyển khoản / MoMo)
+  enablePrepaidFreeShip?: boolean;   // Bật/tắt chính sách freeship khi thanh toán trước
+  momoPhone?: string;               // Số điện thoại nhận MoMo
+  momoName?: string;                // Tên chủ ví MoMo
+  momoQrImage?: string;             // Ảnh QR MoMo riêng nếu upload
+  bankId?: string;                  // Tên / Mã ngân hàng (MB, VCB, TCB...)
+  bankAccount?: string;             // Số tài khoản ngân hàng
+  bankOwner?: string;               // Tên chủ tài khoản ngân hàng
 }
 
 export interface DetailedDatabaseSchema {
@@ -2098,7 +2107,7 @@ export const db = {
       discount?: number;
       totalAmount?: number;
       totalWeight?: number;
-      paymentMethod?: 'ZALO_CONFIRM' | 'COD' | 'BANK';
+      paymentMethod?: 'ZALO_CONFIRM' | 'COD' | 'BANK' | 'MOMO';
     }): Order {
       const dbData = readDb();
       if (!dbData.orders || !Array.isArray(dbData.orders)) {
@@ -2147,9 +2156,30 @@ export const db = {
       const discount = mappedItems.reduce((s, i) => s + i.savingsAmount, 0);
       // Tiền hàng thực tế sau khi giảm
       const itemsTotal = mappedItems.reduce((s, i) => s + i.totalPrice, 0);
-      // Phí vận chuyển SPX
-      const shipping = Number(orderInput.shippingFee || 0);
-      // Tổng thanh toán = Tiền hàng sau giảm + Phí ship
+
+      // Tính tổng cân nặng thực tế kiện hàng
+      const computedWeight = mappedItems.reduce((sum, item) => {
+        const prod = (orderInput.items || []).find((it: any) => (it.product?.id || it.productId) === item.productId)?.product;
+        const w = Number(prod?.weight || 50);
+        return sum + (w * item.quantity);
+      }, 0);
+      const totalWeight = Number(orderInput.totalWeight) > 0 ? Number(orderInput.totalWeight) : computedWeight;
+
+      // BẢO MẬT & KIỂM TRA CHÍNH SÁCH FREESHIP TỪ MÁY CHỦ (ANTI-TAMPERING):
+      const settings: any = dbData.settings || {};
+      const prepaidFreeShipThreshold = Number(settings.prepaidFreeShipThreshold) || 1000000;
+      const isPrepaid = orderInput.paymentMethod === 'BANK' || orderInput.paymentMethod === 'MOMO';
+      const isEligiblePrepaidFreeship = isPrepaid && itemsTotal >= prepaidFreeShipThreshold && settings.enablePrepaidFreeShip !== false;
+
+      let calculatedShippingFee = 0;
+      if (isEligiblePrepaidFreeship) {
+        calculatedShippingFee = 0; // Đủ điều kiện miễn phí vận chuyển khi thanh toán trước
+      } else {
+        const { shippingFee: spxFee } = calculateShippingFee(totalWeight, itemsTotal);
+        calculatedShippingFee = spxFee;
+      }
+
+      const shipping = calculatedShippingFee;
       const finalTotal = itemsTotal + shipping;
 
       const newOrder: Order = {
@@ -2168,10 +2198,10 @@ export const db = {
         comboDiscountAmount: discount,
         itemsTotalAmount: itemsTotal,
         shippingFee: shipping,
-        totalWeight: Number(orderInput.totalWeight) || 0,
+        totalWeight: totalWeight,
         finalTotalAmount: finalTotal,
         totalAmount: finalTotal,
-        paymentMethod: orderInput.paymentMethod || 'ZALO_CONFIRM',
+        paymentMethod: orderInput.paymentMethod || 'COD',
         paymentStatus: 'UNPAID',
         orderStatus: 'PENDING_CONFIRM',
         carrierName: (orderInput as any).carrierName || 'SPX Express',

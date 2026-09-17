@@ -148,7 +148,7 @@ export interface Order {
   totalAmount: number;
   totalWeight?: number; // Tổng cân nặng đơn hàng (đơn vị: gram)
   finalTotalAmount?: number;
-  paymentMethod: 'ZALO_CONFIRM' | 'COD' | 'BANK';
+  paymentMethod: 'ZALO_CONFIRM' | 'COD' | 'BANK' | 'MOMO';
   paymentStatus: PaymentStatus | 'UNPAID' | 'PAID';
   orderStatus: OrderStatus;
   trackingNumber?: string;
@@ -242,6 +242,14 @@ export interface ShopSettings {
     label: string;
     badge?: string;
   }[];
+  prepaidFreeShipThreshold?: number; // Ngưỡng freeship khi thanh toán trước (Chuyển khoản / MoMo)
+  enablePrepaidFreeShip?: boolean;   // Bật/tắt chính sách freeship khi thanh toán trước
+  momoPhone?: string;               // Số điện thoại nhận MoMo
+  momoName?: string;                // Tên chủ ví MoMo
+  momoQrImage?: string;             // Ảnh QR MoMo riêng nếu upload
+  bankId?: string;                  // Tên / Mã ngân hàng (MB, VCB, TCB...)
+  bankAccount?: string;             // Số tài khoản ngân hàng
+  bankOwner?: string;               // Tên chủ tài khoản ngân hàng
 }
 
 

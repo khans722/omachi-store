@@ -324,6 +324,19 @@ export default function OrderLookupPage() {
                             <span className={`w-2 h-2 rounded-full ${status.dot} animate-pulse`} />
                             <span>{status.label}</span>
                           </span>
+                          <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                            order.paymentMethod === 'MOMO'
+                              ? 'bg-pink-50 text-[#A50064] border-pink-200'
+                              : order.paymentMethod === 'BANK'
+                              ? 'bg-blue-50 text-blue-700 border-blue-200'
+                              : 'bg-stone-50 text-stone-700 border-stone-200'
+                          }`}>
+                            {order.paymentMethod === 'MOMO'
+                              ? '🟣 Ví MoMo'
+                              : order.paymentMethod === 'BANK'
+                              ? '💳 Chuyển khoản VietQR'
+                              : '💵 Thu tiền COD'}
+                          </span>
                         </div>
                         <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5" />
@@ -494,7 +507,11 @@ export default function OrderLookupPage() {
                               <span className="text-stone-800 text-xs sm:text-sm">Tổng thanh toán:</span>
                               <span className="text-[10px] sm:text-xs text-stone-400 block font-normal">
                                 {shippingFee > 0
-                                  ? (order.paymentMethod === 'COD' ? '(Đã gồm cước ship • Thu tiền mặt COD)' : '(Đã gồm cước ship)')
+                                  ? (order.paymentMethod === 'MOMO'
+                                      ? '(Đã gồm cước ship • Ví MoMo)'
+                                      : order.paymentMethod === 'BANK'
+                                      ? '(Đã gồm cước ship • VietQR)'
+                                      : '(Đã gồm cước ship • Thu tiền mặt COD)')
                                   : '(Đã miễn phí vận chuyển 0đ)'}
                               </span>
                             </div>
