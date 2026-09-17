@@ -76,7 +76,7 @@ export let productsStore: Product[] = [
         "id": "t1-50",
         "minQuantity": 50,
         "unitPrice": 2000,
-        "label": "Combo 50 pcs",
+        "label": "Mua từ 50 cái",
         "badge": "Mốc 50 cái",
         "discountPercent": 0
       },
@@ -84,7 +84,7 @@ export let productsStore: Product[] = [
         "id": "t1-100",
         "minQuantity": 100,
         "unitPrice": 1950,
-        "label": "Combo 100 pcs",
+        "label": "Mua từ 100 cái",
         "badge": "Hot Bán Chạy 🔥",
         "discountPercent": 3,
         "isPopular": true
@@ -93,7 +93,7 @@ export let productsStore: Product[] = [
         "id": "t1-200",
         "minQuantity": 200,
         "unitPrice": 1900,
-        "label": "Combo 200 pcs (Sỉ VIP)",
+        "label": "Mua từ 200 cái (Sỉ VIP)",
         "badge": "Sỉ VIP 💎",
         "discountPercent": 5
       },
@@ -101,7 +101,7 @@ export let productsStore: Product[] = [
         "id": "t1-500",
         "minQuantity": 500,
         "unitPrice": 1850,
-        "label": "Combo 500 pcs (Xưởng Charm)",
+        "label": "Mua từ 500 cái (Xưởng Charm)",
         "badge": "Cực Rẻ 👑",
         "discountPercent": 8
       }

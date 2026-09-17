@@ -1305,109 +1305,136 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Navigation Tabs - Clean Modern Responsive Strip */}
-      <div className="flex items-center gap-1.5 sm:gap-2 border-b border-pink-100 pb-2 overflow-x-auto no-scrollbar scroll-smooth">
-        <button
-          onClick={() => setActiveTab('orders')}
-          className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
-            activeTab === 'orders'
-              ? 'bg-rose-500 text-white shadow-xs'
-              : 'bg-white text-gray-600 hover:bg-pink-50 border border-pink-50 sm:border-0'
-          }`}
-        >
-          <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          <span className="hidden sm:inline">Quản Lý Đơn Hàng</span>
-          <span className="sm:hidden">Đơn hàng</span>
-          <span className="text-[10px] opacity-90">({orders.length})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('revenue')}
-          className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
-            activeTab === 'revenue'
-              ? 'bg-rose-500 text-white shadow-xs'
-              : 'bg-white text-gray-600 hover:bg-pink-50 border border-pink-50 sm:border-0'
-          }`}
-        >
-          <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          <span className="hidden sm:inline">Báo Cáo Doanh Thu</span>
-          <span className="sm:hidden">Doanh thu</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('products')}
-          className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
-            activeTab === 'products'
-              ? 'bg-rose-500 text-white shadow-xs'
-              : 'bg-white text-gray-600 hover:bg-pink-50 border border-pink-50 sm:border-0'
-          }`}
-        >
-          <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          <span className="hidden sm:inline">Cấu Hình &amp; Loại Sản Phẩm</span>
-          <span className="sm:hidden">Sản phẩm</span>
-          <span className="text-[10px] opacity-90">({products.length})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('inventory')}
-          className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
-            activeTab === 'inventory'
-              ? 'bg-rose-500 text-white shadow-xs'
-              : 'bg-white text-gray-600 hover:bg-pink-50 border border-pink-50 sm:border-0'
-          }`}
-        >
-          <Boxes className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          <span className="hidden sm:inline">Quản Lý Kho &amp; Nhập Hàng</span>
-          <span className="sm:hidden">Kho hàng</span>
-          {(lowStockProducts.length > 0 || outOfStockProducts.length > 0) && (
+      {/* Navigation Tabs - Smart Grouped Professional Bar */}
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 border-b border-pink-100/80 pb-3">
+        
+        {/* NHÓM 1: KINH DOANH & ĐƠN HÀNG */}
+        <div className="flex items-center p-1 bg-stone-100/90 rounded-2xl border border-stone-200/70 shadow-2xs">
+          <button
+            type="button"
+            onClick={() => setActiveTab('orders')}
+            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+              activeTab === 'orders'
+                ? 'bg-rose-500 text-white shadow-xs'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-white/70'
+            }`}
+          >
+            <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>Đơn Hàng</span>
             <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-              activeTab === 'inventory' ? 'bg-white text-rose-600' : 'bg-rose-500 text-white animate-pulse'
+              activeTab === 'orders' ? 'bg-white/20 text-white' : 'bg-stone-200 text-stone-700'
             }`}>
-              {outOfStockProducts.length > 0 ? `!${outOfStockProducts.length}` : `${lowStockProducts.length}`}
+              {orders.length}
             </span>
-          )}
-        </button>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('categories')}
-          className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
-            activeTab === 'categories'
-              ? 'bg-rose-500 text-white shadow-xs'
-              : 'bg-white text-gray-600 hover:bg-pink-50 border border-pink-50 sm:border-0'
-          }`}
-        >
-          <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          <span className="hidden sm:inline">Quản Lý Danh Mục</span>
-          <span className="sm:hidden">Danh mục</span>
-          <span className="text-[10px] opacity-90">({categories.length})</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('revenue')}
+            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+              activeTab === 'revenue'
+                ? 'bg-rose-500 text-white shadow-xs'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-white/70'
+            }`}
+          >
+            <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>Doanh Thu</span>
+          </button>
+        </div>
 
-        <button
-          onClick={() => setActiveTab('feedbacks')}
-          className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
-            activeTab === 'feedbacks'
-              ? 'bg-rose-500 text-white shadow-xs'
-              : 'bg-white text-gray-600 hover:bg-pink-50 border border-pink-50 sm:border-0'
-          }`}
-        >
-          <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          <span className="hidden sm:inline">Feedback &amp; Đánh Giá</span>
-          <span className="sm:hidden">Đánh giá</span>
-          <span className="text-[10px] opacity-90">({feedbacks.length})</span>
-        </button>
+        {/* NHÓM 2: SẢN PHẨM & KHO HÀNG */}
+        <div className="flex items-center p-1 bg-stone-100/90 rounded-2xl border border-stone-200/70 shadow-2xs">
+          <button
+            type="button"
+            onClick={() => setActiveTab('categories')}
+            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+              activeTab === 'categories'
+                ? 'bg-rose-500 text-white shadow-xs'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-white/70'
+            }`}
+          >
+            <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>Danh Mục</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+              activeTab === 'categories' ? 'bg-white/20 text-white' : 'bg-stone-200 text-stone-700'
+            }`}>
+              {categories.length}
+            </span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('settings')}
-          className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
-            activeTab === 'settings'
-              ? 'bg-rose-500 text-white shadow-xs'
-              : 'bg-white text-gray-600 hover:bg-pink-50 border border-pink-50 sm:border-0'
-          }`}
-        >
-          <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          <span className="hidden sm:inline">Cấu Hình Toàn Diện (IG, TikTok)</span>
-          <span className="sm:hidden">Cài đặt shop</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('products')}
+            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+              activeTab === 'products'
+                ? 'bg-rose-500 text-white shadow-xs'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-white/70'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>Sản Phẩm &amp; Giá Sỉ</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+              activeTab === 'products' ? 'bg-white/20 text-white' : 'bg-stone-200 text-stone-700'
+            }`}>
+              {products.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('inventory')}
+            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+              activeTab === 'inventory'
+                ? 'bg-rose-500 text-white shadow-xs'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-white/70'
+            }`}
+          >
+            <Boxes className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>Kho &amp; Nhập Hàng</span>
+            {(lowStockProducts.length > 0 || outOfStockProducts.length > 0) && (
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                activeTab === 'inventory' ? 'bg-white text-rose-600' : 'bg-rose-500 text-white animate-pulse'
+              }`}>
+                {outOfStockProducts.length > 0 ? `!${outOfStockProducts.length}` : `${lowStockProducts.length}`}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* NHÓM 3: KHÁCH HÀNG & CỬA HÀNG */}
+        <div className="flex items-center p-1 bg-stone-100/90 rounded-2xl border border-stone-200/70 shadow-2xs">
+          <button
+            type="button"
+            onClick={() => setActiveTab('feedbacks')}
+            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+              activeTab === 'feedbacks'
+                ? 'bg-rose-500 text-white shadow-xs'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-white/70'
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>Feedback</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+              activeTab === 'feedbacks' ? 'bg-white/20 text-white' : 'bg-stone-200 text-stone-700'
+            }`}>
+              {feedbacks.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('settings')}
+            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+              activeTab === 'settings'
+                ? 'bg-rose-500 text-white shadow-xs'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-white/70'
+            }`}
+          >
+            <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>Cài Đặt Shop</span>
+          </button>
+        </div>
+
       </div>
 
       {/* TAB 1: ORDERS MANAGEMENT */}
@@ -3075,9 +3102,6 @@ export default function AdminPage() {
                       <ImagePlus className="w-4 h-4 text-rose-500" />
                       <span>1. Bộ Sưu Tập Ảnh Banner Shop (Hero Slideshow Lookbook)</span>
                     </h4>
-                    <span className="text-[10px] font-bold text-rose-600 bg-pink-100 px-2.5 py-0.5 rounded-full">
-                      Tự Động Trình Chiếu Trang Chủ
-                    </span>
                   </div>
                   <p className="text-[11px] text-gray-500">
                     Bạn có thể tải lên <strong>nhiều ảnh</strong> cùng lúc. Website sẽ tự động trình chiếu luân phiên dạng slideshow hiệu ứng mượt mà và có thanh thumbnail bên dưới.
@@ -3441,9 +3465,6 @@ export default function AdminPage() {
                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       <span>5. Chính Sách Mua Hàng &amp; Cam Kết Của Tiệm</span>
                     </h4>
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                      Hiện Trang Chủ &amp; Chân Trang
-                    </span>
                   </div>
                   <p className="text-[11px] text-gray-500">
                     Các cam kết giúp khách hàng an tâm bấm mua (đồng kiểm, đổi trả, ảnh thật, đóng gói). Bạn có thể chỉnh sửa nội dung từng mốc dưới đây:
@@ -4172,7 +4193,7 @@ export default function AdminPage() {
                                   {
                                     minQuantity: lastMin,
                                     unitPrice: Math.round(base * 0.9),
-                                    label: `Mốc ${lastMin} cái`,
+                                    label: `Mua từ ${lastMin} cái`,
                                     badge: 'Sỉ',
                                   },
                                 ],
@@ -4194,15 +4215,22 @@ export default function AdminPage() {
                           (editingProduct.comboTiers || []).map((tier, idx) => (
                             <div key={idx} className="flex flex-wrap sm:flex-nowrap items-center gap-2 p-2 rounded-xl bg-stone-50 border border-stone-200/80">
                               <div className="w-24">
-                                <span className="text-[10px] text-stone-500 block">Từ số lượng:</span>
+                                <span className="text-[10px] text-stone-500 block font-medium">Từ số lượng:</span>
                                 <input
                                   type="number"
                                   min={1}
                                   step="any"
                                   value={tier.minQuantity}
                                   onChange={(e) => {
+                                    const newQty = Number(e.target.value);
                                     const newTiers = [...(editingProduct.comboTiers || [])];
-                                    newTiers[idx] = { ...newTiers[idx], minQuantity: Number(e.target.value) };
+                                    const curLabel = newTiers[idx].label || '';
+                                    const isAuto = !curLabel || curLabel.includes('pcs') || curLabel.includes('Combo') || curLabel.startsWith('Mốc ') || curLabel.startsWith('Mua từ ');
+                                    newTiers[idx] = {
+                                      ...newTiers[idx],
+                                      minQuantity: newQty,
+                                      label: isAuto ? `Mua từ ${newQty} cái` : curLabel
+                                    };
                                     setEditingProduct({ ...editingProduct, comboTiers: newTiers });
                                   }}
                                   className="w-full px-2 py-1 bg-white border border-stone-200 rounded-lg font-bold text-center text-xs"
@@ -4210,7 +4238,7 @@ export default function AdminPage() {
                               </div>
 
                               <div className="w-28">
-                                <span className="text-[10px] text-stone-500 block">Đơn giá sỉ:</span>
+                                <span className="text-[10px] text-stone-500 block font-medium">Đơn giá sỉ:</span>
                                 <input
                                   type="number"
                                   min={0}
@@ -4229,8 +4257,8 @@ export default function AdminPage() {
                                 />
                               </div>
 
-                              <div className="flex-1 min-w-[120px]">
-                                <span className="text-[10px] text-stone-500 block">Tên mốc hiển thị:</span>
+                              <div className="flex-1 min-w-[130px]">
+                                <span className="text-[10px] text-stone-500 block font-medium">Tên nút chọn sỉ (tùy chỉnh):</span>
                                 <input
                                   type="text"
                                   value={tier.label}
@@ -4239,8 +4267,8 @@ export default function AdminPage() {
                                     newTiers[idx] = { ...newTiers[idx], label: e.target.value };
                                     setEditingProduct({ ...editingProduct, comboTiers: newTiers });
                                   }}
-                                  placeholder="VD: Mốc 50 cái..."
-                                  className="w-full px-2.5 py-1 bg-white border border-stone-200 rounded-lg font-medium text-xs"
+                                  placeholder={`Tự động: Mua từ ${tier.minQuantity} cái`}
+                                  className="w-full px-2.5 py-1 bg-white border border-stone-200 rounded-lg font-medium text-xs text-stone-800"
                                 />
                               </div>
 
