@@ -1,15 +1,16 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { INITIAL_PRODUCTS } from '@/data/products';
-import { Product, ProductVariant, ProductPackageOption } from '@/types';
-import { formatVND } from '@/lib/utils';
+import { Product, ProductVariant } from '@/types';
+import { formatVND, calculateSmartUnitPrice } from '@/lib/utils';
 import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
 import { flyToCart } from '@/lib/flyToCart';
-import { ShoppingBag, Star, ArrowLeft, Plus, Minus, MessageCircle, Check, AlertCircle, ChevronRight } from 'lucide-react';
+import { ShoppingBag, Star, ArrowLeft, Plus, Minus, MessageCircle, Check, AlertCircle, ChevronRight, Zap } from 'lucide-react';
 import Link from 'next/link';
+import SmartPricingBar from '@/components/SmartPricingBar';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -21,29 +22,7 @@ export default function ProductDetailPage() {
   const initialFound = INITIAL_PRODUCTS.find((p) => p.id === productId || p.slug === productId);
   const [product, setProduct] = useState<Product | undefined>(initialFound);
 
-  // Linh động cấu hình packageOptions: 1 cái, 10 cái, 100 cái hoặc combo
-  const getPackageOptions = (prod: Product): ProductPackageOption[] => {
-    if (prod.packageOptions && prod.packageOptions.length > 0) {
-      return prod.packageOptions;
-    }
-    return [
-      { id: 'pkg-1', name: '1 cái', price: prod.basePrice },
-    ];
-  };
-
-  const getPackQuantity = (pkg?: ProductPackageOption): number => {
-    if (!pkg) return 1;
-    const match = pkg.name.match(/\d+/);
-    return match ? parseInt(match[0], 10) : 1;
-  };
-
-  const initialPackages = initialFound ? getPackageOptions(initialFound) : [];
-
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(undefined);
-  // Mặc định chọn sẵn gói 10 cái
-  const [selectedPackage, setSelectedPackage] = useState<ProductPackageOption>(
-    initialPackages[0] || { id: 'pkg-10', name: '10 cái', price: (initialFound?.basePrice || 2000) * 10 }
-  );
 
   const [variantError, setVariantError] = useState(false);
   const [warningToast, setWarningToast] = useState<string | null>(null);
@@ -85,11 +64,6 @@ export default function ProductDetailPage() {
             if (found.images && found.images[0]) {
               setSelectedImage(found.images[0]);
             }
-            const pkgs = getPackageOptions(found);
-            setSelectedPackage((prev) => {
-              if (prev && prev.id === 'pkg-100') return pkgs[1] || pkgs[0];
-              return pkgs[0];
-            });
           }
         }
       } catch (e) {
@@ -205,15 +179,17 @@ export default function ProductDetailPage() {
     );
   }
 
-  const packageOptions = getPackageOptions(product);
+  // 1688 Auto Tier Pricing Model (Đơn vị tính: 1 chiếc/cái)
+  const smartPricing = useMemo(() => {
+    if (!product) {
+      return { unitPrice: 0, itemsToNextTier: 0, savings: 0, discountPercent: 0 };
+    }
+    return calculateSmartUnitPrice(product.basePrice, quantity, product.comboTiers);
+  }, [product?.basePrice, quantity, product?.comboTiers]);
 
-  // Đơn giá cho 1 gói (10 cái hoặc 100 cái)
-  const unitPrice = selectedPackage?.price ?? (packageOptions[0]?.price || product.basePrice * 10);
+  const unitPrice = smartPricing.unitPrice;
   const totalPrice = unitPrice * quantity;
-
-  // Tính tổng số cái thực tế
-  const itemsPerPack = getPackQuantity(selectedPackage);
-  const totalItemCount = quantity * itemsPerPack;
+  const totalItemCount = quantity;
 
   const totalStockCount =
     product.variants && product.variants.length > 0
@@ -247,7 +223,7 @@ export default function ProductDetailPage() {
     const currentImg = selectedImage || selectedVariant?.image || selectedVariant?.imageUrl || product.images?.[0] || '/images/charm_feed_1.jpg';
     flyToCart(e?.currentTarget, currentImg);
 
-    addItem(product, quantity, selectedVariant, customNote, selectedPackage, false);
+    addItem(product, quantity, selectedVariant, customNote, undefined, false);
     setIsMobileSheetOpen(false);
     setIsAddedToast(true);
     setTimeout(() => setIsAddedToast(false), 2500);
@@ -256,7 +232,7 @@ export default function ProductDetailPage() {
   const handleBuyNow = () => {
     if (!validateSelection()) return;
 
-    buyNow(product, quantity, selectedVariant, customNote, selectedPackage);
+    buyNow(product, quantity, selectedVariant, customNote, undefined);
     setIsMobileSheetOpen(false);
     router.push('/checkout');
   };
@@ -375,16 +351,49 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          {/* Price Tag (Theme Styled) */}
-          <div className={`p-4 rounded-2xl border flex items-baseline gap-3 ${curr.priceBg}`}>
-            <span className={`text-2xl sm:text-3xl font-black ${curr.priceText}`}>{formatVND(unitPrice)}</span>
-            <span className="text-xs text-gray-500 font-bold">/gói {selectedPackage.name}</span>
-            <span className={`ml-auto text-xs font-bold px-2.5 py-1 rounded-full border ${curr.badgeQuyCach}`}>
-              Quy cách: {selectedPackage.name}
-            </span>
+          {/* Price Tag (Theme Styled) - 1688 Wholesale Standard */}
+          <div className={`p-4 rounded-2xl border ${curr.priceBg} space-y-2`}>
+            <div className="flex items-baseline justify-between flex-wrap gap-2">
+              <div className="flex items-baseline gap-2">
+                <span className={`text-2xl sm:text-3xl font-black ${curr.priceText}`}>{formatVND(unitPrice)}</span>
+                <span className="text-xs text-gray-500 font-bold">/chiếc (cái)</span>
+                {product.originalPrice && product.originalPrice > unitPrice && (
+                  <span className="text-xs text-gray-400 line-through">
+                    {formatVND(product.originalPrice)}
+                  </span>
+                )}
+              </div>
+
+              {smartPricing.appliedTier ? (
+                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs px-3 py-1 rounded-full font-extrabold shadow-sm animate-pulse">
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>Đã áp giá sỉ: {smartPricing.appliedTier.label}</span>
+                </span>
+              ) : (
+                <span className="text-xs font-bold text-gray-500 bg-white/80 px-2.5 py-1 rounded-full border border-gray-200">
+                  Giá bán lẻ (Mua nhiều tự động giảm)
+                </span>
+              )}
+            </div>
+
+            {smartPricing.savings > 0 && (
+              <div className="text-xs font-semibold text-emerald-700 bg-emerald-100/70 px-2.5 py-1 rounded-lg inline-flex items-center gap-1.5">
+                <span>🎉 Tiết kiệm <strong>{formatVND(smartPricing.savings)}</strong> khi mua số lượng {quantity} cái!</span>
+              </div>
+            )}
           </div>
 
-          {/* 📱 TRÊN MOBILE: Nút Shopee "Chọn Phân Loại / Quy Cách" (Click mở Bottom Sheet Drawer) */}
+          {/* 1688 Auto Tier Pricing Bar */}
+          {product.comboTiers && product.comboTiers.length > 0 && (
+            <SmartPricingBar
+              basePrice={product.basePrice}
+              quantity={quantity}
+              comboTiers={product.comboTiers}
+              onQuantityChange={(newQty) => setQuantity(newQty)}
+            />
+          )}
+
+          {/* 📱 TRÊN MOBILE: Nút Shopee "Chọn Phân Loại & Số Lượng" (Click mở Bottom Sheet Drawer) */}
           <button
             type="button"
             onClick={() => {
@@ -396,7 +405,7 @@ export default function ProductDetailPage() {
             <div className="flex items-center gap-2 text-xs text-left min-w-0">
               <span className="font-bold text-stone-500 shrink-0">Phân Loại:</span>
               <span className={`font-extrabold truncate ${curr.highlightText}`}>
-                {selectedVariant ? selectedVariant.name : 'Chọn Màu Sắc'}, {selectedPackage.name}
+                {selectedVariant ? selectedVariant.name : 'Chọn Màu Sắc'} • {quantity} cái
               </span>
             </div>
             <div className={`flex items-center gap-1 text-xs font-bold shrink-0 ${curr.highlightText}`}>
@@ -503,88 +512,68 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Desktop Option 2: Quy Cách (CHỈ 2 NÚT: 10 CÁI VÀ 100 CÁI) */}
-            <div className="p-4 rounded-2xl bg-stone-50/70 border border-stone-200/80">
-              <div className="flex items-start gap-4">
-                <span className="text-xs text-gray-500 font-bold min-w-[70px] pt-1.5">Quy Cách:</span>
-                <div className="flex-1 space-y-2">
-                  <div className="flex flex-wrap gap-2.5">
-                    {packageOptions.map((pkg) => {
-                      const isSelected = selectedPackage?.id === pkg.id;
-                      return (
-                        <button
-                          key={pkg.id}
-                          type="button"
-                          onClick={() => setSelectedPackage(pkg)}
-                          className={`relative px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 select-none overflow-hidden shadow-2xs ${
-                            isSelected
-                              ? curr.chipActive
-                              : curr.chipInactive
-                          }`}
-                        >
-                          <span className="text-sm">{pkg.name}</span>
-                          <span className={`text-[11px] font-semibold ${isSelected ? curr.highlightText : 'text-gray-400'}`}>
-                            ({formatVND(pkg.price || 0)})
-                          </span>
-
-                          {isSelected && (
-                            <div className="absolute bottom-0 right-0 w-3.5 h-3.5 overflow-hidden pointer-events-none">
-                              <div className={`absolute bottom-0 right-0 w-0 h-0 border-solid border-t-transparent border-l-transparent ${curr.triangleClass} border-b-[14px] border-r-[14px]`} />
-                              <svg
-                                className="absolute bottom-[1px] right-[1px] w-2 h-2 text-white"
-                                viewBox="0 0 12 12"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                              >
-                                <path d="M2 6l3 3 5-5" />
-                              </svg>
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <p className="text-[11px] text-gray-500 italic pt-1">
-                    * Vui lòng chọn quy cách đóng gói phù hợp với nhu cầu của bạn.
-                  </p>
+            {/* Desktop Quantity & 1688 Quick Tier Selector */}
+            <div className="p-4 rounded-2xl bg-stone-50/70 border border-stone-200/80 space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <span className="text-xs text-gray-700 font-bold">Số Lượng Mua:</span>
+                
+                {/* 1688 Quick Preset Quantity Buttons */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] text-gray-400 font-semibold">Chọn nhanh:</span>
+                  {[1, 10, 50, 100, 200].map((qtyPreset) => {
+                    const isSelected = quantity === qtyPreset;
+                    return (
+                      <button
+                        key={qtyPreset}
+                        type="button"
+                        onClick={() => setQuantity(qtyPreset)}
+                        className={`px-2.5 py-1 text-xs font-bold rounded-lg transition ${
+                          isSelected
+                            ? curr.chipActive
+                            : 'bg-white border border-stone-200 text-stone-700 hover:border-stone-400'
+                        }`}
+                      >
+                        {qtyPreset} cái
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
 
-            {/* Desktop Quantity Stepper */}
-            <div className="flex items-center gap-4 flex-wrap">
-              <span className="text-xs text-gray-500 font-bold min-w-[70px]">
-                {itemsPerPack > 1 ? 'Số Lượng Gói:' : 'Số Lượng:'}
-              </span>
-              <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white shadow-2xs">
-                <button
-                  type="button"
-                  disabled={quantity <= 1}
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className={`w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 ${curr.hoverTextColor} border-r border-gray-200 transition disabled:opacity-40`}
-                >
-                  <Minus className="w-3.5 h-3.5" />
-                </button>
-                <input
-                  type="number"
-                  min="1"
-                  value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-14 h-8 text-center text-xs font-black text-gray-800 focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => setQuantity(quantity + 1)}
-                  className={`w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 ${curr.hoverTextColor} border-l border-gray-200 transition`}
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white shadow-2xs">
+                  <button
+                    type="button"
+                    disabled={quantity <= 1}
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className={`w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-100 ${curr.hoverTextColor} border-r border-gray-200 transition disabled:opacity-40`}
+                  >
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    value={quantity}
+                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-16 h-9 text-center text-sm font-black text-gray-800 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(quantity + 1)}
+                    className={`w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-100 ${curr.hoverTextColor} border-l border-gray-200 transition`}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="text-xs font-bold text-gray-700 bg-white border border-stone-200 px-3 py-2 rounded-lg flex items-center gap-1.5">
+                  <span>Tổng cộng:</span>
+                  <strong className={`${curr.highlightText} font-black text-sm`}>{quantity.toLocaleString('vi-VN')}</strong>
+                  <span>cái</span>
+                  <span className="text-gray-400">•</span>
+                  <strong className="text-gray-900 font-extrabold">{formatVND(totalPrice)}</strong>
+                </div>
               </div>
-
-              <span className="text-xs font-bold text-gray-700 bg-gray-100 px-2.5 py-1 rounded-lg">
-                = Tổng cộng: <strong className={`${curr.highlightText} font-black`}>{totalItemCount.toLocaleString('vi-VN')}</strong> cái
-              </span>
             </div>
 
             {/* Custom Note */}
@@ -724,14 +713,17 @@ export default function ProductDetailPage() {
                 <img src={selectedImage} alt={product.name} className="w-full h-full object-cover object-center" />
               </div>
               <div className="flex-1 min-w-0 pr-8 pt-0.5">
-                <p className={`text-xl font-black leading-tight ${curr.priceText}`}>{formatVND(unitPrice)}</p>
+                <p className={`text-xl font-black leading-tight ${curr.priceText}`}>
+                  {formatVND(unitPrice)}
+                  <span className="text-xs font-normal text-gray-400 ml-1">/cái</span>
+                </p>
                 <p className="text-xs text-gray-500 mt-1">
                   Kho: <strong className="text-gray-800 font-bold">{maxAvailable.toLocaleString('vi-VN')}</strong>
                 </p>
                 <p className="text-xs text-gray-600 mt-1 truncate">
                   Đã chọn:{' '}
                   <span className={`font-bold ${curr.highlightText}`}>
-                    {[selectedVariant?.name, selectedPackage.name].filter(Boolean).join(' • ')}
+                    {[selectedVariant?.name, `${quantity} cái`].filter(Boolean).join(' • ')}
                   </span>
                 </p>
               </div>
@@ -820,62 +812,25 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* Group 2: Quy cách */}
-              <div className="space-y-2 pt-2 border-t border-gray-100">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-gray-700">Quy cách đóng gói:</h4>
-                  <span className="text-[10px] text-gray-400">
-                    {itemsPerPack > 1 ? `Gói ${itemsPerPack} cái` : 'Bán lẻ'}
-                  </span>
+              {/* 1688 Auto Tier Pricing Bar inside Mobile Drawer */}
+              {product.comboTiers && product.comboTiers.length > 0 && (
+                <div className="pt-2 border-t border-gray-100">
+                  <SmartPricingBar
+                    basePrice={product.basePrice}
+                    quantity={quantity}
+                    comboTiers={product.comboTiers}
+                    onQuantityChange={(newQty) => setQuantity(newQty)}
+                  />
                 </div>
-                <div className="flex flex-wrap gap-2.5">
-                  {packageOptions.map((pkg) => {
-                    const isSelected = selectedPackage?.id === pkg.id;
-                    return (
-                      <button
-                        key={pkg.id}
-                        type="button"
-                        onClick={() => setSelectedPackage(pkg)}
-                        className={`relative px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 select-none overflow-hidden transition ${
-                          isSelected
-                            ? curr.chipActive
-                            : curr.chipInactiveDrawer
-                        }`}
-                      >
-                        <span className="text-sm">{pkg.name}</span>
-                        <span className={`text-[11px] font-semibold ${isSelected ? curr.highlightText : 'text-gray-400'}`}>
-                          ({formatVND(pkg.price || 0)})
-                        </span>
+              )}
 
-                        {isSelected && (
-                          <div className="absolute bottom-0 right-0 w-3.5 h-3.5 overflow-hidden pointer-events-none">
-                            <div className={`absolute bottom-0 right-0 w-0 h-0 border-solid border-t-transparent border-l-transparent ${curr.triangleClass} border-b-[14px] border-r-[14px]`} />
-                            <svg
-                              className="absolute bottom-[1px] right-[1px] w-2 h-2 text-white"
-                              viewBox="0 0 12 12"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2.5"
-                            >
-                              <path d="M2 6l3 3 5-5" />
-                            </svg>
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Group 3: Số lượng */}
-              <div className="space-y-2 pt-2 border-t border-gray-100">
+              {/* Group 2: Số lượng mua & Mốc sỉ nhanh */}
+              <div className="space-y-2.5 pt-2 border-t border-gray-100">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold text-gray-700 block">
-                      {itemsPerPack > 1 ? 'Số lượng gói:' : 'Số lượng:'}
-                    </span>
+                    <span className="text-xs font-bold text-gray-700 block">Số lượng mua:</span>
                     <span className="text-[10px] text-gray-400">
-                      Tổng = <strong className={curr.highlightText}>{totalItemCount.toLocaleString('vi-VN')}</strong> cái
+                      Tạm tính: <strong className={curr.highlightText}>{formatVND(totalPrice)}</strong>
                     </span>
                   </div>
                   <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
@@ -902,6 +857,25 @@ export default function ProductDetailPage() {
                       <Plus className="w-3.5 h-3.5" />
                     </button>
                   </div>
+                </div>
+
+                {/* Quick preset buttons on Mobile */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] text-gray-400 font-semibold">Mốc sỉ nhanh:</span>
+                  {[1, 10, 50, 100, 200].map((qtyPreset) => (
+                    <button
+                      key={qtyPreset}
+                      type="button"
+                      onClick={() => setQuantity(qtyPreset)}
+                      className={`px-2.5 py-1 text-xs font-bold rounded-lg transition ${
+                        quantity === qtyPreset
+                          ? curr.chipActive
+                          : 'bg-stone-100 text-stone-700 active:bg-stone-200'
+                      }`}
+                    >
+                      {qtyPreset} cái
+                    </button>
+                  ))}
                 </div>
               </div>
 

@@ -241,10 +241,16 @@ export default function CartPage() {
                     {/* Bottom Row: Price on left, Stepper & Delete on right */}
                     <div className="mt-2 flex items-center justify-between gap-2">
                       {/* Unit Price */}
-                      <div className="flex items-baseline gap-1.5 min-w-0">
+                      <div className="flex items-baseline gap-1.5 min-w-0 flex-wrap">
                         <span className={`text-sm sm:text-base font-black ${curr.priceText}`}>
                           {formatVND(item.unitPrice)}
                         </span>
+                        <span className="text-[10px] text-stone-400 font-normal">/cái</span>
+                        {item.appliedTier && (
+                          <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">
+                            ⚡ {item.appliedTier.label}
+                          </span>
+                        )}
                         {item.product?.originalPrice && item.product.originalPrice > item.unitPrice && (
                           <span className="text-[10px] text-stone-400 line-through truncate hidden sm:inline">
                             {formatVND(item.product.originalPrice)}

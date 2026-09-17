@@ -324,9 +324,16 @@ export default function CartDrawer() {
                               <span className={`text-xs font-black ${curr.priceColor}`}>
                                 {formatVND(item.totalPrice)}
                               </span>
-                              <span className="block text-[10px] text-stone-400">
-                                {formatVND(item.unitPrice)}/cái
-                              </span>
+                              <div className="flex items-center gap-1 justify-end">
+                                <span className="block text-[10px] text-stone-400">
+                                  {formatVND(item.unitPrice)}/cái
+                                </span>
+                                {item.appliedTier && (
+                                  <span className="text-[8px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">
+                                    ⚡ Sỉ
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>

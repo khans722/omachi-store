@@ -638,12 +638,9 @@ export default function AdminPage() {
         { id: `v-${timestamp}-2`, name: 'Xanh Bơ Mint 🌿', colorHex: '#A7F3D0', stock: 50, soldCount: 0, isActive: true },
       ],
       comboTiers: [
-        { minQuantity: 50, unitPrice: 1500, label: 'Combo 50 pcs', badge: 'Tiết kiệm 25%' },
-        { minQuantity: 100, unitPrice: 1200, label: 'Combo 100 pcs', badge: 'Hot Bán Chạy' },
-        { minQuantity: 200, unitPrice: 1000, label: 'Combo 200 pcs (Sỉ)', badge: 'Sỉ VIP 50%' },
-      ],
-      packageOptions: [
-        { id: `pkg-${timestamp}-1`, name: '1 cái', price: 2000 },
+        { minQuantity: 10, unitPrice: 1800, label: 'Mốc 10 cái', badge: 'Sỉ nhẹ 10%' },
+        { minQuantity: 50, unitPrice: 1500, label: 'Mốc 50 cái', badge: 'Tiết kiệm 25%' },
+        { minQuantity: 100, unitPrice: 1200, label: 'Mốc 100 cái (Sỉ VIP)', badge: 'Hot Bán Chạy 🔥' },
       ],
     });
     setIsProductModalOpen(true);
@@ -654,9 +651,6 @@ export default function AdminPage() {
       ...prod,
       variants: prod.variants || [],
       comboTiers: prod.comboTiers || [],
-      packageOptions: prod.packageOptions && prod.packageOptions.length > 0 ? prod.packageOptions : [
-        { id: 'pkg-1', name: '1 cái', price: prod.basePrice || 2000 }
-      ],
     });
     setIsProductModalOpen(true);
   };
@@ -3387,157 +3381,6 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* SECTION 3b: PACKAGE OPTIONS / QUY CÁCH ĐÓNG GÓI & COMBO */}
-              <div className="space-y-3.5 p-4 rounded-2xl bg-white border border-pink-200">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div>
-                    <h4 className="font-extrabold text-gray-800 flex items-center gap-1.5 text-xs">
-                      <span>📦 3b. Cấu Hình Quy Cách Đóng Gói &amp; Combo Bán Hàng</span>
-                    </h4>
-                    <p className="text-[11px] text-gray-400 mt-0.5">
-                      Linh động cấu hình món bán lẻ (1 cái), bán sỉ (gói 10 cái, 100 cái) hoặc combo (Set 5 cái)
-                    </p>
-                  </div>
-                  
-                  {/* Preset Quick Buttons */}
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[10px] text-gray-400 font-semibold">Tạo nhanh:</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const base = Number(editingProduct.basePrice) || 20000;
-                        setEditingProduct({
-                          ...editingProduct,
-                          packageOptions: [
-                            { id: `pkg-${Date.now()}-1`, name: '1 cái', price: base },
-                          ],
-                        });
-                      }}
-                      className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition"
-                      title="Chỉ bán lẻ từng cái một"
-                    >
-                      ⚡ Bán lẻ (1 cái)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const base = Number(editingProduct.basePrice) || 2000;
-                        setEditingProduct({
-                          ...editingProduct,
-                          packageOptions: [
-                            { id: `pkg-${Date.now()}-10`, name: 'Gói 10 cái', price: base * 10 },
-                            { id: `pkg-${Date.now()}-100`, name: 'Gói 100 cái', price: Math.round(base * 100 * 0.8) },
-                          ],
-                        });
-                      }}
-                      className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition"
-                      title="Bán sỉ hạt hoặc charm theo gói 10 hoặc 100"
-                    >
-                      📦 Hạt/Charm (10 &amp; 100 cái)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const base = Number(editingProduct.basePrice) || 25000;
-                        setEditingProduct({
-                          ...editingProduct,
-                          packageOptions: [
-                            { id: `pkg-${Date.now()}-1`, name: '1 cái', price: base },
-                            { id: `pkg-${Date.now()}-5`, name: 'Set 5 cái', price: Math.round(base * 5 * 0.85) },
-                          ],
-                        });
-                      }}
-                      className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition"
-                      title="Bán phụ kiện lẻ và combo set 5"
-                    >
-                      🎀 Phụ kiện (1 cái &amp; Set 5)
-                    </button>
-                  </div>
-                </div>
-
-                {/* Package Options Rows */}
-                <div className="space-y-2 pt-1">
-                  {(editingProduct.packageOptions || []).length === 0 ? (
-                    <div className="p-3 text-center rounded-xl bg-gray-50 border border-dashed border-gray-200 text-xs text-gray-500">
-                      Chưa cấu hình quy cách. Mặc định sẽ bán lẻ 1 cái theo giá niêm yết ({formatVND(editingProduct.basePrice || 0)}).
-                    </div>
-                  ) : (
-                    (editingProduct.packageOptions || []).map((pkg, pIdx) => (
-                      <div
-                        key={pkg.id || pIdx}
-                        className="p-2.5 rounded-xl bg-gray-50/80 border border-gray-200/80 flex items-center gap-3 text-xs"
-                      >
-                        <span className="w-5 h-5 rounded-full bg-pink-100 text-pink-700 font-extrabold flex items-center justify-center text-[10px] shrink-0">
-                          {pIdx + 1}
-                        </span>
-
-                        <div className="flex-1 min-w-[120px]">
-                          <label className="text-[10px] text-gray-400 font-bold block mb-0.5">Tên quy cách</label>
-                          <input
-                            type="text"
-                            value={pkg.name || ''}
-                            placeholder="VD: 1 cái, Gói 10 cái, Set 5 cái..."
-                            onChange={(e) => {
-                              const newPkgs = [...(editingProduct.packageOptions || [])];
-                              newPkgs[pIdx] = { ...newPkgs[pIdx], name: e.target.value };
-                              setEditingProduct({ ...editingProduct, packageOptions: newPkgs });
-                            }}
-                            className="w-full px-2.5 py-1.5 bg-white border border-pink-200 rounded-lg font-bold text-gray-800"
-                          />
-                        </div>
-
-                        <div className="w-36">
-                          <label className="text-[10px] text-gray-400 font-bold block mb-0.5">Giá bán quy cách (đ)</label>
-                          <input
-                            type="number"
-                            min={0}
-                            step={500}
-                            value={pkg.price ?? 0}
-                            onChange={(e) => {
-                              const newPkgs = [...(editingProduct.packageOptions || [])];
-                              newPkgs[pIdx] = { ...newPkgs[pIdx], price: Number(e.target.value) };
-                              setEditingProduct({ ...editingProduct, packageOptions: newPkgs });
-                            }}
-                            className="w-full px-2.5 py-1.5 bg-white border border-pink-200 rounded-lg font-bold text-emerald-700 text-right"
-                          />
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newPkgs = (editingProduct.packageOptions || []).filter((_, i) => i !== pIdx);
-                            setEditingProduct({ ...editingProduct, packageOptions: newPkgs });
-                          }}
-                          className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 transition shrink-0 mt-3.5"
-                          title="Xóa quy cách này"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const currentPkgs = editingProduct.packageOptions || [];
-                      const nextId = `pkg-${Date.now()}-${currentPkgs.length + 1}`;
-                      setEditingProduct({
-                        ...editingProduct,
-                        packageOptions: [
-                          ...currentPkgs,
-                          { id: nextId, name: currentPkgs.length === 0 ? '1 cái' : `Gói ${currentPkgs.length * 5} cái`, price: (editingProduct.basePrice || 2000) * (currentPkgs.length === 0 ? 1 : 5) },
-                        ],
-                      });
-                    }}
-                    className="w-full py-2 border-2 border-dashed border-pink-300 rounded-xl text-xs font-bold text-pink-600 hover:bg-pink-50 transition flex items-center justify-center gap-1.5"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Thêm quy cách / combo mới</span>
-                  </button>
-                </div>
-              </div>
-
               {/* SECTION 4: IMAGES & DESCRIPTION */}
               <div className="space-y-3.5 p-4 rounded-2xl bg-white border border-pink-200">
                 <h4 className="font-extrabold text-gray-800 flex items-center gap-1.5 text-xs">
@@ -3690,33 +3533,76 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* SECTION 5: COMBO TIERS */}
-              <div className="space-y-3 p-4 rounded-2xl bg-pink-50/20 border border-pink-200">
-                <div className="flex items-center justify-between">
+              {/* SECTION 4: BẢNG GIÁ SỈ BẬC THANG CHUẨN 1688 */}
+              <div className="space-y-3.5 p-4 rounded-2xl bg-gradient-to-r from-pink-50/50 via-rose-50/30 to-amber-50/20 border border-pink-200">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
                     <h4 className="font-extrabold text-gray-800 flex items-center gap-1.5 text-xs">
                       <Tag className="w-4 h-4 text-rose-500" />
-                      <span>5. Mốc Combo &amp; Bán Sỉ Tự Động</span>
+                      <span>4. Bảng Mốc Giá Sỉ Bậc Thang (Chuẩn Sàn 1688 / Taobao)</span>
                     </h4>
-                    <p className="text-[10px] text-gray-400">Khách mua chạm mốc số lượng này sẽ tự động được áp dụng đơn giá ưu đãi</p>
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      Khách mua số lượng chạm mốc nào sẽ tự động nhận đơn giá sỉ mốc đó • Không lo bị giảm giá kép
+                    </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const currentTiers = editingProduct.comboTiers || [];
-                      setEditingProduct({
-                        ...editingProduct,
-                        comboTiers: [
-                          ...currentTiers,
-                          { minQuantity: 50, unitPrice: Math.round((editingProduct.basePrice || 2000) * 0.8), label: 'Combo Mới', badge: 'Giảm 20%' }
-                        ]
-                      });
-                    }}
-                    className="px-2.5 py-1 rounded-xl bg-pink-100 hover:bg-pink-200 text-pink-700 font-bold text-[11px] transition flex items-center gap-1"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>+ Thêm mốc</span>
-                  </button>
+                  
+                  {/* Preset Buttons for 1688 Wholesale */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] text-gray-400 font-semibold">Tạo nhanh:</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const base = Number(editingProduct.basePrice) || 2000;
+                        setEditingProduct({
+                          ...editingProduct,
+                          comboTiers: [
+                            { minQuantity: 10, unitPrice: Math.round(base * 0.9), label: 'Mốc 10 cái', badge: 'Sỉ nhẹ 10%' },
+                            { minQuantity: 50, unitPrice: Math.round(base * 0.75), label: 'Mốc 50 cái', badge: 'Tiết kiệm 25%' },
+                            { minQuantity: 100, unitPrice: Math.round(base * 0.6), label: 'Mốc 100 cái (Sỉ VIP)', badge: 'Hot Bán Chạy 🔥' },
+                          ],
+                        });
+                      }}
+                      className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition"
+                      title="Áp dụng 3 mốc sỉ phổ biến 10, 50, 100 cái"
+                    >
+                      ⚡ Mẫu 1688 (10, 50, 100)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const base = Number(editingProduct.basePrice) || 2000;
+                        setEditingProduct({
+                          ...editingProduct,
+                          comboTiers: [
+                            { minQuantity: 50, unitPrice: Math.round(base * 0.75), label: 'Mốc 50 cái', badge: 'Tiết kiệm 25%' },
+                            { minQuantity: 100, unitPrice: Math.round(base * 0.6), label: 'Mốc 100 cái', badge: 'Sỉ VIP 🔥' },
+                            { minQuantity: 200, unitPrice: Math.round(base * 0.5), label: 'Mốc 200 cái (Xưởng)', badge: 'Sỉ Tận Gốc 50%' },
+                          ],
+                        });
+                      }}
+                      className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition"
+                      title="Áp dụng mốc sỉ số lượng lớn"
+                    >
+                      💎 Sỉ lớn (50, 100, 200)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentTiers = editingProduct.comboTiers || [];
+                        setEditingProduct({
+                          ...editingProduct,
+                          comboTiers: [
+                            ...currentTiers,
+                            { minQuantity: (currentTiers.length + 1) * 50, unitPrice: Math.round((editingProduct.basePrice || 2000) * 0.8), label: `Mốc ${(currentTiers.length + 1) * 50} cái`, badge: 'Giá Sỉ' }
+                          ]
+                        });
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-pink-100 hover:bg-pink-200 text-pink-700 font-bold text-[11px] transition flex items-center gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>+ Thêm mốc</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-2 max-h-44 overflow-y-auto">

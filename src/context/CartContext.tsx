@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { CartItem, Product, ProductVariant, ProductPackageOption } from '@/types';
+import { calculateSmartUnitPrice } from '@/lib/utils';
 
 interface CartContextType {
   items: CartItem[];
@@ -94,8 +95,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         newQuantity = prevItems[existingIndex].quantity + quantity;
       }
 
-      // Clear, straightforward unit price: packageOption price > variant price > product basePrice
-      const unitPrice = packageOption?.price ?? variant?.price ?? product.basePrice;
+      // 1688 Wholesale Auto-Tier Pricing:
+      let unitPrice = packageOption?.price ?? variant?.price ?? product.basePrice;
+      let appliedTier = undefined;
+
+      if (product.comboTiers && product.comboTiers.length > 0) {
+        const smart = calculateSmartUnitPrice(product.basePrice, newQuantity, product.comboTiers);
+        unitPrice = smart.unitPrice;
+        appliedTier = smart.appliedTier;
+      }
 
       const updatedItem: CartItem = {
         id: cartItemId,
@@ -105,6 +113,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         customNote: customNote || (existingIndex > -1 ? prevItems[existingIndex].customNote : undefined),
         quantity: newQuantity,
         unitPrice,
+        appliedTier,
         totalPrice: unitPrice * newQuantity,
         selected: true, // Auto selected when added
       };
@@ -131,12 +140,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     packageOption?: ProductPackageOption
   ) => {
     const targetId = `${product.id}-${variant?.id || 'default'}-${packageOption?.id || 'standard'}`;
-    const unitPrice = packageOption?.price ?? variant?.price ?? product.basePrice;
 
     setItems((prevItems) => {
       // Chuẩn Shopee: Bỏ chọn các món khác trong giỏ, chỉ tick chọn món bấm Mua Ngay để thanh toán
       const unselectedOthers: CartItem[] = prevItems.map((it) => ({ ...it, selected: false }));
       const existingIndex = unselectedOthers.findIndex((item) => item.id === targetId);
+      const totalQty = existingIndex > -1 ? unselectedOthers[existingIndex].quantity + quantity : quantity;
+
+      // 1688 Wholesale Auto-Tier Pricing:
+      let unitPrice = packageOption?.price ?? variant?.price ?? product.basePrice;
+      let appliedTier = undefined;
+
+      if (product.comboTiers && product.comboTiers.length > 0) {
+        const smart = calculateSmartUnitPrice(product.basePrice, totalQty, product.comboTiers);
+        unitPrice = smart.unitPrice;
+        appliedTier = smart.appliedTier;
+      }
 
       const targetItem: CartItem = {
         id: targetId,
@@ -144,9 +163,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         selectedVariant: variant,
         selectedPackage: packageOption,
         customNote,
-        quantity: existingIndex > -1 ? unselectedOthers[existingIndex].quantity + quantity : quantity,
+        quantity: totalQty,
         unitPrice,
-        totalPrice: unitPrice * (existingIndex > -1 ? unselectedOthers[existingIndex].quantity + quantity : quantity),
+        appliedTier,
+        totalPrice: unitPrice * totalQty,
         selected: true,
       };
 
@@ -170,10 +190,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems((prevItems) =>
       prevItems.map((item) => {
         if (item.id === cartItemId) {
+          // 1688 Wholesale Auto-Tier Pricing:
+          let unitPrice = item.selectedPackage?.price ?? item.selectedVariant?.price ?? item.product.basePrice;
+          let appliedTier = item.appliedTier;
+
+          if (item.product.comboTiers && item.product.comboTiers.length > 0) {
+            const smart = calculateSmartUnitPrice(item.product.basePrice, newQuantity, item.product.comboTiers);
+            unitPrice = smart.unitPrice;
+            appliedTier = smart.appliedTier;
+          }
+
           return {
             ...item,
             quantity: newQuantity,
-            totalPrice: item.unitPrice * newQuantity,
+            unitPrice,
+            appliedTier,
+            totalPrice: unitPrice * newQuantity,
           };
         }
         return item;

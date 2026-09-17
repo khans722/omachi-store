@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Product, ProductVariant, ProductPackageOption } from '@/types';
-import { formatVND } from '@/lib/utils';
+import { Product, ProductVariant } from '@/types';
+import { formatVND, calculateSmartUnitPrice } from '@/lib/utils';
 import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
 import { flyToCart } from '@/lib/flyToCart';
@@ -22,21 +22,8 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
   const { theme } = useTheme();
   const previewImgRef = useRef<HTMLImageElement>(null);
 
-  // Helper to extract package options
-  const getPackageOptions = (prod: Product): ProductPackageOption[] => {
-    if (prod.packageOptions && prod.packageOptions.length > 0) {
-      return prod.packageOptions;
-    }
-    return [{ id: 'pkg-1', name: '1 cái', price: prod.basePrice }];
-  };
-
-  const packageOptions = getPackageOptions(product);
-
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(
     product.variants && product.variants.length > 0 ? product.variants[0] : undefined
-  );
-  const [selectedPackage, setSelectedPackage] = useState<ProductPackageOption | undefined>(
-    packageOptions[0]
   );
   const [quantity, setQuantity] = useState(1);
   const [errorMsg, setErrorMsg] = useState('');
@@ -45,24 +32,18 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
   useEffect(() => {
     if (isOpen) {
       setSelectedVariant(product.variants && product.variants.length > 0 ? product.variants[0] : undefined);
-      setSelectedPackage(packageOptions[0]);
       setQuantity(1);
       setErrorMsg('');
     }
   }, [isOpen, product]);
 
+  const smartPricing = useMemo(() => {
+    return calculateSmartUnitPrice(product.basePrice, quantity, product.comboTiers);
+  }, [product.basePrice, quantity, product.comboTiers]);
+
   if (!isOpen) return null;
 
-  // Extract count per pack
-  const getPackQuantity = (pkg?: ProductPackageOption): number => {
-    if (!pkg) return 1;
-    if ((pkg as any).quantity) return (pkg as any).quantity;
-    const match = pkg.name.match(/\d+/);
-    return match ? parseInt(match[0], 10) : 1;
-  };
-
-  const packQuantity = getPackQuantity(selectedPackage);
-  const unitPrice = selectedPackage?.price ?? selectedVariant?.price ?? product.basePrice;
+  const unitPrice = selectedVariant?.price ?? smartPricing.unitPrice;
   const totalPrice = unitPrice * quantity;
 
   // Stock calculations
@@ -122,7 +103,7 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
     // Hiệu ứng ảnh sản phẩm bay uốn lượn vào giỏ hàng
     flyToCart(previewImgRef.current || (e?.currentTarget as HTMLElement), displayImage);
 
-    addItem(product, quantity, selectedVariant, undefined, selectedPackage, false);
+    addItem(product, quantity, selectedVariant, undefined, undefined, false);
     onClose();
   };
 
@@ -136,7 +117,7 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
       return;
     }
     // Chuẩn Shopee: Bỏ chọn các món khác trong giỏ, chỉ mua đúng món này và đi tới checkout
-    buyNow(product, quantity, selectedVariant, undefined, selectedPackage);
+    buyNow(product, quantity, selectedVariant, undefined, undefined);
     onClose();
     router.push('/checkout');
   };
@@ -174,14 +155,15 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
               {product.name}
             </h4>
 
-            {/* Dynamic Price */}
-            <div className="mt-1 flex items-baseline gap-2">
+            {/* Dynamic Price (1688 wholesale) */}
+            <div className="mt-1 flex items-baseline gap-2 flex-wrap">
               <span className={`text-base sm:text-xl font-black ${style.priceText}`}>
                 {formatVND(unitPrice)}
               </span>
-              {selectedPackage && (
-                <span className="text-[10px] sm:text-xs text-stone-500 font-medium">
-                  / {selectedPackage.name}
+              <span className="text-[10px] sm:text-xs text-stone-500 font-medium">/cái</span>
+              {smartPricing.appliedTier && (
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">
+                  ⚡ {smartPricing.appliedTier.label}
                 </span>
               )}
             </div>
@@ -263,41 +245,47 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
             </div>
           )}
 
-          {/* 2. Package Options / Quy cách đóng gói */}
-          {packageOptions.length > 0 && (
+          {/* 2. 1688 Wholesale Tier Buttons */}
+          {product.comboTiers && product.comboTiers.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-stone-700 uppercase tracking-wider">
-                  Quy cách / Đóng gói
+                  Mốc Giá Sỉ Bậc Thang (1688)
                 </span>
-                {selectedPackage && (
-                  <span className="text-xs font-semibold text-stone-500">
-                    {packQuantity > 1 ? `Gói ${packQuantity} cái` : 'Bán lẻ'}
-                  </span>
-                )}
+                <span className="text-[10px] text-stone-400">
+                  {smartPricing.appliedTier ? `Đã áp dụng: ${smartPricing.appliedTier.label}` : 'Mua nhiều tự động giảm'}
+                </span>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                {packageOptions.map((pkg) => {
-                  const isSelected = selectedPackage?.id === pkg.id;
+              <div className="grid grid-cols-3 gap-2">
+                {product.comboTiers.map((tier) => {
+                  const isActive = quantity >= tier.minQuantity;
+                  const savingsPerUnit = Math.max(0, product.basePrice - tier.unitPrice);
+                  const discountPercent = product.basePrice > 0 ? Math.round((savingsPerUnit / product.basePrice) * 100) : 0;
+
                   return (
                     <button
-                      key={pkg.id}
-                      onClick={() => {
-                        setSelectedPackage(pkg);
-                        setErrorMsg(null);
-                      }}
-                      className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-between gap-3 border ${
-                        isSelected
-                          ? `${style.activeRing} ring-2 ring-offset-1`
-                          : 'border-stone-200 bg-stone-50/60 hover:bg-stone-100 text-stone-700'
+                      key={tier.minQuantity}
+                      type="button"
+                      onClick={() => setQuantity(tier.minQuantity)}
+                      className={`p-2 rounded-xl text-left transition flex flex-col justify-between border cursor-pointer ${
+                        isActive
+                          ? `${style.activeRing} ring-2 ring-offset-1 font-bold shadow-xs`
+                          : 'border-stone-200 bg-stone-50/70 hover:bg-stone-100 text-stone-700'
                       }`}
                     >
-                      <span>{pkg.name}</span>
-                      <span className="text-[11px] font-black opacity-80">
-                        {formatVND(pkg.price ?? product.basePrice)}
-                      </span>
-                      {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
+                      <div className="flex items-center justify-between w-full">
+                        <span className="text-[11px] font-extrabold truncate">{tier.label}</span>
+                        {discountPercent > 0 && (
+                          <span className="text-[9px] font-black text-rose-600 bg-rose-50 px-1 rounded">
+                            -{discountPercent}%
+                          </span>
+                        )}
+                      </div>
+                      <p className={`text-xs font-black mt-1 ${style.priceText}`}>
+                        {formatVND(tier.unitPrice)}
+                        <span className="text-[9px] font-normal text-stone-400">/c</span>
+                      </p>
                     </button>
                   );
                 })}
@@ -306,50 +294,67 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
           )}
 
           {/* 3. Quantity Stepper */}
-          <div className="pt-2 border-t border-stone-100 flex items-center justify-between">
-            <div>
-              <div className="text-xs font-bold text-stone-700 uppercase tracking-wider">
-                {packQuantity > 1 ? 'Số lượng gói' : 'Số lượng'}
+          <div className="pt-2 border-t border-stone-100 space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs font-bold text-stone-700 uppercase tracking-wider">
+                  Số lượng mua
+                </div>
+                <div className="text-[11px] text-stone-400 mt-0.5">
+                  Tổng: <strong className="text-stone-700 font-bold">{quantity} cái</strong>
+                </div>
               </div>
-              <div className="text-[11px] text-stone-400 mt-0.5">
-                {packQuantity > 1 ? (
-                  <span>= Tổng: <strong className="text-stone-700 font-bold">{quantity * packQuantity} cái</strong></span>
-                ) : (
-                  <span>Tổng: <strong className="text-stone-700 font-bold">{quantity} cái</strong></span>
-                )}
+
+              <div className="flex items-center gap-1.5 bg-stone-100 p-1 rounded-xl border border-stone-200">
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  disabled={quantity <= 1}
+                  className="w-8 h-8 rounded-lg bg-white text-stone-700 font-extrabold flex items-center justify-center hover:bg-stone-50 active:scale-95 disabled:opacity-40 disabled:hover:bg-white shadow-2xs text-base transition"
+                >
+                  -
+                </button>
+                <input
+                  type="number"
+                  min={1}
+                  max={availableStock}
+                  value={quantity}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    if (!isNaN(val) && val >= 1) {
+                      setQuantity(Math.min(val, availableStock || 999));
+                    }
+                  }}
+                  className="w-12 text-center text-xs font-black bg-transparent text-stone-800 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => Math.min(availableStock || 999, q + 1))}
+                  disabled={quantity >= availableStock}
+                  className="w-8 h-8 rounded-lg bg-white text-stone-700 font-extrabold flex items-center justify-center hover:bg-stone-50 active:scale-95 disabled:opacity-40 disabled:hover:bg-white shadow-2xs text-base transition"
+                >
+                  +
+                </button>
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 bg-stone-100 p-1 rounded-xl border border-stone-200">
-              <button
-                type="button"
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                disabled={quantity <= 1}
-                className="w-8 h-8 rounded-lg bg-white text-stone-700 font-extrabold flex items-center justify-center hover:bg-stone-50 active:scale-95 disabled:opacity-40 disabled:hover:bg-white shadow-2xs text-base transition"
-              >
-                -
-              </button>
-              <input
-                type="number"
-                min={1}
-                max={availableStock}
-                value={quantity}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value, 10);
-                  if (!isNaN(val) && val >= 1) {
-                    setQuantity(Math.min(val, availableStock || 999));
-                  }
-                }}
-                className="w-12 text-center text-xs font-black bg-transparent text-stone-800 focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={() => setQuantity((q) => Math.min(availableStock || 999, q + 1))}
-                disabled={quantity >= availableStock}
-                className="w-8 h-8 rounded-lg bg-white text-stone-700 font-extrabold flex items-center justify-center hover:bg-stone-50 active:scale-95 disabled:opacity-40 disabled:hover:bg-white shadow-2xs text-base transition"
-              >
-                +
-              </button>
+            {/* Quick Presets */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] text-stone-400 font-semibold">Chọn nhanh:</span>
+              {[1, 10, 50, 100, 200].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setQuantity(preset)}
+                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer ${
+                    quantity === preset
+                      ? `${style.activeBadge}`
+                      : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                  }`}
+                >
+                  {preset} cái
+                </button>
+              ))}
             </div>
           </div>
         </div>

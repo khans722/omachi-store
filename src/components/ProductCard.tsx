@@ -138,11 +138,17 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
                 {formatVND(product.basePrice)}
                 <span className="text-[10px] text-stone-400 font-normal ml-0.5">/cái</span>
               </div>
-              {product.originalPrice && product.originalPrice > product.basePrice ? (
-                <div className="text-[10px] text-stone-400 line-through leading-tight">
-                  {formatVND(product.originalPrice)}
-                </div>
-              ) : null}
+              <div className="flex items-center gap-1">
+                {product.comboTiers && product.comboTiers.length > 0 ? (
+                  <span className="text-[10px] text-emerald-700 font-bold">
+                    ⚡ Sỉ từ {formatVND(Math.min(...product.comboTiers.map((t) => t.unitPrice)))}
+                  </span>
+                ) : product.originalPrice && product.originalPrice > product.basePrice ? (
+                  <span className="text-[10px] text-stone-400 line-through leading-tight">
+                    {formatVND(product.originalPrice)}
+                  </span>
+                ) : null}
+              </div>
             </div>
 
             <button
