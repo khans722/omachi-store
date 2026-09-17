@@ -345,7 +345,7 @@ export default function CheckoutPage() {
   const wardRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!selectedProvince.trim() || !selectedDistrict.trim()) {
+    if (!selectedProvince.trim()) {
       setCurrentWards([]);
       return;
     }
@@ -353,7 +353,8 @@ export default function CheckoutPage() {
     let isMounted = true;
     setIsLoadingWards(true);
 
-    fetch(`/api/address/wards?province=${encodeURIComponent(selectedProvince)}&district=${encodeURIComponent(selectedDistrict)}`)
+    const distQuery = selectedDistrict.trim() ? `&district=${encodeURIComponent(selectedDistrict)}` : '';
+    fetch(`/api/address/wards?province=${encodeURIComponent(selectedProvince)}${distQuery}`)
       .then((r) => r.json())
       .then((res) => {
         if (isMounted && res.success && Array.isArray(res.data)) {
@@ -374,12 +375,12 @@ export default function CheckoutPage() {
   // Payment method selection (Shopee style)
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BANK'>('COD');
 
-  // Address edit toggle: auto-expand if any required field is missing
+  // Address edit toggle: auto-expand if any required field is missing (2 cấp: Tỉnh/TP và Phường/Xã)
   const isAddressComplete = Boolean(
     customer.fullName.trim() &&
     customer.phone.trim() &&
     selectedProvince.trim() &&
-    selectedDistrict.trim() &&
+    selectedWard.trim() &&
     specificAddress.trim()
   );
   const [isEditingAddress, setIsEditingAddress] = useState(!isAddressComplete);
@@ -395,7 +396,6 @@ export default function CheckoutPage() {
   const fullNameRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
   const provinceRef = useRef<any>(null);
-  const districtRef = useRef<any>(null);
   const addressRef = useRef<HTMLInputElement>(null);
   const addressSectionRef = useRef<HTMLDivElement>(null);
 
@@ -403,6 +403,7 @@ export default function CheckoutPage() {
     fullName?: string;
     phone?: string;
     province?: string;
+    ward?: string;
     district?: string;
     specificAddress?: string;
   }>({});
@@ -465,10 +466,10 @@ export default function CheckoutPage() {
   }, [selectedProvince, errorMessage]);
 
   useEffect(() => {
-    if (selectedDistrict.trim() && errorMessage.includes('Quận / Huyện')) {
+    if (selectedWard.trim() && errorMessage.includes('Phường / Xã')) {
       setErrorMessage('');
     }
-  }, [selectedDistrict, errorMessage]);
+  }, [selectedWard, errorMessage]);
 
   useEffect(() => {
     if (specificAddress.trim() && errorMessage.includes('số nhà')) {
@@ -547,8 +548,6 @@ export default function CheckoutPage() {
     );
   }, [selectedProvince]);
 
-  const currentDistricts = currentProvinceData?.districts || [];
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
 
@@ -603,13 +602,13 @@ export default function CheckoutPage() {
       return false;
     }
 
-    if (!selectedDistrict.trim()) {
-      errors.district = 'Vui lòng chọn Quận / Huyện';
+    if (!selectedWard.trim()) {
+      errors.ward = 'Vui lòng chọn hoặc nhập Phường / Xã';
       setFieldErrors(errors);
-      setErrorMessage('Vui lòng chọn Quận / Huyện nhận hàng');
+      setErrorMessage('Vui lòng nhập hoặc chọn Phường / Xã nhận hàng');
       setIsEditingAddress(true);
       setTimeout(() => {
-        districtRef.current?.focus();
+        wardRef.current?.focus();
         addressSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 50);
       return false;
@@ -921,7 +920,7 @@ export default function CheckoutPage() {
                       <span className="text-xs text-gray-500 font-medium">({customer.phone || 'Chưa có SĐT'})</span>
                     </div>
                     <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
-                      {[specificAddress, selectedWard, selectedDistrict, selectedProvince].filter(Boolean).join(', ') || 'Chưa nhập địa chỉ chi tiết - Bấm để thêm'}
+                      {[specificAddress, selectedWard, selectedProvince].filter(Boolean).join(', ') || 'Chưa nhập địa chỉ chi tiết - Bấm để thêm'}
                     </p>
                   </div>
                 )}
@@ -977,16 +976,17 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
+                {/* 2 CẤP HÀNH CHÍNH MỚI: TỈNH/THÀNH PHỐ VÀ PHƯỜNG/XÃ (BỎ CẤP QUẬN/HUYỆN CHUẨN SHOPEE) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <SearchableDropdown
                     label="Tỉnh / Thành phố"
                     required
                     placeholder="Chọn Tỉnh / TP..."
-                    searchPlaceholder="🔍 Tìm tỉnh thành..."
+                    searchPlaceholder="🔍 Tìm tỉnh thành (VD: Bắc Ninh, Hà Nội...)"
                     value={selectedProvince}
                     onChange={(prov) => {
                       setSelectedProvince(prov);
-                      setSelectedDistrict('');
+                      setSelectedWard('');
                       if (fieldErrors.province) setFieldErrors((p) => ({ ...p, province: undefined }));
                       if (errorMessage && errorMessage.includes('Tỉnh')) setErrorMessage('');
                     }}
@@ -995,53 +995,50 @@ export default function CheckoutPage() {
                     buttonRef={provinceRef}
                   />
 
-                  <SearchableDropdown
-                    label="Quận / Huyện"
-                    required
-                    placeholder={selectedProvince ? 'Chọn Quận / Huyện...' : 'Chọn Tỉnh trước'}
-                    searchPlaceholder="🔍 Tìm quận huyện..."
-                    disabled={!selectedProvince}
-                    disabledText="Chọn Tỉnh trước"
-                    value={selectedDistrict}
-                    onChange={(dist) => {
-                      setSelectedDistrict(dist);
-                      setSelectedWard('');
-                      if (fieldErrors.district) setFieldErrors((p) => ({ ...p, district: undefined }));
-                      if (errorMessage && errorMessage.includes('Quận')) setErrorMessage('');
-                    }}
-                    options={currentDistricts}
-                    error={fieldErrors.district}
-                    buttonRef={districtRef}
-                  />
-                </div>
-
-                {/* Hàng 3: Phường / Xã / Thị trấn (Tự do điền tay hoặc chọn gợi ý, hoàn toàn không sợ bị thiếu do sáp nhập) */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[11px] font-bold text-gray-700 block">
-                      Phường / Xã / Thị trấn
-                    </label>
-                    <span className="text-[10px] text-gray-400 font-medium">Tự do điền xã cũ hoặc mới</span>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      list="ward-datalist-suggestions"
-                      placeholder={
-                        !selectedDistrict
-                          ? 'Nhập Phường / Xã của bạn...'
-                          : 'VD: Xã Nội Hoàng / Phường Bến Nghé (tự do điền tay)...'
-                      }
-                      value={selectedWard}
-                      onChange={(e) => setSelectedWard(e.target.value)}
-                      className={`w-full px-3 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-lg font-medium text-gray-900 focus:outline-none focus:bg-white ${curr.focusBorder}`}
-                    />
-                    {currentWards.length > 0 && (
-                      <datalist id="ward-datalist-suggestions">
-                        {currentWards.map((w, idx) => (
-                          <option key={`${w}-${idx}`} value={w} />
-                        ))}
-                      </datalist>
+                  {/* Phường / Xã / Thị trấn (Cấp 2 trực tiếp) */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-bold text-gray-700 block">
+                        Phường / Xã / Thị trấn <span className="text-rose-500">*</span>
+                      </label>
+                      <span className="text-[10px] text-gray-400 font-medium">
+                        {isLoadingWards ? 'Đang tải danh sách...' : 'Chọn hoặc điền tay'}
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        ref={wardRef}
+                        type="text"
+                        list="ward-datalist-suggestions"
+                        disabled={!selectedProvince}
+                        placeholder={
+                          !selectedProvince
+                            ? 'Chọn Tỉnh / TP trước...'
+                            : 'VD: Phường Tiền Phong / Xã Nội Hoàng...'
+                        }
+                        value={selectedWard}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSelectedWard(val);
+                          if (fieldErrors.ward) setFieldErrors((p) => ({ ...p, ward: undefined }));
+                          if (errorMessage && errorMessage.includes('Phường')) setErrorMessage('');
+                        }}
+                        className={`w-full px-3 py-2 text-xs ${
+                          !selectedProvince ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50'
+                        } border ${
+                          fieldErrors.ward ? 'border-rose-400 ring-1 ring-rose-200 bg-rose-50/20' : 'border-gray-200'
+                        } rounded-lg font-medium text-gray-900 focus:outline-none focus:bg-white ${curr.focusBorder}`}
+                      />
+                      {currentWards.length > 0 && (
+                        <datalist id="ward-datalist-suggestions">
+                          {currentWards.map((w, idx) => (
+                            <option key={`${w}-${idx}`} value={w} />
+                          ))}
+                        </datalist>
+                      )}
+                    </div>
+                    {fieldErrors.ward && (
+                      <p className="text-[10px] text-rose-500 font-semibold mt-0.5">⚠️ {fieldErrors.ward}</p>
                     )}
                   </div>
                 </div>
@@ -1075,11 +1072,11 @@ export default function CheckoutPage() {
                 </div>
 
                 {/* Xem trước địa chỉ vận đơn đầy đủ */}
-                {(specificAddress || selectedWard || selectedDistrict || selectedProvince) && (
+                {(specificAddress || selectedWard || selectedProvince) && (
                   <div className="p-2.5 bg-pink-50/50 rounded-lg border border-pink-100 text-xs text-gray-700 flex items-start gap-2">
                     <span className="font-bold text-rose-600 shrink-0">📍 Vận đơn:</span>
                     <span className="font-medium text-gray-900">
-                      {[specificAddress.trim(), selectedWard.trim(), selectedDistrict.trim(), selectedProvince.trim()].filter(Boolean).join(', ')}
+                      {[specificAddress.trim(), selectedWard.trim(), selectedProvince.trim()].filter(Boolean).join(', ')}
                     </span>
                   </div>
                 )}
@@ -1089,7 +1086,7 @@ export default function CheckoutPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (customer.fullName.trim() && customer.phone.trim() && selectedProvince.trim() && selectedDistrict.trim() && specificAddress.trim()) {
+                      if (customer.fullName.trim() && customer.phone.trim() && selectedProvince.trim() && selectedWard.trim() && specificAddress.trim()) {
                         setIsEditingAddress(false);
                         setErrorMessage('');
                         setFieldErrors({});
