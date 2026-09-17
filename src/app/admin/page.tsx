@@ -732,20 +732,21 @@ export default function AdminPage() {
   const handleOpenAddProduct = () => {
     const timestamp = Date.now();
     const defaultCat = categories[0] || { id: 'cat-1', slug: 'beads-haul', name: 'Hạt Cườm & Beads' };
+    setProductModalTab('BASIC');
     setEditingProduct({
       name: '',
       sku: `OM-PROD-${timestamp.toString().slice(-4)}`,
       category: defaultCat.slug,
       categoryId: defaultCat.id,
       categoryName: defaultCat.name,
-      basePrice: 2000,
-      originalPrice: 2000,
-      costPrice: 800,
-      material: 'Acrylic cao cấp pastel',
-      dimensions: '8mm - 12mm',
+      basePrice: 0,
+      originalPrice: 0,
+      costPrice: 0,
+      material: '',
+      dimensions: '',
       weight: 50,
-      images: ['/uploads/charm_1789432914386_1789371730804_1528911961217344.jpg'],
-      description: 'Mô tả chi tiết về kích thước, màu sắc và chất liệu sản phẩm...',
+      images: [],
+      description: '',
       isHot: false,
       isNewArrival: true,
       isCustomizable: false,
@@ -753,20 +754,14 @@ export default function AdminPage() {
       soldCount: 0,
       rating: 5.0,
       reviewCount: 0,
-      variants: [
-        { id: `v-${timestamp}-1`, name: 'Hồng Baby Pastel 🌸', colorHex: '#FFB6C1', stock: 50, soldCount: 0, isActive: true },
-        { id: `v-${timestamp}-2`, name: 'Xanh Bơ Mint 🌿', colorHex: '#A7F3D0', stock: 50, soldCount: 0, isActive: true },
-      ],
-      comboTiers: [
-        { minQuantity: 10, unitPrice: 1800, label: 'Mốc 10 cái', badge: 'Sỉ nhẹ 10%' },
-        { minQuantity: 50, unitPrice: 1500, label: 'Mốc 50 cái', badge: 'Tiết kiệm 25%' },
-        { minQuantity: 100, unitPrice: 1200, label: 'Mốc 100 cái (Sỉ VIP)', badge: 'Hot Bán Chạy 🔥' },
-      ],
+      variants: [],
+      comboTiers: [],
     });
     setIsProductModalOpen(true);
   };
 
   const handleOpenEditProduct = (prod: Product) => {
+    setProductModalTab('BASIC');
     setEditingProduct({
       ...prod,
       variants: prod.variants || [],
@@ -3607,58 +3602,59 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* PRODUCT ADD / EDIT MODAL - 3 CLEAN TABS */}
+      {/* PRODUCT ADD / EDIT MODAL - MODERN MINIMALIST DESIGN */}
       {isProductModalOpen && editingProduct && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl border border-pink-200 shadow-2xl max-w-3xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-scale-up">
+        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl border border-stone-200 shadow-2xl max-w-3xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-scale-up">
             
-            {/* 1. MODAL HEADER WITH TABS */}
-            <div className="shrink-0 p-4 sm:p-5 bg-gradient-to-r from-pink-50/90 via-white to-rose-50/60 border-b border-pink-100 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <span className="p-2 bg-pink-100 text-pink-600 rounded-xl text-lg">✨</span>
-                  <div>
-                    <h3 className="text-sm sm:text-base font-black text-gray-900 line-clamp-1">
-                      {editingProduct.id ? `Chỉnh Sửa: ${editingProduct.name}` : 'Thêm Mẫu Charm / Phụ Kiện Mới'}
-                    </h3>
-                    <p className="text-[11px] text-gray-500">Cấu hình giá bán, hình ảnh và phân loại gọn gàng</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsProductModalOpen(false)}
-                  className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+            {/* 1. MODAL HEADER */}
+            <div className="shrink-0 px-5 sm:px-6 py-4 bg-white border-b border-stone-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-stone-900 line-clamp-1">
+                  {editingProduct.id ? `Chỉnh sửa: ${editingProduct.name}` : 'Thêm sản phẩm mới'}
+                </h3>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Thiết lập thông tin, giá bán, hình ảnh và cấu hình phân loại
+                </p>
               </div>
+              <button
+                type="button"
+                onClick={() => setIsProductModalOpen(false)}
+                className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-              {/* 3 TABS SELECTOR */}
-              <div className="flex items-center gap-1.5 bg-gray-100/80 p-1 rounded-xl">
+            {/* TAB SELECTOR */}
+            <div className="shrink-0 px-5 sm:px-6 py-2.5 bg-stone-50/80 border-b border-stone-200/70">
+              <div className="flex items-center gap-1.5 bg-stone-200/60 p-1 rounded-xl">
                 <button
                   type="button"
                   onClick={() => setProductModalTab('BASIC')}
-                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 cursor-pointer ${
                     productModalTab === 'BASIC'
-                      ? 'bg-white text-rose-600 shadow-xs'
-                      : 'text-gray-500 hover:text-gray-800'
+                      ? 'bg-white text-stone-900 shadow-xs'
+                      : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
-                  <span>🌸 1. Thông Tin &amp; Giá</span>
+                  <Package className="w-3.5 h-3.5" />
+                  <span>Thông tin &amp; Giá</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setProductModalTab('MEDIA')}
-                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 cursor-pointer ${
                     productModalTab === 'MEDIA'
-                      ? 'bg-white text-rose-600 shadow-xs'
-                      : 'text-gray-500 hover:text-gray-800'
+                      ? 'bg-white text-stone-900 shadow-xs'
+                      : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
-                  <span>📸 2. Hình Ảnh &amp; Mô Tả</span>
+                  <ImagePlus className="w-3.5 h-3.5" />
+                  <span>Hình ảnh &amp; Mô tả</span>
                   {(editingProduct.images?.length || 0) > 0 && (
-                    <span className="bg-pink-100 text-pink-700 text-[10px] px-1.5 py-0.2 rounded-full font-black">
+                    <span className="bg-stone-100 text-stone-700 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
                       {editingProduct.images?.length}
                     </span>
                   )}
@@ -3667,15 +3663,16 @@ export default function AdminPage() {
                 <button
                   type="button"
                   onClick={() => setProductModalTab('VARIANTS_WHOLESALE')}
-                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 cursor-pointer ${
                     productModalTab === 'VARIANTS_WHOLESALE'
-                      ? 'bg-white text-rose-600 shadow-xs'
-                      : 'text-gray-500 hover:text-gray-800'
+                      ? 'bg-white text-stone-900 shadow-xs'
+                      : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
-                  <span>⚙️ 3. Phân Loại &amp; Mua Sỉ</span>
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Phân loại &amp; Giá sỉ</span>
                   {((editingProduct.variants?.length || 0) > 0 || (editingProduct.comboTiers?.length || 0) > 0) && (
-                    <span className="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.2 rounded-full font-black">
+                    <span className="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
                       {(editingProduct.variants?.length || 0) + (editingProduct.comboTiers?.length || 0)}
                     </span>
                   )}
@@ -3684,50 +3681,53 @@ export default function AdminPage() {
             </div>
 
             {/* 2. MODAL BODY (SCROLLABLE) */}
-            <form onSubmit={handleSaveProduct} noValidate className="flex-1 overflow-y-auto p-4 sm:p-6 text-xs flex flex-col justify-between">
+            <form onSubmit={handleSaveProduct} noValidate className="flex-1 overflow-y-auto p-5 sm:p-6 text-xs flex flex-col justify-between">
               
-              <div className="space-y-4">
-                {/* TAB 1: THÔNG TIN CƠ BẢN & GIÁ BÁN */}
+              <div className="space-y-5">
+                {/* TAB 1: THÔNG TIN & GIÁ */}
                 {productModalTab === 'BASIC' && (
                   <div className="space-y-4 animate-fade-in">
                     {/* Tên & SKU */}
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                      <div className="sm:col-span-8 space-y-1">
-                        <label className="font-bold text-gray-700">Tên Mẫu Charm / Phụ Kiện <span className="text-rose-500">*</span></label>
+                      <div className="sm:col-span-8 space-y-1.5">
+                        <label className="font-semibold text-stone-700 text-xs flex items-center gap-1">
+                          <span>Tên sản phẩm</span>
+                          <span className="text-rose-500">*</span>
+                        </label>
                         <input
                           type="text"
                           required
                           value={editingProduct.name || ''}
                           onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
-                          placeholder="VD: Set Hạt Cườm Hoa & Nơ Pastel Tự Xâu..."
-                          className="w-full px-3.5 py-2.5 bg-white border border-pink-200 rounded-xl font-medium focus:ring-2 focus:ring-rose-400 focus:outline-none"
+                          placeholder="Nhập tên sản phẩm..."
+                          className="w-full px-3.5 py-2.5 bg-white border border-stone-200 rounded-xl text-stone-900 text-sm font-medium focus:border-stone-400 focus:ring-2 focus:ring-stone-100 focus:outline-none"
                         />
                       </div>
 
-                      <div className="sm:col-span-4 space-y-1">
-                        <label className="font-bold text-gray-700">Mã SKU Quản Lý Kho</label>
+                      <div className="sm:col-span-4 space-y-1.5">
+                        <label className="font-semibold text-stone-700 text-xs">Mã SKU</label>
                         <input
                           type="text"
                           value={editingProduct.sku || ''}
                           onChange={(e) => setEditingProduct({ ...editingProduct, sku: e.target.value })}
-                          placeholder="OM-BEAD-01"
-                          className="w-full px-3.5 py-2.5 bg-white border border-pink-200 rounded-xl font-mono font-bold text-gray-800"
+                          placeholder="VD: OM-BEAD-01"
+                          className="w-full px-3.5 py-2.5 bg-white border border-stone-200 rounded-xl font-mono text-stone-800 text-sm font-semibold focus:border-stone-400 focus:ring-2 focus:ring-stone-100 focus:outline-none"
                         />
                       </div>
                     </div>
 
                     {/* Danh mục & Cân nặng */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
-                          <label className="font-bold text-gray-700">Danh Mục</label>
+                          <label className="font-semibold text-stone-700 text-xs">Danh mục</label>
                           <button
                             type="button"
                             onClick={handleOpenAddCategory}
-                            className="text-[11px] font-bold text-rose-600 hover:text-rose-700 bg-pink-50 hover:bg-pink-100 px-2 py-0.5 rounded-lg border border-pink-200 flex items-center gap-1 transition shadow-2xs cursor-pointer"
+                            className="text-[11px] font-semibold text-stone-600 hover:text-stone-900 flex items-center gap-1 cursor-pointer transition"
                           >
                             <Plus className="w-3 h-3" />
-                            <span>Tạo mới</span>
+                            <span>Thêm danh mục mới</span>
                           </button>
                         </div>
                         <select
@@ -3748,7 +3748,7 @@ export default function AdminPage() {
                               });
                             }
                           }}
-                          className="w-full px-3 py-2.5 bg-white border border-pink-200 rounded-xl font-bold text-gray-700 focus:ring-2 focus:ring-rose-400 outline-hidden"
+                          className="w-full px-3 py-2.5 bg-white border border-stone-200 rounded-xl font-medium text-stone-800 text-sm focus:border-stone-400 focus:ring-2 focus:ring-stone-100 focus:outline-none"
                         >
                           {categories.map((cat) => (
                             <option key={cat.id} value={cat.id}>
@@ -3758,32 +3758,35 @@ export default function AdminPage() {
                         </select>
                       </div>
 
-                      <div className="space-y-1">
-                        <label className="font-bold text-gray-700 flex items-center justify-between">
-                          <span>Cân Nặng Kiện Hàng (gram)</span>
-                          <span className="text-[10px] text-gray-400 font-normal">Tự động tính cước SPX</span>
+                      <div className="space-y-1.5">
+                        <label className="font-semibold text-stone-700 text-xs flex items-center justify-between">
+                          <span>Cân nặng kiện hàng (gram)</span>
+                          <span className="text-[11px] text-stone-400 font-normal">Tự động tính cước SPX</span>
                         </label>
                         <input
                           type="number"
                           min={0}
                           value={editingProduct.weight !== undefined && editingProduct.weight !== null ? editingProduct.weight : ''}
                           onChange={(e) => setEditingProduct({ ...editingProduct, weight: Math.max(0, Number(e.target.value)) })}
-                          placeholder="Mặc định: 50 (50g)"
-                          className="w-full px-3.5 py-2.5 bg-white border border-pink-200 rounded-xl font-bold text-gray-800 focus:ring-2 focus:ring-rose-400"
+                          placeholder="Mặc định: 50g"
+                          className="w-full px-3.5 py-2.5 bg-white border border-stone-200 rounded-xl font-semibold text-stone-800 text-sm focus:border-stone-400 focus:ring-2 focus:ring-stone-100 focus:outline-none"
                         />
                       </div>
                     </div>
 
-                    {/* Giá Bán & Giá Vốn */}
-                    <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-50/50 to-pink-50/40 border border-amber-200 space-y-3">
-                      <div className="flex items-center gap-1.5 text-xs font-extrabold text-gray-800">
-                        <DollarSign className="w-4 h-4 text-amber-600" />
-                        <span>Giá Bán &amp; Quản Lý Giá Vốn Nhập Kho</span>
+                    {/* Giá bán lẻ & Giá vốn */}
+                    <div className="p-4 rounded-xl bg-stone-50/80 border border-stone-200 space-y-3">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-stone-800">
+                        <DollarSign className="w-4 h-4 text-stone-600" />
+                        <span>Thiết Lập Giá Bán &amp; Giá Vốn</span>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="font-bold text-gray-700 text-xs">Giá Bán Lẻ 1 Chiếc (VNĐ) <span className="text-rose-500">*</span></label>
+                        <div className="space-y-1.5">
+                          <label className="font-semibold text-stone-700 text-xs flex items-center gap-1">
+                            <span>Giá bán lẻ (VNĐ)</span>
+                            <span className="text-rose-500">*</span>
+                          </label>
                           <input
                             type="number"
                             required
@@ -3791,34 +3794,34 @@ export default function AdminPage() {
                             step="any"
                             value={editingProduct.basePrice || 0}
                             onChange={(e) => setEditingProduct({ ...editingProduct, basePrice: Number(e.target.value) })}
-                            className="w-full px-3.5 py-2.5 bg-white border border-pink-200 rounded-xl font-black text-rose-600 focus:ring-2 focus:ring-rose-400 focus:outline-none text-sm"
+                            className="w-full px-3.5 py-2.5 bg-white border border-stone-200 rounded-xl font-bold text-rose-600 text-base focus:border-stone-400 focus:ring-2 focus:ring-stone-100 focus:outline-none"
                           />
                         </div>
 
-                        <div className="space-y-1">
-                          <label className="font-bold text-gray-700 text-xs">Giá Vốn Nhập Xưởng (VNĐ)</label>
+                        <div className="space-y-1.5">
+                          <label className="font-semibold text-stone-700 text-xs">Giá vốn nhập kho (VNĐ)</label>
                           <input
                             type="number"
                             min={0}
                             step="any"
                             value={editingProduct.costPrice || 0}
                             onChange={(e) => setEditingProduct({ ...editingProduct, costPrice: Number(e.target.value) })}
-                            placeholder="VD: 600"
-                            className="w-full px-3.5 py-2.5 bg-white border border-amber-200 rounded-xl font-bold text-gray-700 text-sm"
+                            placeholder="Tùy chọn (để theo dõi lãi)"
+                            className="w-full px-3.5 py-2.5 bg-white border border-stone-200 rounded-xl font-semibold text-stone-800 text-sm focus:border-stone-400 focus:ring-2 focus:ring-stone-100 focus:outline-none"
                           />
                         </div>
                       </div>
 
-                      {/* Lợi nhuận hoặc cảnh báo bán lỗ (non-blocking) */}
+                      {/* Lợi nhuận hoặc cảnh báo bán xả kho */}
                       {editingProduct.basePrice !== undefined && editingProduct.costPrice !== undefined && Number(editingProduct.costPrice) > 0 && (
                         Number(editingProduct.basePrice) < Number(editingProduct.costPrice) ? (
-                          <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-300 text-[11px] text-amber-900 flex items-center gap-2">
+                          <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
                             <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                            <span>⚠️ Giá bán lẻ thấp hơn giá vốn (-{formatVND(Number(editingProduct.costPrice) - Number(editingProduct.basePrice))}/cái - Xả kho). Vẫn cho phép lưu bình thường.</span>
+                            <span>Lưu ý: Giá bán lẻ thấp hơn giá vốn (-{formatVND(Number(editingProduct.costPrice) - Number(editingProduct.basePrice))}/cái - Bán xả kho). Vẫn cho phép lưu.</span>
                           </div>
                         ) : (
-                          <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 text-[11px] text-emerald-800 flex items-center justify-between">
-                            <span>Lợi nhuận ước tính trên 1 chiếc:</span>
+                          <div className="p-2.5 bg-emerald-50 rounded-lg border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between">
+                            <span>Lợi nhuận ước tính:</span>
                             <strong className="text-emerald-700 text-xs">
                               +{formatVND((editingProduct.basePrice || 0) - (editingProduct.costPrice || 0))} /cái (Tỷ suất ~{Math.round((((editingProduct.basePrice || 0) - (editingProduct.costPrice || 0)) / (editingProduct.basePrice || 1)) * 100)}%)
                             </strong>
@@ -3829,60 +3832,75 @@ export default function AdminPage() {
 
                     {/* Chất liệu & Kích thước */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="font-bold text-gray-700">Chất Liệu</label>
+                      <div className="space-y-1.5">
+                        <label className="font-semibold text-stone-700 text-xs">Chất liệu</label>
                         <input
                           type="text"
                           value={editingProduct.material || ''}
                           onChange={(e) => setEditingProduct({ ...editingProduct, material: e.target.value })}
-                          placeholder="VD: Acrylic trong suốt, Miyuki..."
-                          className="w-full px-3 py-2 bg-white border border-pink-200 rounded-xl font-medium"
+                          placeholder="VD: Acrylic trong suốt, Cườm đá..."
+                          className="w-full px-3.5 py-2.5 bg-white border border-stone-200 rounded-xl font-medium text-stone-800 text-sm focus:border-stone-400 focus:ring-2 focus:ring-stone-100 focus:outline-none"
                         />
                       </div>
 
-                      <div className="space-y-1">
-                        <label className="font-bold text-gray-700">Kích Thước / Size</label>
+                      <div className="space-y-1.5">
+                        <label className="font-semibold text-stone-700 text-xs">Kích thước / Chiều dài</label>
                         <input
                           type="text"
                           value={editingProduct.dimensions || ''}
                           onChange={(e) => setEditingProduct({ ...editingProduct, dimensions: e.target.value })}
-                          placeholder="VD: 8mm-12mm / Dây rút 15cm"
-                          className="w-full px-3 py-2 bg-white border border-pink-200 rounded-xl font-medium"
+                          placeholder="VD: Hạt 8mm - 12mm, dây 16cm..."
+                          className="w-full px-3.5 py-2.5 bg-white border border-stone-200 rounded-xl font-medium text-stone-800 text-sm focus:border-stone-400 focus:ring-2 focus:ring-stone-100 focus:outline-none"
                         />
                       </div>
                     </div>
 
-                    {/* Checkbox nhãn */}
-                    <div className="flex items-center gap-6 pt-1 flex-wrap">
-                      <label className="flex items-center gap-2 cursor-pointer font-bold text-gray-700">
-                        <input
-                          type="checkbox"
-                          checked={editingProduct.isHot || false}
-                          onChange={(e) => setEditingProduct({ ...editingProduct, isHot: e.target.checked })}
-                          className="w-4 h-4 text-rose-500 rounded-md focus:ring-rose-400"
-                        />
-                        <span>Gắn nhãn Hot 🔥</span>
-                      </label>
+                    {/* Checkbox nhãn / Thuộc tính hiển thị */}
+                    <div className="space-y-1.5 pt-1">
+                      <label className="font-semibold text-stone-700 text-xs block">Thuộc tính hiển thị</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition ${
+                          editingProduct.isHot
+                            ? 'bg-rose-50 border-rose-200 text-rose-900 font-semibold'
+                            : 'bg-white border-stone-200 text-stone-600 hover:border-stone-300'
+                        }`}>
+                          <input
+                            type="checkbox"
+                            checked={editingProduct.isHot || false}
+                            onChange={(e) => setEditingProduct({ ...editingProduct, isHot: e.target.checked })}
+                            className="w-4 h-4 text-rose-600 rounded border-stone-300 focus:ring-rose-500"
+                          />
+                          <span className="text-xs">Sản phẩm Bán chạy (Hot)</span>
+                        </label>
 
-                      <label className="flex items-center gap-2 cursor-pointer font-bold text-gray-700">
-                        <input
-                          type="checkbox"
-                          checked={editingProduct.isNewArrival || false}
-                          onChange={(e) => setEditingProduct({ ...editingProduct, isNewArrival: e.target.checked })}
-                          className="w-4 h-4 text-rose-500 rounded-md focus:ring-rose-400"
-                        />
-                        <span>Hàng Mới Về ✨</span>
-                      </label>
+                        <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition ${
+                          editingProduct.isNewArrival
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-900 font-semibold'
+                            : 'bg-white border-stone-200 text-stone-600 hover:border-stone-300'
+                        }`}>
+                          <input
+                            type="checkbox"
+                            checked={editingProduct.isNewArrival || false}
+                            onChange={(e) => setEditingProduct({ ...editingProduct, isNewArrival: e.target.checked })}
+                            className="w-4 h-4 text-emerald-600 rounded border-stone-300 focus:ring-emerald-500"
+                          />
+                          <span className="text-xs">Hàng Mới Về</span>
+                        </label>
 
-                      <label className="flex items-center gap-2 cursor-pointer font-bold text-gray-700">
-                        <input
-                          type="checkbox"
-                          checked={editingProduct.isCustomizable || false}
-                          onChange={(e) => setEditingProduct({ ...editingProduct, isCustomizable: e.target.checked })}
-                          className="w-4 h-4 text-rose-500 rounded-md focus:ring-rose-400"
-                        />
-                        <span>Cho phép custom cỡ tay 🎀</span>
-                      </label>
+                        <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition ${
+                          editingProduct.isCustomizable
+                            ? 'bg-purple-50 border-purple-200 text-purple-900 font-semibold'
+                            : 'bg-white border-stone-200 text-stone-600 hover:border-stone-300'
+                        }`}>
+                          <input
+                            type="checkbox"
+                            checked={editingProduct.isCustomizable || false}
+                            onChange={(e) => setEditingProduct({ ...editingProduct, isCustomizable: e.target.checked })}
+                            className="w-4 h-4 text-purple-600 rounded border-stone-300 focus:ring-purple-500"
+                          />
+                          <span className="text-xs">Custom theo cỡ tay</span>
+                        </label>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -3890,43 +3908,50 @@ export default function AdminPage() {
                 {/* TAB 2: HÌNH ẢNH & MÔ TẢ */}
                 {productModalTab === 'MEDIA' && (
                   <div className="space-y-4 animate-fade-in">
-                    <div className="p-4 rounded-2xl bg-white border border-pink-200 space-y-3">
+                    <div className="p-4 rounded-xl bg-white border border-stone-200 space-y-3">
                       <div className="flex items-center justify-between">
-                        <label className="font-bold text-gray-800 text-xs block">
-                          Bộ Sưu Tập Ảnh Sản Phẩm ({editingProduct.images?.length || 0} ảnh)
+                        <label className="font-bold text-stone-800 text-xs block">
+                          Bộ sưu tập hình ảnh ({editingProduct.images?.length || 0})
                         </label>
-                        <span className="text-[10px] text-gray-400 font-medium">
-                          (Ảnh đầu tiên là ảnh bìa đại diện)
+                        <span className="text-[11px] text-stone-400">
+                          Ảnh đầu tiên là ảnh đại diện
                         </span>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2.5">
-                        <label className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 ${uploadingImage ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700'} text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95`}>
-                          <UploadCloud className="w-4 h-4" />
-                          <span>{uploadingImage ? '⚡ Đang nén & tải ảnh...' : '📁 Tải ảnh từ máy / điện thoại'}</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleImageFileUpload}
-                            disabled={uploadingImage}
-                            className="hidden"
-                          />
-                        </label>
-                        <span className="text-[11px] text-gray-400">hoặc thêm link trực tiếp:</span>
-                      </div>
+                      {/* Dropzone upload */}
+                      <label className={`cursor-pointer block border-2 border-dashed rounded-xl p-5 text-center transition ${
+                        uploadingImage 
+                          ? 'border-stone-300 bg-stone-100 cursor-not-allowed' 
+                          : 'border-stone-200 hover:border-stone-400 bg-stone-50/50 hover:bg-stone-50'
+                      }`}>
+                        <UploadCloud className="w-7 h-7 text-stone-400 mx-auto mb-1.5" />
+                        <span className="font-semibold text-stone-800 text-xs block">
+                          {uploadingImage ? 'Đang nén và tải ảnh lên...' : 'Nhấn để chọn ảnh từ máy tính hoặc điện thoại'}
+                        </span>
+                        <span className="text-[11px] text-stone-400 block mt-0.5">
+                          Tự động nén tối ưu WebP siêu nhanh, hỗ trợ chọn nhiều ảnh cùng lúc
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleImageFileUpload}
+                          disabled={uploadingImage}
+                          className="hidden"
+                        />
+                      </label>
 
                       {imageUploadError && (
                         <p className="text-xs text-rose-500 font-semibold">⚠️ {imageUploadError}</p>
                       )}
 
                       {/* Manual URL input */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 pt-1">
                         <input
                           id="newImageUrlInput"
                           type="text"
-                          placeholder="Dán link ảnh URL (https://...) rồi bấm nút Thêm ảnh"
-                          className="flex-1 px-3.5 py-2 bg-pink-50/30 border border-pink-200 rounded-xl font-medium focus:ring-2 focus:ring-rose-400 focus:outline-none text-xs"
+                          placeholder="Hoặc dán đường link ảnh trực tiếp (https://...)"
+                          className="flex-1 px-3.5 py-2 bg-stone-50 border border-stone-200 rounded-xl font-medium text-xs text-stone-800 focus:border-stone-400 focus:ring-2 focus:ring-stone-100 focus:outline-none"
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
@@ -3949,7 +3974,7 @@ export default function AdminPage() {
                               input.value = '';
                             }
                           }}
-                          className="px-3.5 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold text-xs shadow-2xs transition active:scale-95 shrink-0"
+                          className="px-4 py-2 bg-stone-800 hover:bg-stone-900 text-white rounded-xl font-semibold text-xs transition cursor-pointer shrink-0"
                         >
                           + Thêm Link
                         </button>
@@ -3961,8 +3986,8 @@ export default function AdminPage() {
                           {editingProduct.images.map((imgUrl, imgIdx) => (
                             <div
                               key={imgIdx}
-                              className={`relative group rounded-2xl overflow-hidden border-2 bg-pink-50/50 aspect-square shadow-2xs transition ${
-                                imgIdx === 0 ? 'border-rose-500 ring-2 ring-rose-200' : 'border-pink-100 hover:border-pink-300'
+                              className={`relative group rounded-xl overflow-hidden border-2 bg-stone-100 aspect-square transition ${
+                                imgIdx === 0 ? 'border-stone-900 ring-2 ring-stone-300' : 'border-stone-200 hover:border-stone-300'
                               }`}
                             >
                               <img
@@ -3976,12 +4001,12 @@ export default function AdminPage() {
                               />
 
                               {imgIdx === 0 && (
-                                <span className="absolute top-1 left-1 bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-xs">
-                                  ⭐ Ảnh bìa
+                                <span className="absolute top-1 left-1 bg-stone-900 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs">
+                                  Ảnh đại diện
                                 </span>
                               )}
 
-                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-1">
+                              <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-1">
                                 {imgIdx !== 0 && (
                                   <button
                                     type="button"
@@ -3991,10 +4016,10 @@ export default function AdminPage() {
                                       list.unshift(moved);
                                       setEditingProduct({ ...editingProduct, images: list });
                                     }}
-                                    className="p-1.5 bg-white text-gray-800 rounded-lg text-[10px] font-bold shadow-xs hover:bg-rose-50 transition"
-                                    title="Đặt làm ảnh bìa"
+                                    className="p-1.5 bg-white text-stone-900 rounded-lg text-[10px] font-bold shadow-xs hover:bg-stone-100 transition cursor-pointer"
+                                    title="Đặt làm ảnh đại diện"
                                   >
-                                    ⭐ Bìa
+                                    Làm bìa
                                   </button>
                                 )}
 
@@ -4004,8 +4029,8 @@ export default function AdminPage() {
                                     const list = (editingProduct.images || []).filter((_, i) => i !== imgIdx);
                                     setEditingProduct({ ...editingProduct, images: list });
                                   }}
-                                  className="p-1.5 bg-rose-600 text-white rounded-lg text-[10px] font-bold shadow-xs hover:bg-rose-700 transition"
-                                  title="Xóa ảnh này"
+                                  className="p-1.5 bg-rose-600 text-white rounded-lg text-[10px] font-bold shadow-xs hover:bg-rose-700 transition cursor-pointer"
+                                  title="Xóa ảnh"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -4014,21 +4039,21 @@ export default function AdminPage() {
                           ))}
                         </div>
                       ) : (
-                        <div className="p-6 border-2 border-dashed border-pink-200 rounded-2xl text-center text-gray-400 text-xs">
-                          Chưa có hình ảnh nào. Bấm nút tải ảnh ở trên để tải ảnh từ máy hoặc dán link.
+                        <div className="p-6 border-2 border-dashed border-stone-200 rounded-xl text-center text-stone-400 text-xs">
+                          Chưa có hình ảnh nào. Chọn ảnh từ máy tính hoặc dán link ở trên.
                         </div>
                       )}
                     </div>
 
                     {/* Mô tả chi tiết */}
-                    <div className="space-y-1">
-                      <label className="font-bold text-gray-700">Mô Tả Sản Phẩm</label>
+                    <div className="space-y-1.5">
+                      <label className="font-semibold text-stone-700 text-xs">Mô tả sản phẩm</label>
                       <textarea
-                        rows={3}
+                        rows={4}
                         value={editingProduct.description || ''}
                         onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
-                        placeholder="Mô tả chi tiết về sản phẩm..."
-                        className="w-full px-3.5 py-2 bg-pink-50/30 border border-pink-200 rounded-xl font-medium focus:ring-2 focus:ring-rose-400 focus:outline-none"
+                        placeholder="Mô tả chi tiết về đặc điểm, hướng dẫn sử dụng, bảo quản sản phẩm..."
+                        className="w-full px-3.5 py-2.5 bg-white border border-stone-200 rounded-xl font-medium text-xs text-stone-800 focus:border-stone-400 focus:ring-2 focus:ring-stone-100 focus:outline-none"
                       />
                     </div>
                   </div>
@@ -4038,15 +4063,15 @@ export default function AdminPage() {
                 {productModalTab === 'VARIANTS_WHOLESALE' && (
                   <div className="space-y-4 animate-fade-in">
                     {/* Phân loại màu sắc */}
-                    <div className="p-4 rounded-2xl bg-white border border-pink-200 space-y-3">
+                    <div className="p-4 rounded-xl bg-white border border-stone-200 space-y-3">
                       <div className="flex items-center justify-between">
                         <div>
-                          <h4 className="font-extrabold text-gray-800 flex items-center gap-1.5 text-xs">
-                            <Palette className="w-4 h-4 text-pink-500" />
+                          <h4 className="font-bold text-stone-800 flex items-center gap-1.5 text-xs">
+                            <Palette className="w-4 h-4 text-stone-600" />
                             <span>Phân Loại Màu Sắc &amp; Tồn Kho</span>
                           </h4>
-                          <p className="text-[10px] text-gray-400">
-                            Nếu sản phẩm có nhiều màu, hãy thêm danh sách màu bên dưới.
+                          <p className="text-[11px] text-stone-400">
+                            Nếu sản phẩm có nhiều phân loại hoặc màu sắc, thêm danh sách bên dưới
                           </p>
                         </div>
                         <button
@@ -4059,7 +4084,7 @@ export default function AdminPage() {
                                 ...currentVariants,
                                 {
                                   id: `v-${Date.now()}`,
-                                  name: `Màu Mới ${currentVariants.length + 1}`,
+                                  name: `Màu ${currentVariants.length + 1}`,
                                   colorHex: '#FFB6C1',
                                   stock: 100,
                                   soldCount: 0,
@@ -4068,21 +4093,21 @@ export default function AdminPage() {
                               ],
                             });
                           }}
-                          className="px-3 py-1.5 rounded-xl bg-pink-50 hover:bg-pink-100 text-rose-600 font-bold border border-pink-200 text-xs flex items-center gap-1 shadow-2xs transition"
+                          className="px-3 py-1.5 rounded-xl bg-stone-50 hover:bg-stone-100 text-stone-700 font-semibold border border-stone-200 text-xs flex items-center gap-1 transition cursor-pointer"
                         >
                           <Plus className="w-3.5 h-3.5" />
-                          <span>Thêm Phân Loại Màu</span>
+                          <span>Thêm phân loại</span>
                         </button>
                       </div>
 
                       <div className="space-y-2 max-h-48 overflow-y-auto">
                         {(editingProduct.variants || []).length === 0 ? (
-                          <p className="text-gray-400 italic text-center py-2 text-xs">
-                            Sản phẩm đang bán dạng 1 loại chuẩn duy nhất (chưa chia màu).
+                          <p className="text-stone-400 italic text-center py-3 text-xs">
+                            Sản phẩm đang bán dạng 1 mẫu tiêu chuẩn duy nhất (chưa chia phân loại màu).
                           </p>
                         ) : (
                           (editingProduct.variants || []).map((variant, vIdx) => (
-                            <div key={vIdx} className="flex flex-wrap sm:flex-nowrap items-center gap-2 p-2 rounded-xl bg-pink-50/30 border border-pink-100">
+                            <div key={vIdx} className="flex flex-wrap sm:flex-nowrap items-center gap-2 p-2 rounded-xl bg-stone-50 border border-stone-200/80">
                               <div className="w-9 shrink-0 flex items-center justify-center">
                                 <input
                                   type="color"
@@ -4092,13 +4117,13 @@ export default function AdminPage() {
                                     newVariants[vIdx] = { ...newVariants[vIdx], colorHex: e.target.value };
                                     setEditingProduct({ ...editingProduct, variants: newVariants });
                                   }}
-                                  className="w-7 h-7 rounded-lg cursor-pointer border border-pink-200 bg-transparent"
-                                  title="Chọn mã màu đại diện"
+                                  className="w-7 h-7 rounded-lg cursor-pointer border border-stone-200 bg-transparent"
+                                  title="Chọn màu đại diện"
                                 />
                               </div>
 
                               <div className="flex-1 min-w-[140px]">
-                                <span className="text-[10px] text-gray-500 block">Tên Màu / Phân loại:</span>
+                                <span className="text-[10px] text-stone-500 block">Tên phân loại:</span>
                                 <input
                                   type="text"
                                   value={variant.name}
@@ -4107,13 +4132,13 @@ export default function AdminPage() {
                                     newVariants[vIdx] = { ...newVariants[vIdx], name: e.target.value };
                                     setEditingProduct({ ...editingProduct, variants: newVariants });
                                   }}
-                                  placeholder="VD: Hồng Baby Pastel 🌸"
-                                  className="w-full px-2.5 py-1 bg-white border border-pink-200 rounded-lg font-bold text-gray-800"
+                                  placeholder="VD: Hồng Pastel, Trắng Kem..."
+                                  className="w-full px-2.5 py-1 bg-white border border-stone-200 rounded-lg font-semibold text-stone-800 text-xs"
                                 />
                               </div>
 
                               <div className="w-24">
-                                <span className="text-[10px] text-gray-500 block">Tồn kho:</span>
+                                <span className="text-[10px] text-stone-500 block">Tồn kho:</span>
                                 <input
                                   type="number"
                                   min={0}
@@ -4124,7 +4149,7 @@ export default function AdminPage() {
                                     newVariants[vIdx] = { ...newVariants[vIdx], stock: Number(e.target.value) };
                                     setEditingProduct({ ...editingProduct, variants: newVariants });
                                   }}
-                                  className="w-full px-2 py-1 bg-white border border-pink-200 rounded-lg font-bold text-rose-600 text-center"
+                                  className="w-full px-2 py-1 bg-white border border-stone-200 rounded-lg font-bold text-stone-800 text-center text-xs"
                                 />
                               </div>
 
@@ -4134,8 +4159,8 @@ export default function AdminPage() {
                                   const newVariants = (editingProduct.variants || []).filter((_, i) => i !== vIdx);
                                   setEditingProduct({ ...editingProduct, variants: newVariants });
                                 }}
-                                className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 transition shrink-0 mt-3"
-                                title="Xóa màu này"
+                                className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-stone-100 transition shrink-0 mt-3 cursor-pointer"
+                                title="Xóa phân loại"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -4146,17 +4171,18 @@ export default function AdminPage() {
                     </div>
 
                     {/* Quy Cách Đặt Hàng (Min Qty & Step Qty) */}
-                    <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-50/40 to-orange-50/30 border border-amber-200 space-y-2">
+                    <div className="p-4 rounded-xl bg-stone-50/80 border border-stone-200 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-gray-800 text-xs flex items-center gap-1.5">
-                          <span>📦 Quy Cách Đặt Hàng &amp; Số Lượng Tối Thiểu</span>
+                        <span className="font-bold text-stone-800 text-xs flex items-center gap-1.5">
+                          <Boxes className="w-4 h-4 text-stone-600" />
+                          <span>Quy Cách Mua &amp; Số Lượng Tối Thiểu</span>
                         </span>
-                        <span className="text-[10px] text-gray-400">Chặn khách mua lẻ đối với hàng bán theo bịch</span>
+                        <span className="text-[11px] text-stone-400">Giới hạn số lượng mua lẻ</span>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <label className="font-bold text-gray-700 block text-xs">
+                          <label className="font-semibold text-stone-700 block text-xs">
                             Mua tối thiểu (Min Qty):
                           </label>
                           <input
@@ -4164,34 +4190,34 @@ export default function AdminPage() {
                             min={1}
                             value={editingProduct.minOrderQuantity || 1}
                             onChange={(e) => setEditingProduct({ ...editingProduct, minOrderQuantity: Math.max(1, Number(e.target.value)) })}
-                            className="w-full px-3 py-1.5 bg-white border border-amber-200 rounded-xl font-bold text-gray-800 text-xs"
+                            className="w-full px-3 py-1.5 bg-white border border-stone-200 rounded-xl font-bold text-stone-800 text-xs"
                           />
-                          <div className="flex items-center gap-1 mt-1 flex-wrap">
+                          <div className="flex items-center gap-1 mt-1.5 flex-wrap">
                             <button
                               type="button"
                               onClick={() => setEditingProduct({ ...editingProduct, minOrderQuantity: 1, stepQuantity: 1 })}
-                              className="px-2 py-0.5 text-[10px] font-bold rounded bg-gray-100 hover:bg-gray-200 text-gray-600"
+                              className="px-2 py-0.5 text-[10px] font-semibold rounded bg-stone-200 hover:bg-stone-300 text-stone-700 cursor-pointer"
                             >
                               Lẻ (1)
                             </button>
                             <button
                               type="button"
                               onClick={() => setEditingProduct({ ...editingProduct, minOrderQuantity: 10, stepQuantity: 10 })}
-                              className="px-2 py-0.5 text-[10px] font-bold rounded bg-amber-100 hover:bg-amber-200 text-amber-800"
+                              className="px-2 py-0.5 text-[10px] font-semibold rounded bg-stone-200 hover:bg-stone-300 text-stone-700 cursor-pointer"
                             >
                               10 cái
                             </button>
                             <button
                               type="button"
                               onClick={() => setEditingProduct({ ...editingProduct, minOrderQuantity: 50, stepQuantity: 50 })}
-                              className="px-2 py-0.5 text-[10px] font-bold rounded bg-rose-100 hover:bg-rose-200 text-rose-800"
+                              className="px-2 py-0.5 text-[10px] font-semibold rounded bg-stone-200 hover:bg-stone-300 text-stone-700 cursor-pointer"
                             >
                               Bịch 50
                             </button>
                             <button
                               type="button"
                               onClick={() => setEditingProduct({ ...editingProduct, minOrderQuantity: 100, stepQuantity: 100 })}
-                              className="px-2 py-0.5 text-[10px] font-bold rounded bg-purple-100 hover:bg-purple-200 text-purple-800"
+                              className="px-2 py-0.5 text-[10px] font-semibold rounded bg-stone-200 hover:bg-stone-300 text-stone-700 cursor-pointer"
                             >
                               Bịch 100
                             </button>
@@ -4199,19 +4225,19 @@ export default function AdminPage() {
                         </div>
 
                         <div className="space-y-1">
-                          <label className="font-bold text-gray-700 block text-xs">
-                            Bội số bước nhảy (Step Qty):
+                          <label className="font-semibold text-stone-700 block text-xs">
+                            Bước nhảy số lượng (Step Qty):
                           </label>
                           <input
                             type="number"
                             min={1}
                             value={editingProduct.stepQuantity || 1}
                             onChange={(e) => setEditingProduct({ ...editingProduct, stepQuantity: Math.max(1, Number(e.target.value)) })}
-                            className="w-full px-3 py-1.5 bg-white border border-amber-200 rounded-xl font-bold text-gray-800 text-xs"
+                            className="w-full px-3 py-1.5 bg-white border border-stone-200 rounded-xl font-bold text-stone-800 text-xs"
                           />
-                          <p className="text-[10px] text-gray-500 mt-1">
+                          <p className="text-[10px] text-stone-500 mt-1">
                             {editingProduct.stepQuantity && editingProduct.stepQuantity > 1
-                              ? `Tăng/giảm theo bội số ${editingProduct.stepQuantity} cái/lần.`
+                              ? `Tăng/giảm theo bước nhảy ${editingProduct.stepQuantity} cái/lần.`
                               : 'Tăng/giảm từng chiếc 1.'}
                           </p>
                         </div>
@@ -4219,15 +4245,15 @@ export default function AdminPage() {
                     </div>
 
                     {/* Bảng mốc giá sỉ */}
-                    <div className="p-4 rounded-2xl bg-gradient-to-r from-pink-50/50 via-rose-50/30 to-amber-50/20 border border-pink-200 space-y-3">
+                    <div className="p-4 rounded-xl bg-white border border-stone-200 space-y-3">
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <div>
-                          <h4 className="font-extrabold text-gray-800 flex items-center gap-1.5 text-xs">
-                            <Tag className="w-4 h-4 text-rose-500" />
+                          <h4 className="font-bold text-stone-800 flex items-center gap-1.5 text-xs">
+                            <Tag className="w-4 h-4 text-stone-600" />
                             <span>Bảng Mốc Giá Sỉ Bậc Thang</span>
                           </h4>
-                          <p className="text-[10px] text-gray-500">
-                            Khách mua chạm mốc nào tự động nhận đơn giá sỉ mốc đó
+                          <p className="text-[11px] text-stone-400">
+                            Khách mua đạt số lượng sẽ tự động áp dụng mức giá sỉ tương ứng
                           </p>
                         </div>
 
@@ -4235,10 +4261,10 @@ export default function AdminPage() {
                           <button
                             type="button"
                             onClick={applyShopCustomTemplate}
-                            className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 text-white shadow-xs transition flex items-center gap-1"
+                            className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 transition flex items-center gap-1 cursor-pointer"
                           >
-                            <Sparkles className="w-3 h-3" />
-                            <span>⭐ Mẫu của Shop</span>
+                            <Sparkles className="w-3.5 h-3.5 text-stone-600" />
+                            <span>Mẫu có sẵn</span>
                           </button>
                           <button
                             type="button"
@@ -4259,7 +4285,7 @@ export default function AdminPage() {
                                 ],
                               });
                             }}
-                            className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white border border-pink-200 text-gray-700 hover:bg-pink-50 transition"
+                            className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 transition cursor-pointer"
                           >
                             + Thêm Mốc
                           </button>
@@ -4268,14 +4294,14 @@ export default function AdminPage() {
 
                       <div className="space-y-2 max-h-44 overflow-y-auto">
                         {(editingProduct.comboTiers || []).length === 0 ? (
-                          <p className="text-gray-400 italic text-center py-2 text-xs">
-                            Chưa có mốc giá sỉ. Bấm &quot;Mẫu của Shop&quot; hoặc &quot;+ Thêm Mốc&quot; để thiết lập.
+                          <p className="text-stone-400 italic text-center py-3 text-xs">
+                            Chưa có mốc giá sỉ. Bấm &quot;Mẫu có sẵn&quot; hoặc &quot;+ Thêm Mốc&quot; để thiết lập.
                           </p>
                         ) : (
                           (editingProduct.comboTiers || []).map((tier, idx) => (
-                            <div key={idx} className="flex flex-wrap sm:flex-nowrap items-center gap-2 p-2 rounded-xl bg-white border border-pink-100">
+                            <div key={idx} className="flex flex-wrap sm:flex-nowrap items-center gap-2 p-2 rounded-xl bg-stone-50 border border-stone-200/80">
                               <div className="w-24">
-                                <span className="text-[10px] text-gray-500 block">Số lượng từ:</span>
+                                <span className="text-[10px] text-stone-500 block">Từ số lượng:</span>
                                 <input
                                   type="number"
                                   min={1}
@@ -4286,12 +4312,12 @@ export default function AdminPage() {
                                     newTiers[idx] = { ...newTiers[idx], minQuantity: Number(e.target.value) };
                                     setEditingProduct({ ...editingProduct, comboTiers: newTiers });
                                   }}
-                                  className="w-full px-2 py-1 bg-pink-50/30 border border-pink-200 rounded-lg font-bold text-center"
+                                  className="w-full px-2 py-1 bg-white border border-stone-200 rounded-lg font-bold text-center text-xs"
                                 />
                               </div>
 
                               <div className="w-28">
-                                <span className="text-[10px] text-gray-500 block">Đơn giá sỉ:</span>
+                                <span className="text-[10px] text-stone-500 block">Đơn giá sỉ:</span>
                                 <input
                                   type="number"
                                   min={0}
@@ -4302,16 +4328,16 @@ export default function AdminPage() {
                                     newTiers[idx] = { ...newTiers[idx], unitPrice: Number(e.target.value) };
                                     setEditingProduct({ ...editingProduct, comboTiers: newTiers });
                                   }}
-                                  className={`w-full px-2 py-1 border rounded-lg font-bold text-center ${
+                                  className={`w-full px-2 py-1 border rounded-lg font-bold text-center text-xs ${
                                     Number(editingProduct.costPrice) > 0 && Number(tier.unitPrice) > 0 && Number(tier.unitPrice) < Number(editingProduct.costPrice)
-                                      ? 'bg-amber-50 border-amber-400 text-amber-700'
-                                      : 'bg-pink-50/30 border-pink-200 text-rose-600'
+                                      ? 'bg-amber-50 border-amber-300 text-amber-800'
+                                      : 'bg-white border-stone-200 text-rose-600'
                                   }`}
                                 />
                               </div>
 
                               <div className="flex-1 min-w-[120px]">
-                                <span className="text-[10px] text-gray-500 block">Tên mốc hiển thị:</span>
+                                <span className="text-[10px] text-stone-500 block">Tên mốc hiển thị:</span>
                                 <input
                                   type="text"
                                   value={tier.label}
@@ -4320,8 +4346,8 @@ export default function AdminPage() {
                                     newTiers[idx] = { ...newTiers[idx], label: e.target.value };
                                     setEditingProduct({ ...editingProduct, comboTiers: newTiers });
                                   }}
-                                  placeholder="Mốc sỉ 50 cái..."
-                                  className="w-full px-2 py-1 bg-pink-50/30 border border-pink-200 rounded-lg font-medium"
+                                  placeholder="VD: Mốc 50 cái..."
+                                  className="w-full px-2.5 py-1 bg-white border border-stone-200 rounded-lg font-medium text-xs"
                                 />
                               </div>
 
@@ -4331,7 +4357,7 @@ export default function AdminPage() {
                                   const newTiers = (editingProduct.comboTiers || []).filter((_, i) => i !== idx);
                                   setEditingProduct({ ...editingProduct, comboTiers: newTiers });
                                 }}
-                                className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 transition shrink-0 mt-3"
+                                className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-stone-100 transition shrink-0 mt-3 cursor-pointer"
                                 title="Xóa mốc này"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -4346,41 +4372,33 @@ export default function AdminPage() {
               </div>
 
               {/* 3. MODAL FOOTER (STICKY BOTTOM ACTION BUTTONS) */}
-              <div className="pt-4 mt-6 border-t border-pink-100 flex items-center justify-between gap-3 bg-white">
-                <div className="text-xs text-gray-500 font-medium">
-                  {productModalTab === 'BASIC' && (
-                    <span>💡 Điền Tên và Giá bán rồi bấm Lưu là xong.</span>
-                  )}
-                  {productModalTab === 'MEDIA' && (
-                    <span>💡 Tải ảnh hoặc dán link ảnh sản phẩm.</span>
-                  )}
-                  {productModalTab === 'VARIANTS_WHOLESALE' && (
-                    <span>💡 Tùy chỉnh màu sắc &amp; các mốc sỉ nếu có.</span>
-                  )}
+              <div className="pt-4 mt-6 border-t border-stone-200 flex items-center justify-between gap-3 bg-white">
+                <div className="text-xs text-stone-400 font-normal">
+                  <span>Nhấn nút Hủy hoặc click dấu × để đóng</span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <button
                     type="button"
                     onClick={() => setIsProductModalOpen(false)}
                     disabled={isSavingProduct}
-                    className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 font-bold transition text-xs cursor-pointer"
+                    className="px-5 py-2 rounded-xl border border-stone-200 text-stone-600 hover:bg-stone-50 font-semibold transition text-xs cursor-pointer"
                   >
-                    Hủy Bỏ
+                    Hủy bỏ
                   </button>
 
                   <button
                     type="submit"
                     disabled={isSavingProduct}
-                    className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-red-500 via-rose-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-extrabold shadow-md transition transform active:scale-95 text-xs flex items-center gap-2 cursor-pointer"
+                    className="px-7 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-semibold shadow-xs transition active:scale-98 text-xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {isSavingProduct ? (
                       <>
                         <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Đang lưu sản phẩm...</span>
+                        <span>Đang lưu...</span>
                       </>
                     ) : (
-                      <span>{editingProduct.id ? '💾 Lưu Thay Đổi Sản Phẩm ✨' : '✨ Tạo Mẫu Charm Mới'}</span>
+                      <span>{editingProduct.id ? 'Lưu Thay Đổi Sản Phẩm' : 'Tạo Sản Phẩm Mới'}</span>
                     )}
                   </button>
                 </div>
