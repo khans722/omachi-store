@@ -748,7 +748,7 @@ export default function AdminPage() {
       categoryId: defaultCat.id,
       categoryName: defaultCat.name,
       basePrice: 2000,
-      originalPrice: 3000,
+      originalPrice: 2000,
       costPrice: 800,
       material: 'Acrylic cao cấp pastel',
       dimensions: '8mm - 12mm',
@@ -787,11 +787,37 @@ export default function AdminPage() {
     e.preventDefault();
     if (!editingProduct || !editingProduct.name) return;
 
-    // Auto calculate total stock if variants exist
-    const finalProduct = { ...editingProduct };
     // Coi giá lẻ là giá gốc luôn
+    const finalProduct = { ...editingProduct };
     finalProduct.originalPrice = Number(finalProduct.basePrice) || 0;
 
+    // Kiểm tra cảnh báo nếu đặt giá bán hoặc giá sỉ thấp hơn giá vốn nhập kho
+    const costPrice = Number(finalProduct.costPrice) || 0;
+    const basePrice = Number(finalProduct.basePrice) || 0;
+    const losingTiers = (finalProduct.comboTiers || []).filter(
+      (t) => (Number(t.unitPrice) || 0) > 0 && (Number(t.unitPrice) || 0) < costPrice
+    );
+
+    if (costPrice > 0 && (basePrice < costPrice || losingTiers.length > 0)) {
+      let warnMessage = `⚠️ CẢNH BÁO: PHÁT HIỆN GIÁ BÁN THẤP HƠN GIÁ VỐN NHẬP KHO!\n\n`;
+      if (basePrice < costPrice) {
+        warnMessage += `• Giá bán lẻ (${formatVND(basePrice)}) thấp hơn giá vốn (${formatVND(costPrice)}): Bán lỗ -${formatVND(costPrice - basePrice)}/cái.\n`;
+      }
+      if (losingTiers.length > 0) {
+        warnMessage += `• Có ${losingTiers.length} mốc sỉ bán lỗ dưới giá vốn:\n`;
+        losingTiers.forEach((t) => {
+          warnMessage += `   + ${t.label || `Mốc ${t.minQuantity} cái`}: ${formatVND(t.unitPrice)} (Vốn: ${formatVND(costPrice)} -> Lỗ -${formatVND(costPrice - t.unitPrice)}/cái)\n`;
+        });
+      }
+      warnMessage += `\n❓ Bạn có chắc chắn muốn lưu các mức giá này để XẢ KHO CẮT LỖ không?\n\n(Bấm OK để VẪN LƯU bình thường, hoặc bấm CANCEL / HỦY nếu bạn gõ nhầm giá)`;
+
+      const confirmSave = window.confirm(warnMessage);
+      if (!confirmSave) {
+        return; // Người dùng ấn Hủy để kiểm tra và sửa lại giá gõ nhầm
+      }
+    }
+
+    // Auto calculate total stock if variants exist
     if (finalProduct.variants && finalProduct.variants.length > 0) {
       const sumVariantStock = finalProduct.variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
       if (sumVariantStock > 0) {
@@ -4220,8 +4246,17 @@ export default function AdminPage() {
                             newTiers[idx] = { ...newTiers[idx], unitPrice: Number(e.target.value) };
                             setEditingProduct({ ...editingProduct, comboTiers: newTiers });
                           }}
-                          className="w-full px-2 py-1 bg-pink-50/30 border border-pink-200 rounded-lg font-bold text-rose-600 text-center"
+                          className={`w-full px-2 py-1 border rounded-lg font-bold text-center transition ${
+                            Number(editingProduct.costPrice) > 0 && Number(tier.unitPrice) > 0 && Number(tier.unitPrice) < Number(editingProduct.costPrice)
+                              ? 'bg-amber-50 border-amber-400 text-amber-700'
+                              : 'bg-pink-50/30 border-pink-200 text-rose-600'
+                          }`}
                         />
+                        {Number(editingProduct.costPrice) > 0 && Number(tier.unitPrice) > 0 && Number(tier.unitPrice) < Number(editingProduct.costPrice) && (
+                          <span className="text-[9px] font-bold text-amber-700 block text-center mt-0.5 leading-tight">
+                            ⚠️ Dưới vốn (-{formatVND(Number(editingProduct.costPrice) - Number(tier.unitPrice))})
+                          </span>
+                        )}
                       </div>
 
                       <div className="flex-1 min-w-[120px]">

@@ -125,14 +125,8 @@ export default function Navbar() {
             <OmachiLogo size="md" />
           </Link>
 
-          {/* Desktop Search Bar - Cùng độ rộng và căn chỉnh đồng trục với ô tìm kiếm bộ sưu tập (Ẩn khi ở Admin) */}
-          {isAdmin ? (
-            <div className="flex-1 flex items-center justify-center">
-              <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-rose-50 text-rose-600 border border-rose-200 shadow-2xs">
-                ✨ TRANG QUẢN TRỊ OMACHI
-              </span>
-            </div>
-          ) : (
+          {/* Desktop Search Bar (Ẩn khi ở Admin) */}
+          {!isAdmin && (
             <div className="hidden md:flex flex-1 max-w-md mx-4">
               <form
                 onSubmit={(e) => {
