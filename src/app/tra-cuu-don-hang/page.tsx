@@ -26,6 +26,7 @@ import {
   X,
   AlertCircle
 } from 'lucide-react';
+import PaymentModal from '@/components/PaymentModal';
 
 function getStatusBadge(status: string) {
   switch (status) {
@@ -74,7 +75,15 @@ function getStatusBadge(status: string) {
   }
 }
 
-function OrderCard({ order, zaloUrl }: { order: Order; zaloUrl: string }) {
+function OrderCard({
+  order,
+  zaloUrl,
+  onOpenPaymentModal,
+}: {
+  order: Order;
+  zaloUrl: string;
+  onOpenPaymentModal?: (order: Order) => void;
+}) {
   const status = getStatusBadge(order.orderStatus);
   const orderDate = new Date(order.createdAt).toLocaleDateString('vi-VN', {
     day: '2-digit',
@@ -110,6 +119,16 @@ function OrderCard({ order, zaloUrl }: { order: Order; zaloUrl: string }) {
                 ? '💳 Chuyển khoản VietQR'
                 : '💵 Thu tiền COD'}
             </span>
+            {order.paymentStatus !== 'PAID' && (order.paymentMethod === 'BANK' || order.paymentMethod === 'MOMO') ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                <span>Chờ thanh toán ({formatVND(order.finalTotalAmount || order.totalAmount)})</span>
+              </span>
+            ) : order.paymentStatus === 'PAID' ? (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span>✓ Đã thanh toán</span>
+              </span>
+            ) : null}
           </div>
           <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" />
@@ -312,7 +331,21 @@ function OrderCard({ order, zaloUrl }: { order: Order; zaloUrl: string }) {
           )}
         </div>
 
-        <div className="flex items-center gap-2.5 self-end sm:self-center">
+        <div className="flex items-center gap-2 flex-wrap self-end sm:self-center">
+          {order.paymentStatus !== 'PAID' && (order.paymentMethod === 'BANK' || order.paymentMethod === 'MOMO') && onOpenPaymentModal && (
+            <button
+              type="button"
+              onClick={() => onOpenPaymentModal(order)}
+              className={`px-3.5 py-2 rounded-xl text-white text-xs font-black transition flex items-center gap-1.5 shadow-md cursor-pointer animate-pulse ${
+                order.paymentMethod === 'MOMO'
+                  ? 'bg-gradient-to-r from-[#A50064] to-[#D82D8B] hover:brightness-110 shadow-pink-200'
+                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 shadow-blue-200'
+              }`}
+            >
+              <span>{order.paymentMethod === 'MOMO' ? '🟣 Thanh toán MoMo' : '💳 Thanh toán ngay (Quét QR)'}</span>
+            </button>
+          )}
+
           <Link
             href={`/order/${order.code || order.id}`}
             className="px-3.5 py-2 rounded-xl bg-white hover:bg-pink-50 text-rose-600 border border-pink-200 text-xs font-bold transition flex items-center gap-1 shadow-2xs"
@@ -345,6 +378,9 @@ function OrderLookupContent() {
   
   // Settings
   const [settings, setSettings] = useState<ShopSettings | null>(null);
+
+  // Selected Order for Payment Modal
+  const [selectedPayOrder, setSelectedPayOrder] = useState<Order | null>(null);
 
   // My Orders State (Logged in)
   const [myOrders, setMyOrders] = useState<Order[]>([]);
@@ -765,7 +801,12 @@ function OrderLookupContent() {
           {!isLoadingMyOrders && filteredMyOrders.length > 0 && (
             <div className="space-y-4">
               {filteredMyOrders.map((order) => (
-                <OrderCard key={order.id || order.code} order={order} zaloUrl={zaloUrl} />
+                <OrderCard
+                  key={order.id || order.code}
+                  order={order}
+                  zaloUrl={zaloUrl}
+                  onOpenPaymentModal={setSelectedPayOrder}
+                />
               ))}
             </div>
           )}
@@ -853,7 +894,12 @@ function OrderLookupContent() {
               ) : (
                 <div className="space-y-4">
                   {manualOrders.map((order) => (
-                    <OrderCard key={order.id || order.code} order={order} zaloUrl={zaloUrl} />
+                    <OrderCard
+                      key={order.id || order.code}
+                      order={order}
+                      zaloUrl={zaloUrl}
+                      onOpenPaymentModal={setSelectedPayOrder}
+                    />
                   ))}
                 </div>
               )}
@@ -871,6 +917,17 @@ function OrderLookupContent() {
           Mọi đơn hàng sau khi đặt trên website đều được nhân viên Omachi liên hệ xác nhận và gửi ảnh mẫu hoàn thiện qua Zalo trước khi gửi bưu tá. Nếu bạn cần đổi mẫu hoặc giao gấp, vui lòng gọi Hotline: <strong className="text-rose-600">{settings?.hotline || '0375.408.256'}</strong>.
         </p>
       </div>
+
+      {/* Payment Modal for Re-paying via VietQR or MoMo */}
+      <PaymentModal
+        order={selectedPayOrder}
+        settings={settings}
+        isOpen={Boolean(selectedPayOrder)}
+        onClose={() => setSelectedPayOrder(null)}
+        onPaymentConfirmed={() => {
+          setSelectedPayOrder(null);
+        }}
+      />
 
     </div>
   );

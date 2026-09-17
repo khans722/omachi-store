@@ -1,8 +1,17 @@
 import { Order, ShopSettings } from '@/types';
 import { formatVND } from './utils';
+import { getPaymentConfirmToken } from './paymentToken';
+
+function escapeHtml(text: string): string {
+  if (!text) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
 
 /**
- * Send notification to Zalo / Telegram webhook when an order is created or status changes
+ * Send notification to Telegram webhook when an order is created or status changes
  */
 export async function sendOrderNotification(
   order: Order,
@@ -10,15 +19,23 @@ export async function sendOrderNotification(
   trigger: 'NEW_ORDER' | 'PAYMENT_SUCCESS' | 'CONFIRMED' | 'SHIPPING',
   requestOrigin?: string
 ) {
-  const itemsText = (order.items || [])
+  const isPaid = order.paymentStatus === 'PAID' || trigger === 'PAYMENT_SUCCESS';
+  const isPrepaid = order.paymentMethod === 'BANK' || order.paymentMethod === 'MOMO';
+
+  const cleanFullName = escapeHtml(order.customer.fullName);
+  const cleanPhone = escapeHtml(order.customer.phone);
+  const cleanAddress = escapeHtml(order.customer.address);
+  const cleanNote = escapeHtml(order.customer.note || '');
+
+  const itemsHtml = (order.items || [])
     .map((item: any, idx: number) => {
-      const name = item.productName || item.product?.name || 'Mẫu Charm';
-      const variant = item.variantName || item.selectedVariant?.name || '';
+      const name = escapeHtml(item.productName || item.product?.name || 'Mẫu Charm');
+      const variant = escapeHtml(item.variantName || item.selectedVariant?.name || '');
       const qty = item.quantity || 1;
       const total = item.totalPrice || 0;
-      const pkg = item.selectedPackage?.name || '';
+      const pkg = escapeHtml(item.selectedPackage?.name || '');
       const details = [variant, pkg ? `Quy cách: ${pkg}` : ''].filter(Boolean).join(' • ');
-      return `   ${idx + 1}. ${name} ${details ? `(${details})` : ''} x${qty} gói = ${formatVND(total)}`;
+      return `   ${idx + 1}. <b>${name}</b> ${details ? `(${details})` : ''} x${qty} gói = <b>${formatVND(total)}</b>`;
     })
     .join('\n');
 
@@ -26,75 +43,108 @@ export async function sendOrderNotification(
   const configUrl = ((settings as any).websiteUrl || '').replace(/\/$/, '');
   const reqUrl = (requestOrigin || '').replace(/\/$/, '');
 
-  // Tự động nhận diện domain thật khi đã deploy lên mạng (tránh tuyệt đối localhost khi chạy thực tế)
-  let baseUrl = '';
+  // Tự động nhận diện domain thật khi đã deploy lên mạng
+  let baseUrl = 'https://omachi-store-theta.vercel.app';
   if (configUrl && !configUrl.includes('localhost')) {
     baseUrl = configUrl;
   } else if (reqUrl && !reqUrl.includes('localhost')) {
     baseUrl = reqUrl;
-  } else if (envUrl) {
+  } else if (envUrl && !envUrl.includes('localhost')) {
     baseUrl = envUrl;
-  } else if (reqUrl) {
-    baseUrl = reqUrl;
-  } else if (configUrl) {
-    baseUrl = configUrl;
-  } else {
-    baseUrl = '';
   }
 
-  const orderViewUrl = baseUrl ? `${baseUrl}/order/${order.code || order.id}` : `/order/${order.code || order.id}`;
-  const adminUrl = baseUrl ? `${baseUrl}/admin` : `/admin`;
+  const orderViewUrl = `${baseUrl}/order/${order.code || order.id}`;
+  const adminUrl = `${baseUrl}/admin`;
 
-  let title = '🌸 OMACHI - CÓ ĐƠN HÀNG MỚI! ✨';
-  if (trigger === 'PAYMENT_SUCCESS') {
-    title = '💰 OMACHI - ĐÃ XÁC NHẬN THANH TOÁN! ✅';
+  let title = '🌸 <b>OMACHI - CÓ ĐƠN HÀNG MỚI!</b> ✨';
+  if (isPaid) {
+    title = '💰 <b>OMACHI - ĐÃ XÁC NHẬN THANH TOÁN!</b> ✅';
   } else if (trigger === 'CONFIRMED') {
-    title = '📦 OMACHI - ĐÃ XÁC NHẬN ĐƠN HÀNG! 🎀';
+    title = '📦 <b>OMACHI - ĐÃ XÁC NHẬN ĐƠN HÀNG!</b> 🎀';
   }
 
-  const messageText = `
+  let methodText = '';
+  let paymentStatusText = '';
+  let shippingFeeText = '';
+  let shopNoteText = '';
+
+  if (isPaid) {
+    methodText = order.paymentMethod === 'MOMO' ? '🟣 Ví MoMo' : order.paymentMethod === 'BANK' ? '💳 Chuyển khoản VietQR' : '💵 Thu tiền COD';
+    paymentStatusText = '✅ <b>ĐÃ THANH TOÁN THÀNH CÔNG</b>';
+    shippingFeeText = '🎁 <b>0đ</b> <i>(Đã áp dụng Miễn phí ship)</i>';
+    shopNoteText = '✨ <b>TIỀN ĐÃ VỀ TÀI KHOẢN:</b> Shop an tâm đóng hàng và bàn giao bưu tá!';
+  } else if (isPrepaid) {
+    methodText = order.paymentMethod === 'MOMO' ? '🟣 Ví MoMo (Chờ khách quét QR)' : '💳 Chuyển khoản VietQR (Chờ khách quét QR)';
+    paymentStatusText = '⏳ <b>CHƯA NHẬN TIỀN (Khách vừa tạo lệnh QR)</b>';
+    shippingFeeText = '0đ <i>(Tạm tính theo ưu đãi Chuyển khoản - Điều kiện: Khách phải CK đủ)</i>';
+    shopNoteText = `⚠️ <b>LƯU Ý CHO SHOP:</b> Vui lòng kiểm tra app Ngân hàng / MoMo xem đã nhận đủ <b>${formatVND(order.finalTotalAmount || order.totalAmount)}</b> chưa trước khi gửi hàng!\n<i>(Nếu khách KHÔNG chuyển khoản hoặc đổi sang COD, cước ship là 15.000đ)</i>`;
+  } else {
+    methodText = '💵 Thanh toán COD khi nhận hàng';
+    paymentStatusText = '📦 <b>Đơn COD - Thu tiền mặt khi giao hàng</b>';
+    shippingFeeText = order.shippingFee ? `<b>${formatVND(order.shippingFee)}</b>` : '15.000đ';
+    shopNoteText = '💡 <b>ĐƠN COD:</b> Shipper SPX sẽ thu đủ tiền hàng + phí ship khi giao tận nơi.';
+  }
+
+  const messageHtml = `
 ${title}
 ----------------------------------------
-🧾 Mã đơn: #${order.code}
-👤 Khách hàng: ${order.customer.fullName}
-📞 Số điện thoại: ${order.customer.phone}
-📍 Địa chỉ: ${order.customer.address}
-${order.customer.note ? `📝 Ghi chú: ${order.customer.note}\n` : ''}
-🛒 Danh sách sản phẩm:
-${itemsText}
+🧾 <b>Mã đơn:</b> #${order.code}
+👤 <b>Khách hàng:</b> ${cleanFullName}
+📞 <b>Số điện thoại:</b> ${cleanPhone}
+📍 <b>Địa chỉ:</b> ${cleanAddress}
+${cleanNote ? `📝 <b>Ghi chú:</b> <i>"${cleanNote}"</i>\n` : ''}
+🛒 <b>Danh sách sản phẩm:</b>
+${itemsHtml}
 
-💰 Tiền hàng: ${formatVND(order.subtotal || (order as any).subtotalAmount || (order.totalAmount - (order.shippingFee || 0)))}
-🚚 Phí ship: ${order.shippingFee === 0 ? '🎁 Miễn phí ship (0đ - Ưu đãi thanh toán)' : order.shippingFee ? formatVND(order.shippingFee) : '💬 Cân thực tế'}
-💵 TỔNG TIỀN: ${formatVND(order.totalAmount)}
-💳 Phương thức: ${order.paymentMethod === 'MOMO' ? '🟣 Ví MoMo (Chuyển tiền / Quét QR)' : order.paymentMethod === 'BANK' ? '💳 Chuyển khoản VietQR' : '💵 Thanh toán COD khi nhận'}
-📌 Trạng thái: ${order.shippingFee === 0 ? 'ĐÃ ĐƯỢC MIỄN PHÍ SHIP' : order.shippingFee ? 'ĐÃ CÓ PHÍ SHIP' : 'CHỜ SHOP CÂN HÀNG & BÁO SHIP'}
+💰 <b>Tiền hàng:</b> ${formatVND(order.subtotal || (order as any).subtotalAmount || (order.totalAmount - (order.shippingFee || 0)))}
+🚚 <b>Phí ship:</b> ${shippingFeeText}
+💵 <b>TỔNG TIỀN:</b> <b>${formatVND(order.finalTotalAmount || order.totalAmount)}</b>
+💳 <b>Phương thức:</b> ${methodText}
+📌 <b>Trạng thái:</b> ${paymentStatusText}
 
-⏰ Thời gian: ${new Date(order.createdAt).toLocaleString('vi-VN')}
+${shopNoteText}
+
+⏰ <b>Thời gian:</b> ${new Date(order.createdAt).toLocaleString('vi-VN')}
 ----------------------------------------
-👉 Xem đơn hàng: ${orderViewUrl}
-👉 Trang quản trị shop: ${adminUrl}
+👉 <a href="${orderViewUrl}"><b>Bấm vào đây để xem chi tiết đơn #${order.code}</b></a>
+👉 <a href="${adminUrl}"><b>Bấm vào đây để mở Trang Quản Trị Shop</b></a>
 `;
 
-  console.log('[NOTIFICATION LOG]:\n', messageText);
+  console.log('[NOTIFICATION LOG]:\n', messageHtml);
 
   let telegramResult: { success: boolean; error?: string } | null = null;
 
   // GỬI THÔNG BÁO VỀ TELEGRAM NẾU ĐÃ CẤU HÌNH TOKEN & CHAT ID
   if (settings.telegramBotToken && settings.telegramChatId && settings.enableTelegramNotify !== false) {
     try {
-      const cleanPhone = (order.customer?.phone || '').replace(/[^0-9]/g, '');
-      const zaloChatUrl = `https://zalo.me/${cleanPhone}`;
+      const cleanDigits = (order.customer?.phone || '').replace(/[^0-9]/g, '');
+      const zaloChatUrl = `https://zalo.me/${cleanDigits}`;
 
-      // Tạo các nút bấm tương tác trực tiếp dưới tin nhắn Telegram
-      const inlineKeyboard: Array<Array<{ text: string; url: string }>> = [
-        [
-          { text: `📦 Xem & Duyệt Đơn #${order.code}`, url: orderViewUrl }
-        ]
-      ];
+      const confirmToken = getPaymentConfirmToken(order.code, settings.telegramBotToken || '');
+      const confirmPayUrl = `${baseUrl}/api/orders/confirm-payment?code=${order.code}&token=${confirmToken}`;
 
-      if (cleanPhone) {
+      // Nút bấm tương tác trực tiếp dưới tin nhắn Telegram
+      const inlineKeyboard: Array<Array<{ text: string; url: string }>> = [];
+
+      // Nút 1-chạm xác nhận đã nhận tiền nếu đơn chưa thanh toán
+      if (!isPaid && isPrepaid) {
         inlineKeyboard.push([
-          { text: `💬 Mở Chat Zalo Với Khách (${cleanPhone})`, url: zaloChatUrl }
+          {
+            text: `✅ Xác Nhận ĐÃ NHẬN TIỀN (${formatVND(order.finalTotalAmount || order.totalAmount)})`,
+            url: confirmPayUrl,
+          },
+        ]);
+      }
+
+      // Nút xem chi tiết đơn hàng
+      inlineKeyboard.push([
+        { text: `📦 Xem & Duyệt Đơn #${order.code}`, url: orderViewUrl },
+      ]);
+
+      // Nút chat Zalo với khách
+      if (cleanDigits) {
+        inlineKeyboard.push([
+          { text: `💬 Mở Chat Zalo Với Khách (${cleanDigits})`, url: zaloChatUrl },
         ]);
       }
 
@@ -103,29 +153,41 @@ ${itemsText}
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: settings.telegramChatId.trim(),
-          text: messageText,
+          text: messageHtml,
+          parse_mode: 'HTML',
           reply_markup: {
-            inline_keyboard: inlineKeyboard
+            inline_keyboard: inlineKeyboard,
           },
         }),
       });
 
       const resJson = await res.json();
       if (!resJson.ok) {
-        console.error('[TELEGRAM BOT ERROR]:', resJson);
-        telegramResult = {
-          success: false,
-          error: resJson.description || 'Lỗi gửi tin Telegram',
-        };
+        console.error('[TELEGRAM BOT HTML ERROR, retrying plain text]:', resJson);
+        // Fallback plain text if HTML tags ever fail
+        const plainFallback = messageHtml.replace(/<[^>]*>?/gm, '');
+        const retryRes = await fetch(`https://api.telegram.org/bot${settings.telegramBotToken.trim()}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: settings.telegramChatId.trim(),
+            text: plainFallback,
+            reply_markup: {
+              inline_keyboard: inlineKeyboard,
+            },
+          }),
+        });
+        const retryJson = await retryRes.json();
+        telegramResult = { success: retryJson.ok, error: retryJson.description };
       } else {
         console.log('[TELEGRAM BOT SUCCESS]: Message sent to chat', settings.telegramChatId);
         telegramResult = { success: true };
       }
-    } catch (tgErr) {
+    } catch (tgErr: any) {
       console.error('[TELEGRAM BOT FAILED]:', tgErr);
-      telegramResult = { success: false, error: (tgErr && tgErr.message) || String(tgErr) };
+      telegramResult = { success: false, error: tgErr?.message || String(tgErr) };
     }
   }
 
-  return { success: true, messageText, telegram: telegramResult };
+  return { success: true, messageText: messageHtml, telegram: telegramResult };
 }

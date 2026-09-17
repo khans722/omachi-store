@@ -17,7 +17,8 @@ import {
   Tag,
   Edit2,
   Check,
-  CreditCard
+  CreditCard,
+  Download
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -482,8 +483,9 @@ export default function CheckoutPage() {
   const [specificAddress, setSpecificAddress] = useState('');
 
   // Payment method selection (Shopee style)
-  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BANK' | 'MOMO'>('COD');
+  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BANK'>('COD');
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [isDownloadingQr, setIsDownloadingQr] = useState(false);
 
   const copyToClipboard = (text: string, field: string) => {
     if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
@@ -494,16 +496,36 @@ export default function CheckoutPage() {
     }
   };
 
-  // Freeship cấu hình theo settings (mặc định 1.000.000₫) khi thanh toán Chuyển Khoản hoặc Ví MoMo
+  const downloadQrImage = async (url: string, filename: string) => {
+    setIsDownloadingQr(true);
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      window.open(url, '_blank');
+    } finally {
+      setIsDownloadingQr(false);
+    }
+  };
+
+  // Freeship cấu hình theo settings (mặc định 1.000.000₫) khi thanh toán Chuyển Khoản VietQR
   const FREESHIP_THRESHOLD = Number(settings?.prepaidFreeShipThreshold) || 1000000;
   const isPrepaidFreeshipEnabled = settings?.enablePrepaidFreeShip !== false;
   const isOrderOverThreshold = checkoutSubtotal >= FREESHIP_THRESHOLD;
   const missingForFreeship = Math.max(0, FREESHIP_THRESHOLD - checkoutSubtotal);
-  const isPrepaidFreeship = isPrepaidFreeshipEnabled && isOrderOverThreshold && (paymentMethod === 'BANK' || paymentMethod === 'MOMO');
+  const isPrepaidFreeship = isPrepaidFreeshipEnabled && isOrderOverThreshold && (paymentMethod === 'BANK');
   const effectiveShippingFee = isPrepaidFreeship ? 0 : checkoutShippingFee;
   const checkoutFinalTotal = checkoutSubtotal + effectiveShippingFee;
 
-  // Address edit toggle: auto-expand if any required field is missing (2 cấp: Tỉnh/TP và Phường/Xã)
+  // Address edit toggle
   const isAddressComplete = Boolean(
     customer.fullName.trim() &&
     customer.phone.trim() &&
@@ -511,14 +533,7 @@ export default function CheckoutPage() {
     selectedWard.trim() &&
     specificAddress.trim()
   );
-  const [isEditingAddress, setIsEditingAddress] = useState(!isAddressComplete);
-
-  // Sync edit mode if empty
-  useEffect(() => {
-    if (!isAddressComplete) {
-      setIsEditingAddress(true);
-    }
-  }, [isAddressComplete]);
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
 
   // Refs for validation focus
   const fullNameRef = useRef<HTMLInputElement>(null);
@@ -552,8 +567,21 @@ export default function CheckoutPage() {
           if (parsed.selectedDistrict) setSelectedDistrict((prev) => prev || parsed.selectedDistrict);
           if (parsed.selectedWard) setSelectedWard((prev) => prev || parsed.selectedWard);
           if (parsed.specificAddress) setSpecificAddress((prev) => prev || parsed.specificAddress);
+
+          const isSavedComplete = Boolean(
+            parsed.fullName?.trim() &&
+            parsed.phone?.trim() &&
+            parsed.selectedProvince?.trim() &&
+            parsed.selectedWard?.trim() &&
+            parsed.specificAddress?.trim()
+          );
+          setIsEditingAddress(!isSavedComplete);
+        } else {
+          setIsEditingAddress(true);
         }
-      } catch (e) {}
+      } catch (e) {
+        setIsEditingAddress(true);
+      }
     }
   }, [loggedInCustomer]);
 
@@ -649,11 +677,13 @@ export default function CheckoutPage() {
       if (hasValidSavedAddress) {
         const defaultSaved = savedAddresses.find((a) => a.isDefault) || savedAddresses[0];
         applySavedAddress(defaultSaved);
+        setIsEditingAddress(false);
       } else if (hasProfileAddress) {
         setSelectedProvince(loggedInCustomer.city || '');
         setSelectedDistrict(loggedInCustomer.district || '');
         setSelectedWard((loggedInCustomer as any).ward || '');
         setSpecificAddress(loggedInCustomer.address || '');
+        setIsEditingAddress(false);
       } else {
         // Brand new customer with NO saved address:
         // Clear all fields so user can enter their own address cleanly!
@@ -661,6 +691,7 @@ export default function CheckoutPage() {
         setSelectedDistrict('');
         setSelectedWard('');
         setSpecificAddress('');
+        setIsEditingAddress(true);
       }
     }
   }, [loggedInCustomer, savedAddresses]);
@@ -874,7 +905,7 @@ export default function CheckoutPage() {
 
   // MÀN HÌNH ĐÃ TẠO ĐƠN THÀNH CÔNG / CHỜ THANH TOÁN
   if (createdOrder) {
-    const isPrepaidOrder = createdOrder.paymentMethod === 'BANK' || createdOrder.paymentMethod === 'MOMO';
+    const isPrepaidOrder = createdOrder.paymentMethod === 'BANK';
     const zaloShopPhone = (settings?.zaloPhone || '0375408256').replace(/[^0-9]/g, '');
     const prefilledMsg = encodeURIComponent(
       `Chào shop Omachi! Mình vừa đặt đơn #${createdOrder.code} (${createdOrder.items.reduce((s: number, i: any) => s + i.quantity, 0)} món). Mình nhắn qua để shop tư vấn thêm nhé! 💕`
@@ -892,7 +923,7 @@ export default function CheckoutPage() {
 
               <div className="space-y-1">
                 <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-3 py-1 rounded-full border border-amber-200 inline-block">
-                  ĐANG CHỜ THANH TOÁN (HẠN 24H)
+                  ĐANG CHỜ THANH TOÁN
                 </span>
                 <h2 className="text-xl font-black text-gray-900 pt-1">
                   Mã Đơn: #{createdOrder.code}
@@ -901,8 +932,6 @@ export default function CheckoutPage() {
                   Chào <strong>{createdOrder.customer.fullName}</strong>! Vui lòng quét mã bên dưới để thanh toán đơn hàng nhé!
                 </p>
               </div>
-
-              <OrderCountdownTimer createdAt={createdOrder.createdAt} />
             </div>
           ) : (
             <div className="space-y-2">
@@ -911,7 +940,7 @@ export default function CheckoutPage() {
               </div>
 
               <div className="space-y-1">
-                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 inline-block">
+                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 inline-block">
                   ĐẶT HÀNG THÀNH CÔNG
                 </span>
                 <h2 className="text-xl font-black text-gray-900 pt-1.5">
@@ -933,17 +962,16 @@ export default function CheckoutPage() {
               </strong>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-500">
-                Phí vận chuyển (SPX{createdOrder.totalWeight ? ` • ${(Number(createdOrder.totalWeight) / 1000).toFixed(2)}kg` : ''}):
-              </span>
+              <span className="text-gray-500">Phí vận chuyển:</span>
               {(createdOrder.shippingFee || 0) > 0 ? (
                 <strong className="text-rose-600 font-bold">
                   +{formatVND(createdOrder.shippingFee)}
                 </strong>
               ) : (
-                <strong className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[11px]">
-                  🎁 Miễn phí ship (0đ)
-                </strong>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-gray-400 line-through text-[11px]">15.000đ</span>
+                  <strong className="text-emerald-600 font-bold text-xs">0đ</strong>
+                </div>
               )}
             </div>
             <div className="flex justify-between items-baseline pt-2 border-t border-gray-200">
@@ -963,140 +991,12 @@ export default function CheckoutPage() {
             <div className="flex justify-between text-gray-600">
               <span>Hình thức:</span>
               <strong className="text-gray-800">
-                {createdOrder.paymentMethod === 'MOMO'
-                  ? '🟣 Ví MoMo'
-                  : createdOrder.paymentMethod === 'BANK'
+                {createdOrder.paymentMethod === 'BANK'
                   ? '💳 Chuyển khoản VietQR'
                   : '💵 COD (Khi nhận hàng)'}
               </strong>
             </div>
           </div>
-
-          {/* Freeship Alert if Order >= FREESHIP_THRESHOLD */}
-          {isPrepaidFreeshipEnabled && (Number(createdOrder.subtotal) || Number(createdOrder.totalAmount) || 0) >= FREESHIP_THRESHOLD && (
-            <div className="bg-emerald-50 p-3.5 rounded-xl border border-emerald-200 text-xs text-emerald-900 space-y-1 text-left shadow-2xs">
-              <p className="font-black flex items-center gap-1.5 text-emerald-800">
-                <span>🎉</span>
-                <span>ĐƠN TRÊN {formatVND(FREESHIP_THRESHOLD)} – MIỄN PHÍ SHIP KHI THANH TOÁN TRẢ TRƯỚC!</span>
-              </p>
-              <p className="text-[11px] text-emerald-700 leading-relaxed font-medium">
-                {createdOrder.paymentMethod === 'BANK' || createdOrder.paymentMethod === 'MOMO'
-                  ? `✨ Bạn đã chọn ${createdOrder.paymentMethod === 'MOMO' ? 'Ví MoMo' : 'Chuyển khoản VietQR'}: Đơn hàng đã được áp dụng MIỄN PHÍ VẬN CHUYỂN 0đ!`
-                  : '💡 Bạn đang chọn COD: Nếu bạn muốn được MIỄN 100% CƯỚC SHIP (0đ), bạn chỉ cần nhắn tin Zalo cho shop báo đổi sang MoMo hoặc Chuyển khoản là xong nhé!'}
-              </p>
-            </div>
-          )}
-
-          {/* 🟣 MOMO PAYMENT BOX */}
-          {createdOrder.paymentMethod === 'MOMO' && (
-            <div className="rounded-2xl border-2 border-[#A50064]/30 bg-gradient-to-b from-[#FFF0F6] to-white p-4 text-left space-y-3 shadow-sm">
-              <div className="flex items-center gap-2.5 pb-2.5 border-b border-pink-100">
-                <div className="w-8 h-8 rounded-lg bg-[#A50064] text-white font-black flex items-center justify-center text-xs shrink-0 shadow-xs">
-                  M
-                </div>
-                <div>
-                  <h3 className="text-xs font-black text-[#A50064] uppercase tracking-wider">
-                    Thanh Toán Qua Ví MoMo
-                  </h3>
-                  <p className="text-[11px] text-stone-500">
-                    Quét mã QR hoặc chuyển tiền trực tiếp đến SĐT Ví MoMo của shop
-                  </p>
-                </div>
-              </div>
-
-              {/* MoMo QR Code */}
-              <div className="bg-white p-3 rounded-xl border border-pink-200 flex flex-col items-center text-center space-y-2">
-                <div className="relative p-2 bg-white rounded-lg border border-pink-100 shadow-2xs">
-                  <img
-                    src={
-                      settings?.momoQrImage ||
-                      `https://api.qrserver.com/v1/create-qr-code/?size=250x250&margin=8&data=${encodeURIComponent(
-                        `2|99|${(settings?.momoPhone || '0375408256').replace(/[^0-9]/g, '')}|||0|0|${
-                          createdOrder.finalTotalAmount || createdOrder.totalAmount
-                        }|DH ${createdOrder.code}|transfer_p2p`
-                      )}`
-                    }
-                    alt="Mã QR MoMo"
-                    className="w-44 h-44 object-contain rounded-md"
-                  />
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-[#A50064] text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-xs whitespace-nowrap">
-                    Quét bằng App MoMo
-                  </div>
-                </div>
-                <p className="text-[11px] text-stone-500 pt-1 font-medium">
-                  Mở ứng dụng MoMo &gt; Chọn <strong>Quét Mã</strong> để chuyển nhanh
-                </p>
-
-                {/* Deep link button for Mobile */}
-                <a
-                  href={`momo://?action=transfer&phone=${(settings?.momoPhone || '0375408256').replace(/[^0-9]/g, '')}&amount=${
-                    createdOrder.finalTotalAmount || createdOrder.totalAmount
-                  }&comment=${encodeURIComponent(`DH ${createdOrder.code}`)}`}
-                  className="w-full py-2 px-3 bg-[#A50064] hover:bg-[#880052] text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition active:scale-98"
-                >
-                  <span>⚡ Mở App MoMo Trên Điện Thoại</span>
-                </a>
-              </div>
-
-              {/* MoMo Direct Transfer Details */}
-              <div className="bg-stone-50 rounded-xl p-3 border border-stone-200 space-y-2 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-stone-500">Số điện thoại MoMo:</span>
-                  <div className="flex items-center gap-1.5">
-                    <strong className="text-stone-900 font-mono font-bold text-sm">
-                      {settings?.momoPhone || '0375408256'}
-                    </strong>
-                    <button
-                      type="button"
-                      onClick={() => copyToClipboard(settings?.momoPhone || '0375408256', 'momoPhone')}
-                      className="text-[10px] bg-white border border-stone-300 hover:border-pink-500 text-stone-700 px-2 py-0.5 rounded font-bold transition"
-                    >
-                      {copiedField === 'momoPhone' ? '✓ Đã chép' : 'Sao chép'}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-stone-500">Tên chủ ví:</span>
-                  <strong className="text-stone-900 font-bold uppercase">
-                    {settings?.momoName || 'DUONG QUOC KHANH'}
-                  </strong>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-stone-500">Số tiền:</span>
-                  <div className="flex items-center gap-1.5">
-                    <strong className="text-rose-600 font-black text-sm">
-                      {formatVND(createdOrder.finalTotalAmount || createdOrder.totalAmount)}
-                    </strong>
-                    <button
-                      type="button"
-                      onClick={() => copyToClipboard(String(createdOrder.finalTotalAmount || createdOrder.totalAmount), 'momoAmount')}
-                      className="text-[10px] bg-white border border-stone-300 hover:border-pink-500 text-stone-700 px-2 py-0.5 rounded font-bold transition"
-                    >
-                      {copiedField === 'momoAmount' ? '✓ Đã chép' : 'Sao chép'}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-stone-500">Lời nhắn / Nội dung:</span>
-                  <div className="flex items-center gap-1.5">
-                    <strong className="text-[#A50064] font-mono font-black text-sm bg-pink-50 px-2 py-0.5 rounded border border-pink-200">
-                      DH {createdOrder.code}
-                    </strong>
-                    <button
-                      type="button"
-                      onClick={() => copyToClipboard(`DH ${createdOrder.code}`, 'momoContent')}
-                      className="text-[10px] bg-white border border-stone-300 hover:border-pink-500 text-stone-700 px-2 py-0.5 rounded font-bold transition"
-                    >
-                      {copiedField === 'momoContent' ? '✓ Đã chép' : 'Sao chép'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* 💳 VIETQR BANK PAYMENT BOX */}
           {createdOrder.paymentMethod === 'BANK' && (
@@ -1121,22 +1021,49 @@ export default function CheckoutPage() {
                   {(() => {
                     const rawBank = (settings?.bankId || 'VCB').toUpperCase().trim();
                     const qrBank = rawBank.includes('VIETCOM') ? 'VCB' : rawBank.includes('MB') ? 'MB' : rawBank;
+                    const qrUrl = `https://img.vietqr.io/image/${qrBank}-${settings?.bankAccount || '1013388086'}-compact2.png?amount=${
+                      createdOrder.finalTotalAmount || createdOrder.totalAmount
+                    }&addInfo=${encodeURIComponent(`DH ${createdOrder.code}`)}&accountName=${encodeURIComponent(
+                      settings?.bankOwner || 'DUONG QUOC KHANH'
+                    )}`;
                     return (
-                      <img
-                        src={`https://img.vietqr.io/image/${qrBank}-${settings?.bankAccount || '1013388086'}-compact2.png?amount=${
-                          createdOrder.finalTotalAmount || createdOrder.totalAmount
-                        }&addInfo=${encodeURIComponent(`DH ${createdOrder.code}`)}&accountName=${encodeURIComponent(
-                          settings?.bankOwner || 'DUONG QUOC KHANH'
-                        )}`}
-                        alt="VietQR Chuyển khoản"
-                        className="w-52 h-auto object-contain rounded-md"
-                      />
+                      <>
+                        <img
+                          src={qrUrl}
+                          alt="VietQR Chuyển khoản"
+                          className="w-52 h-auto object-contain rounded-md"
+                        />
+                        <div className="mt-2 w-full">
+                          <button
+                            type="button"
+                            disabled={isDownloadingQr}
+                            onClick={() => downloadQrImage(qrUrl, `vietqr-omachi-${createdOrder.code}.png`)}
+                            className="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer disabled:opacity-50"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>{isDownloadingQr ? 'Đang tải ảnh...' : '📥 Tải ảnh mã QR về máy (Để quét từ ảnh)'}</span>
+                          </button>
+                        </div>
+                      </>
                     );
                   })()}
                 </div>
                 <p className="text-[11px] text-stone-500 font-medium">
-                  Mở app ngân hàng &gt; Quét QR để tự động điền STK, số tiền và nội dung
+                  Mở App <strong>Ngân hàng bất kỳ</strong> hoặc <strong>Ví MoMo</strong> &gt; Chọn <strong>Quét mã QR</strong> để chuyển tiền nhanh tự động
                 </p>
+
+                {/* Hướng dẫn quét từ ảnh trên cùng 1 điện thoại */}
+                <div className="p-2.5 bg-blue-50/70 rounded-xl border border-blue-100 text-[11px] text-blue-900 text-left space-y-1 w-full">
+                  <p className="font-bold flex items-center gap-1 text-[11px] text-blue-800">
+                    <span>💡</span>
+                    <span>Thanh toán dễ dàng trên 1 chiếc điện thoại:</span>
+                  </p>
+                  <ol className="list-decimal list-inside space-y-0.5 text-[10.5px] text-blue-700 leading-relaxed">
+                    <li>Bấm nút <strong>&quot;Tải ảnh mã QR về máy&quot;</strong> ở trên (hoặc chụp màn hình).</li>
+                    <li>Mở App Ngân hàng hoặc MoMo &gt; Bấm <strong>Quét QR</strong>.</li>
+                    <li>Chọn biểu tượng <strong>&quot;Ảnh / Thư viện&quot;</strong> để chọn mã vừa tải về là xong!</li>
+                  </ol>
+                </div>
               </div>
 
               {/* Bank Transfer Details */}
@@ -1341,16 +1268,8 @@ export default function CheckoutPage() {
       {/* MAIN CONTAINER */}
       <form onSubmit={handleSubmitOrder} noValidate className="max-w-2xl mx-auto px-2 sm:px-4 py-2.5 space-y-2.5">
 
-        {/* 2. SHOPEE ADDRESS CARD (Bì Thư Viền Ruy Băng) */}
-        <div ref={addressSectionRef} className="bg-white rounded-lg shadow-2xs overflow-hidden border border-gray-100">
-          {/* Top striped ribbon bar */}
-          <div
-            className="h-1 w-full"
-            style={{
-              background: curr.ribbonBg,
-            }}
-          />
-
+        {/* 2. SHOPEE ADDRESS CARD */}
+        <div ref={addressSectionRef} className="bg-white rounded-2xl shadow-2xs overflow-hidden border border-gray-100">
           <div className="p-3.5 space-y-3">
             {/* Header / Click to toggle */}
             <div
@@ -1431,7 +1350,7 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* 2 CẤP HÀNH CHÍNH MỚI: TỈNH/THÀNH PHỐ VÀ PHƯỜNG/XÃ (BỎ CẤP QUẬN/HUYỆN CHUẨN SHOPEE) */}
+                {/* 2 CẤP HÀNH CHÍNH MỚI: TỈNH/THÀNH PHỐ VÀ PHƯỜNG/XÃ */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <SearchableDropdown
                     label="Tỉnh / Thành phố"
@@ -1476,7 +1395,7 @@ export default function CheckoutPage() {
                   />
                 </div>
 
-                {/* Hàng 4: 1 DÒNG ĐỂ ĐIỀN TAY ĐỊA CHỈ CHI TIẾT (100% full width rộng rãi) */}
+                {/* Hàng 4: 1 DÒNG ĐỂ ĐIỀN TAY ĐỊA CHỈ CHI TIẾT */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-[11px] font-bold text-gray-700 block">
@@ -1504,30 +1423,21 @@ export default function CheckoutPage() {
                   )}
                 </div>
 
-                {/* Xem trước địa chỉ vận đơn đầy đủ */}
-                {(specificAddress || selectedWard || selectedProvince) && (
-                  <div className="p-2.5 bg-pink-50/50 rounded-lg border border-pink-100 text-xs text-gray-700 flex items-start gap-2">
-                    <span className="font-bold text-rose-600 shrink-0">📍 Vận đơn:</span>
-                    <span className="font-medium text-gray-900">
-                      {[specificAddress.trim(), selectedWard.trim(), selectedProvince.trim()].filter(Boolean).join(', ')}
-                    </span>
-                  </div>
-                )}
-
-                {/* Nút Xong xác nhận địa chỉ */}
-                <div className="flex justify-end pt-1">
+                {/* Nút Thu gọn địa chỉ nhẹ nhàng */}
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[11px] text-gray-400 font-medium">
+                    Cuộn xuống để chọn thanh toán &amp; đặt hàng
+                  </span>
                   <button
                     type="button"
                     onClick={() => {
-                      if (customer.fullName.trim() && customer.phone.trim() && selectedProvince.trim() && selectedWard.trim() && specificAddress.trim()) {
-                        setIsEditingAddress(false);
-                        setErrorMessage('');
-                        setFieldErrors({});
-                      }
+                      setIsEditingAddress(false);
+                      setErrorMessage('');
                     }}
-                    className="px-5 py-2 bg-stone-900 hover:bg-black text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer"
+                    className="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1"
                   >
-                    Xong
+                    <span>Thu gọn</span>
+                    <span className="text-[10px]">▲</span>
                   </button>
                 </div>
               </div>
@@ -1673,7 +1583,7 @@ export default function CheckoutPage() {
                 />
                 <div>
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-xs font-bold text-gray-900">Chuyển khoản Ngân hàng (VietQR)</span>
+                    <span className="text-xs font-bold text-gray-900">Chuyển khoản VietQR (Mọi App Ngân hàng &amp; Ví MoMo)</span>
                   </div>
                   <p className="text-[11px] text-gray-500 mt-0.5">
                     {isOrderOverThreshold && isPrepaidFreeshipEnabled ? (
@@ -1681,44 +1591,7 @@ export default function CheckoutPage() {
                         Đơn từ {formatVND(FREESHIP_THRESHOLD)} được shop MIỄN 100% cước ship khi thanh toán chuyển khoản!
                       </strong>
                     ) : (
-                      <span>Quét mã VietQR tiện lợi qua mọi app ngân hàng ({settings?.bankId || 'Vietcombank'}).</span>
-                    )}
-                  </p>
-                </div>
-              </div>
-            </label>
-
-            {/* Option 3: MOMO WALLET */}
-            <label
-              onClick={() => setPaymentMethod('MOMO')}
-              className={`p-3 rounded-xl border flex items-start justify-between gap-3 cursor-pointer transition ${
-                paymentMethod === 'MOMO'
-                  ? 'bg-pink-50/50 border-[#A50064] ring-1 ring-[#A50064]/30'
-                  : 'bg-gray-50/60 border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              <div className="flex items-start gap-2.5">
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  checked={paymentMethod === 'MOMO'}
-                  onChange={() => setPaymentMethod('MOMO')}
-                  className="mt-0.5 w-4 h-4 text-[#A50064] focus:ring-[#A50064] cursor-pointer"
-                />
-                <div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-xs font-bold text-gray-900 flex items-center gap-1">
-                      <span className="w-4 h-4 rounded bg-[#A50064] text-white text-[9px] font-black inline-flex items-center justify-center">M</span>
-                      Ví Điện Tử MoMo
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-gray-500 mt-0.5">
-                    {isOrderOverThreshold && isPrepaidFreeshipEnabled ? (
-                      <strong className="text-emerald-700 font-bold">
-                        Đơn từ {formatVND(FREESHIP_THRESHOLD)} được MIỄN 100% cước ship khi thanh toán qua MoMo!
-                      </strong>
-                    ) : (
-                      <span>Quét mã MoMo hoặc chuyển trực tiếp đến SĐT ví {settings?.momoPhone || '0375408256'}.</span>
+                      <span>Quét mã VietQR tiện lợi qua mọi App ngân hàng ({settings?.bankId || 'Vietcombank'}) hoặc App MoMo.</span>
                     )}
                   </p>
                 </div>
