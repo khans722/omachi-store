@@ -48,16 +48,18 @@ export default function PaymentModal({
   const orderCode = order.code || order.id;
   const transferContent = `DH ${orderCode}`;
 
-  const rawBank = (settings?.bankId || 'VCB').toUpperCase().trim();
+  const rawBank = (settings?.bankId || '').toUpperCase().trim();
   const bankId = rawBank.includes('VIETCOM') ? 'VCB' : rawBank.includes('MB') ? 'MB' : rawBank;
-  const bankAccount = settings?.bankAccount || '1018880066';
-  const bankOwner = settings?.bankOwner || 'DUONG QUOC KHANH';
-  const hotline = settings?.hotline || settings?.zaloPhone || '0375408256';
-  const zaloUrl = settings?.zaloOfficialUrl || `https://zalo.me/${hotline.replace(/[^0-9]/g, '')}`;
+  const bankAccount = (settings?.bankAccount || '').trim();
+  const bankOwner = (settings?.bankOwner || '').trim();
+  const hotline = (settings?.hotline || settings?.zaloPhone || '').trim();
+  const zaloUrl = settings?.zaloOfficialUrl || (hotline ? `https://zalo.me/${hotline.replace(/[^0-9]/g, '')}` : 'https://zalo.me');
 
-  const vietQrUrl = `https://img.vietqr.io/image/${bankId}-${bankAccount}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(
-    transferContent
-  )}&accountName=${encodeURIComponent(bankOwner)}`;
+  const vietQrUrl = bankAccount && bankId
+    ? `https://img.vietqr.io/image/${bankId}-${bankAccount}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(
+        transferContent
+      )}&accountName=${encodeURIComponent(bankOwner)}`
+    : '';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
@@ -94,32 +96,38 @@ export default function PaymentModal({
         <div className="p-4 sm:p-5 overflow-y-auto space-y-4">
           
           {/* VietQR Code Container */}
-          <div className="flex flex-col items-center text-center p-3 sm:p-4 bg-blue-50/40 rounded-2xl border border-blue-100">
-            <div className="relative p-2 bg-white rounded-2xl border border-blue-200 shadow-sm">
-              <img
-                src={vietQrUrl}
-                alt="Mã VietQR"
-                className="w-52 h-auto sm:w-60 object-contain rounded-xl"
-              />
-              <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 text-white text-[10px] font-black px-3 py-0.5 rounded-full shadow-xs whitespace-nowrap bg-blue-600">
-                Quét bằng App Ngân Hàng hoặc MoMo
-              </div>
+          {!bankAccount || !bankId ? (
+            <div className="py-12 px-4 text-center space-y-3 bg-blue-50/40 rounded-2xl border border-blue-100">
+              <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-xs text-gray-600 font-medium">Đang tải thông tin thanh toán từ hệ thống...</p>
             </div>
+          ) : (
+            <div className="flex flex-col items-center text-center p-3 sm:p-4 bg-blue-50/40 rounded-2xl border border-blue-100">
+              <div className="relative p-2 bg-white rounded-2xl border border-blue-200 shadow-sm">
+                <img
+                  src={vietQrUrl}
+                  alt="Mã VietQR"
+                  className="w-52 h-auto sm:w-60 object-contain rounded-xl"
+                />
+                <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 text-white text-[10px] font-black px-3 py-0.5 rounded-full shadow-xs whitespace-nowrap bg-blue-600">
+                  Quét bằng App Ngân Hàng hoặc MoMo
+                </div>
+              </div>
 
-            <p className="text-xs text-gray-600 pt-4 font-medium">
-              Mở App <strong>Ngân hàng bất kỳ</strong> hoặc <strong>Ví MoMo</strong> &gt; Chọn <strong>Quét mã QR</strong> để chuyển tiền nhanh tự động
-            </p>
+              <p className="text-xs text-gray-600 pt-4 font-medium">
+                Mở App <strong>Ngân hàng bất kỳ</strong> hoặc <strong>Ví MoMo</strong> &gt; Chọn <strong>Quét mã QR</strong> để chuyển tiền nhanh tự động
+              </p>
 
-            {/* Nút tải mã QR về máy dành cho khách dùng 1 điện thoại */}
-            <button
-              type="button"
-              disabled={isDownloading}
-              onClick={() => downloadQrImage(vietQrUrl, `vietqr-omachi-${orderCode}.png`)}
-              className="mt-3 w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer disabled:opacity-50"
-            >
-              <Download className="w-4 h-4" />
-              <span>{isDownloading ? 'Đang tải ảnh...' : '📥 Tải ảnh mã QR về máy (Để quét từ ảnh)'}</span>
-            </button>
+              {/* Nút tải mã QR về máy dành cho khách dùng 1 điện thoại */}
+              <button
+                type="button"
+                disabled={isDownloading}
+                onClick={() => downloadQrImage(vietQrUrl, `vietqr-omachi-${orderCode}.png`)}
+                className="mt-3 w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer disabled:opacity-50"
+              >
+                <Download className="w-4 h-4" />
+                <span>{isDownloading ? 'Đang tải ảnh...' : '📥 Tải ảnh mã QR về máy (Để quét từ ảnh)'}</span>
+              </button>
 
             {/* Hướng dẫn quét từ ảnh */}
             <div className="mt-3 p-3 bg-white rounded-xl border border-blue-100 text-[11px] text-blue-900 text-left space-y-1.5 w-full">
@@ -134,6 +142,7 @@ export default function PaymentModal({
               </ol>
             </div>
           </div>
+          )}
         </div>
 
         {/* Footer actions */}

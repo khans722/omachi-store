@@ -2730,9 +2730,11 @@ export const db = {
       const totalWeight = Number(orderInput.totalWeight) > 0 ? Number(orderInput.totalWeight) : computedWeight;
 
       const settings: any = dbData.settings || {};
-      const prepaidFreeShipThreshold = Number(settings.prepaidFreeShipThreshold) || 10000;
+      const prepaidFreeShipThreshold = settings.prepaidFreeShipThreshold !== undefined && settings.prepaidFreeShipThreshold !== null
+        ? Number(settings.prepaidFreeShipThreshold)
+        : (settings.freeShippingThreshold !== undefined && settings.freeShippingThreshold !== null ? Number(settings.freeShippingThreshold) : 0);
       const isPrepaid = orderInput.paymentMethod === 'BANK' || orderInput.paymentMethod === 'MOMO';
-      const isEligiblePrepaidFreeship = isPrepaid && itemsTotal >= prepaidFreeShipThreshold && settings.enablePrepaidFreeShip !== false;
+      const isEligiblePrepaidFreeship = isPrepaid && prepaidFreeShipThreshold > 0 && itemsTotal >= prepaidFreeShipThreshold && settings.enablePrepaidFreeShip !== false;
 
       let calculatedShippingFee = 0;
       if (isEligiblePrepaidFreeship) {

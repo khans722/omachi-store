@@ -23,11 +23,21 @@ export default function CartPage() {
   const [settings, setSettings] = useState<ShopSettings | null>(null);
 
   useEffect(() => {
+    try {
+      const cached = localStorage.getItem('omachi_shop_settings');
+      if (cached) {
+        setSettings(JSON.parse(cached));
+      }
+    } catch (e) {}
+
     fetch('/api/settings')
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.data) {
           setSettings(data.data);
+          try {
+            localStorage.setItem('omachi_shop_settings', JSON.stringify(data.data));
+          } catch (e) {}
         }
       })
       .catch(() => {});
@@ -89,10 +99,13 @@ export default function CartPage() {
     selectedIds.forEach((id) => removeItem(id));
   };
 
-  const FREESHIP_THRESHOLD = Number(settings?.prepaidFreeShipThreshold) || 1000000;
-  const isFreeshipEligible = selectedSubtotal >= FREESHIP_THRESHOLD;
+  const FREESHIP_THRESHOLD = settings?.prepaidFreeShipThreshold !== undefined && settings?.prepaidFreeShipThreshold !== null
+    ? Number(settings.prepaidFreeShipThreshold)
+    : (settings?.freeShippingThreshold !== undefined && settings?.freeShippingThreshold !== null ? Number(settings.freeShippingThreshold) : 0);
+  const isPrepaidFreeshipEnabled = settings?.enablePrepaidFreeShip !== false && FREESHIP_THRESHOLD > 0;
+  const isFreeshipEligible = isPrepaidFreeshipEnabled && selectedSubtotal >= FREESHIP_THRESHOLD;
   const missingForFreeship = Math.max(0, FREESHIP_THRESHOLD - selectedSubtotal);
-  const freeshipProgress = Math.min(100, Math.round((selectedSubtotal / FREESHIP_THRESHOLD) * 100));
+  const freeshipProgress = FREESHIP_THRESHOLD > 0 ? Math.min(100, Math.round((selectedSubtotal / FREESHIP_THRESHOLD) * 100)) : 100;
 
   return (
     <div className="max-w-4xl mx-auto py-3 sm:py-6 px-2 sm:px-4 lg:px-6 space-y-3 pb-28 font-sans animate-fade-in">
@@ -137,7 +150,7 @@ export default function CartPage() {
       </div>
 
       {/* FREESHIP PROMOTION PROGRESS BANNER */}
-      {items.length > 0 && settings?.enablePrepaidFreeShip !== false && (
+      {items.length > 0 && isPrepaidFreeshipEnabled && (
         <div className={`p-3 sm:p-3.5 rounded-xl border transition-all ${
           isFreeshipEligible
             ? 'bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border-emerald-200 shadow-xs'
@@ -398,7 +411,11 @@ export default function CartPage() {
             <div className="flex items-center gap-2">
               <Truck className="w-4 h-4 text-amber-600 shrink-0" />
               <span className="text-[11px] text-amber-800">
-                Giao hàng SPX Express • Đơn từ {formatVND(FREESHIP_THRESHOLD)} <strong className="text-emerald-700 font-bold">MIỄN PHÍ SHIP (0đ)</strong> khi Chuyển Khoản
+                {isPrepaidFreeshipEnabled ? (
+                  <>Giao hàng SPX Express • Đơn từ {formatVND(FREESHIP_THRESHOLD)} <strong className="text-emerald-700 font-bold">MIỄN PHÍ SHIP (0đ)</strong> khi Chuyển Khoản</>
+                ) : (
+                  <>Giao hàng SPX Express • Hỗ trợ giao nhanh toàn quốc</>
+                )}
               </span>
             </div>
             {isFreeshipEligible && (

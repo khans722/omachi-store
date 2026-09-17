@@ -366,9 +366,21 @@ export default function OrderTrackingPage() {
               </div>
 
               {(() => {
-                const rawBank = (settings?.bankId || 'VCB').toUpperCase().trim();
+                const rawBank = (settings?.bankId || '').toUpperCase().trim();
                 const qrBank = rawBank.includes('VIETCOM') ? 'VCB' : rawBank.includes('MB') ? 'MB' : rawBank;
-                const qrUrl = `https://img.vietqr.io/image/${qrBank}-${settings?.bankAccount || '1018880066'}-compact2.png?amount=${order.finalTotalAmount || order.totalAmount}&addInfo=${encodeURIComponent(`DH ${order.code}`)}&accountName=${encodeURIComponent(settings?.bankOwner || 'DUONG QUOC KHANH')}`;
+                const bankAccount = (settings?.bankAccount || '').trim();
+                const bankOwner = (settings?.bankOwner || '').trim();
+
+                if (!bankAccount || !qrBank) {
+                  return (
+                    <div className="py-8 px-4 text-center space-y-2 bg-blue-50/40 rounded-2xl border border-blue-100">
+                      <div className="w-7 h-7 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+                      <p className="text-xs text-gray-500 font-medium">Đang tải mã thanh toán VietQR từ hệ thống...</p>
+                    </div>
+                  );
+                }
+
+                const qrUrl = `https://img.vietqr.io/image/${qrBank}-${bankAccount}-compact2.png?amount=${order.finalTotalAmount || order.totalAmount}&addInfo=${encodeURIComponent(`DH ${order.code}`)}&accountName=${encodeURIComponent(bankOwner)}`;
                 return (
                   <div className="flex flex-col items-center bg-blue-50/40 p-3 rounded-2xl border border-blue-100 text-center space-y-2">
                     <img

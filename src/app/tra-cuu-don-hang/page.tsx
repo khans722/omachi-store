@@ -394,11 +394,21 @@ function OrderLookupContent() {
   const [manualErrorMsg, setManualErrorMsg] = useState('');
 
   useEffect(() => {
+    try {
+      const cached = localStorage.getItem('omachi_shop_settings');
+      if (cached) {
+        setSettings(JSON.parse(cached));
+      }
+    } catch (e) {}
+
     fetch('/api/settings')
       .then((r) => r.json())
       .then((res) => {
         if (res.success && res.data) {
           setSettings(res.data);
+          try {
+            localStorage.setItem('omachi_shop_settings', JSON.stringify(res.data));
+          } catch (e) {}
         }
       })
       .catch(() => {});
@@ -607,8 +617,8 @@ function OrderLookupContent() {
     return myOrders.filter((o) => o.orderStatus === 'COMPLETED').length;
   }, [myOrders]);
 
-  const zaloHotline = settings?.zaloPhone || '0375408256';
-  const zaloUrl = settings?.zaloOfficialUrl || `https://zalo.me/${zaloHotline}`;
+  const zaloHotline = settings?.zaloPhone || settings?.hotline || '';
+  const zaloUrl = settings?.zaloOfficialUrl || (zaloHotline ? `https://zalo.me/${zaloHotline.replace(/[^0-9]/g, '')}` : 'https://zalo.me');
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 space-y-8 animate-fade-in">
@@ -913,7 +923,7 @@ function OrderLookupContent() {
           <span>🌸 Omachi Handmade Store Chăm Sóc Khách Hàng</span>
         </h4>
         <p>
-          Mọi đơn hàng sau khi đặt trên website đều được nhân viên Omachi liên hệ xác nhận và gửi ảnh mẫu hoàn thiện qua Zalo trước khi gửi bưu tá. Nếu bạn cần đổi mẫu hoặc giao gấp, vui lòng gọi Hotline: <strong className="text-rose-600">{settings?.hotline || '0375.408.256'}</strong>.
+          Mọi đơn hàng sau khi đặt trên website đều được nhân viên Omachi liên hệ xác nhận và gửi ảnh mẫu hoàn thiện qua Zalo trước khi gửi bưu tá. Nếu bạn cần đổi mẫu hoặc giao gấp, vui lòng gọi Hotline: <strong className="text-rose-600">{settings?.hotline || settings?.zaloPhone || ''}</strong>.
         </p>
       </div>
 

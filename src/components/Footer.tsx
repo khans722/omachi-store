@@ -12,18 +12,28 @@ export default function Footer() {
   const [settings, setSettings] = useState<ShopSettings | null>(null);
 
   useEffect(() => {
+    try {
+      const cached = localStorage.getItem('omachi_shop_settings');
+      if (cached) {
+        setSettings(JSON.parse(cached));
+      }
+    } catch (e) {}
+
     fetch('/api/settings')
       .then((r) => r.json())
       .then((res) => {
         if (res.success && res.data) {
           setSettings(res.data);
+          try {
+            localStorage.setItem('omachi_shop_settings', JSON.stringify(res.data));
+          } catch (e) {}
         }
       })
       .catch(() => {});
   }, []);
 
-  const zaloPhone = settings?.zaloPhone || '0398445122';
-  const hotline = settings?.hotline || '0398.445.122';
+  const zaloPhone = settings?.zaloPhone || settings?.hotline || '';
+  const hotline = settings?.hotline || settings?.zaloPhone || '';
   const igUrl = settings?.instagramUrl || 'https://instagram.com/omachii18';
   const igHandle = settings?.instagramHandle || '@omachii18';
   const tiktokUrl = settings?.tiktokUrl || 'https://tiktok.com/@jiji.omachistore';
@@ -144,13 +154,13 @@ export default function Footer() {
             <div className="space-y-2.5 text-xs">
               {/* Zalo Button */}
               <a
-                href={`https://zalo.me/${zaloPhone.replace(/[^0-9]/g, '')}`}
+                href={settings?.zaloOfficialUrl || (zaloPhone ? `https://zalo.me/${zaloPhone.replace(/[^0-9]/g, '')}` : 'https://zalo.me')}
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center gap-2.5 p-2.5 bg-white hover:bg-stone-50 text-stone-800 rounded-xl border border-stone-200 font-medium transition shadow-2xs"
               >
                 <MessageCircle className="w-4 h-4 text-blue-600" />
-                <span>Zalo tư vấn: {hotline}</span>
+                <span>Zalo tư vấn: {hotline || zaloPhone || 'Omachi'}</span>
               </a>
 
               {/* Instagram & TikTok Buttons */}

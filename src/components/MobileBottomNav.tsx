@@ -11,6 +11,40 @@ export default function MobileBottomNav() {
   const pathname = usePathname();
   const { totalItems, setIsCartOpen } = useCart();
   const { theme } = useTheme();
+  const [zaloUrl, setZaloUrl] = React.useState('https://zalo.me');
+
+  React.useEffect(() => {
+    try {
+      const cached = localStorage.getItem('omachi_shop_settings');
+      if (cached) {
+        const s = JSON.parse(cached);
+        const phone = (s.zaloPhone || s.hotline || '').replace(/[^0-9]/g, '');
+        if (s.zaloOfficialUrl) {
+          setZaloUrl(s.zaloOfficialUrl);
+        } else if (phone) {
+          setZaloUrl(`https://zalo.me/${phone}`);
+        }
+      }
+    } catch (e) {}
+
+    fetch('/api/settings')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && res.data) {
+          const s = res.data;
+          const phone = (s.zaloPhone || s.hotline || '').replace(/[^0-9]/g, '');
+          if (s.zaloOfficialUrl) {
+            setZaloUrl(s.zaloOfficialUrl);
+          } else if (phone) {
+            setZaloUrl(`https://zalo.me/${phone}`);
+          }
+          try {
+            localStorage.setItem('omachi_shop_settings', JSON.stringify(s));
+          } catch (e) {}
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const themeConfig = {
     green: {
@@ -102,7 +136,7 @@ export default function MobileBottomNav() {
 
         {/* 4. Chat Zalo with Shop */}
         <a
-          href="https://zalo.me/0375408256"
+          href={zaloUrl}
           target="_blank"
           rel="noreferrer"
           className="flex flex-col items-center gap-1 p-1 text-blue-600 font-bold transition"

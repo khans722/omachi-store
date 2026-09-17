@@ -55,11 +55,11 @@ const DEFAULT_SETTINGS: ShopSettings = {
   shopName: 'Omachi 🌸 Phụ Kiện Handmade & Charm',
   brandTitle: 'OMACHI HANDMADE STORE',
   slogan: 'Vòng cườm, kẹp tóc pastel, charm hoa xinh lấp lánh custom theo yêu cầu ✨',
-  hotline: '0375.408.256',
-  zaloPhone: '0375408256',
+  hotline: '0398445122',
+  zaloPhone: '0398445122',
   zaloOfficialUrl: 'https://zalo.me/0375408256',
-  instagramUrl: 'https://instagram.com/omachi.handmade',
-  instagramHandle: '@omachi.handmade',
+  instagramUrl: 'https://instagram.com/omachii18',
+  instagramHandle: '@omachii18',
   tiktokUrl: 'https://tiktok.com/@omachi_charm',
   tiktokHandle: '@omachi_charm',
   heroTitle: 'Vòng Charm, Kẹp Tóc & Phụ Kiện Pastel',
@@ -71,11 +71,11 @@ const DEFAULT_SETTINGS: ShopSettings = {
   freeShippingThreshold: 200000,
   prepaidFreeShipThreshold: 10000,
   enablePrepaidFreeShip: true,
-  momoPhone: '0398445122',
-  momoName: 'OMACHI HANDMADE STORE',
-  bankId: 'MB',
-  bankAccount: '0398445122',
-  bankOwner: 'OMACHI STORE',
+  momoPhone: '0375408256',
+  momoName: 'Duong QUOC KHANH',
+  bankId: 'VCB',
+  bankAccount: '1018880066',
+  bankOwner: 'DUong QUOC KHANH',
   telegramBotToken: '8643883325:AAFtYvON3zYNH6D8K1Mf8bTtHclR1ha92SQ',
   telegramChatId: '8941847464',
   enableTelegramNotify: true,
@@ -579,9 +579,8 @@ export default function AdminPage() {
         const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
         const merged = {
           ...DEFAULT_SETTINGS,
-          ...(localSaved || {}),
           ...data.data,
-          websiteUrl: data.data.websiteUrl || localSaved?.websiteUrl || currentOrigin,
+          websiteUrl: data.data.websiteUrl || currentOrigin,
         };
         setSettings(merged);
         try {
@@ -1170,7 +1169,7 @@ export default function AdminPage() {
   };
 
   const handleTestZalo = async () => {
-    const targetPhone = settings.zaloPhone || '0375408256';
+    const targetPhone = settings.zaloPhone || settings.hotline || '';
     const cleanPhone = targetPhone.replace(/[^0-9]/g, '');
     
     // Open direct Zalo chat window
@@ -1587,7 +1586,12 @@ export default function AdminPage() {
                 const calculatedShippingFee = Number(order.shippingFee || 0);
                 const calculatedFinalTotal = calculatedItemsTotal + calculatedShippingFee;
                 const totalItemCount = (order.items || []).reduce((sum: number, it: any) => sum + Number(it.quantity || 1), 0);
-                const isOrderEligibleFreeship = (calculatedItemsTotal >= 1000000) || (Number(order.subtotal || 0) >= 1000000) || (Number(order.totalAmount || 0) >= 1000000);
+                const freeshipThreshold = Number(settings.prepaidFreeShipThreshold ?? settings.freeShippingThreshold ?? 0);
+                const isOrderEligibleFreeship = freeshipThreshold > 0 && (
+                  (calculatedItemsTotal >= freeshipThreshold) ||
+                  (Number(order.subtotal || 0) >= freeshipThreshold) ||
+                  (Number(order.totalAmount || 0) >= freeshipThreshold)
+                );
 
                 return (
                   <div
@@ -1662,7 +1666,7 @@ export default function AdminPage() {
                         {isOrderEligibleFreeship && (
                           <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
                             <span>✨</span>
-                            <span>ĐƠN ≥ ${formatVND(Number(settings.prepaidFreeShipThreshold) || 1000000)} (FREESHIP CK/MOMO)</span>
+                            <span>ĐƠN ≥ {formatVND(freeshipThreshold)} (FREESHIP CK/MOMO)</span>
                           </span>
                         )}
                       </div>
@@ -1755,7 +1759,7 @@ export default function AdminPage() {
                                         <div className="flex items-center justify-between">
                                           <span className="font-extrabold flex items-center gap-1 text-emerald-800">
                                             <span>🎉</span>
-                                            <span>Đơn ≥ 1.000.000₫: Đủ điều kiện FREESHIP</span>
+                                            <span>Đơn ≥ {formatVND(freeshipThreshold)}: Đủ điều kiện FREESHIP</span>
                                           </span>
                                           <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white px-1.5 py-0.2 rounded">
                                             {order.paymentMethod === 'BANK' ? 'Đã chọn CK' : 'Chờ CK'}
@@ -3676,9 +3680,9 @@ export default function AdminPage() {
                           type="number"
                           min={0}
                           step="any"
-                          value={settings.prepaidFreeShipThreshold !== undefined ? settings.prepaidFreeShipThreshold : 1000000}
+                          value={settings.prepaidFreeShipThreshold !== undefined ? settings.prepaidFreeShipThreshold : (settings.freeShippingThreshold || 0)}
                           onChange={(e) => setSettings({ ...settings, prepaidFreeShipThreshold: Math.max(0, Number(e.target.value)) })}
-                          placeholder="VD: 10000 để test, hoặc 1000000"
+                          placeholder="VD: 10000 để test, hoặc 200000"
                           className="flex-1 px-3 py-2 bg-white border border-purple-200 rounded-xl font-bold text-rose-600 text-sm focus:ring-2 focus:ring-purple-400 focus:outline-none"
                         />
                         <span className="text-xs text-gray-500 font-medium">VNĐ</span>

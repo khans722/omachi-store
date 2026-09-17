@@ -516,10 +516,12 @@ export default function CheckoutPage() {
     }
   };
 
-  // Freeship cấu hình theo settings (mặc định 1.000.000₫) khi thanh toán Chuyển Khoản VietQR
-  const FREESHIP_THRESHOLD = Number(settings?.prepaidFreeShipThreshold) || 1000000;
-  const isPrepaidFreeshipEnabled = settings?.enablePrepaidFreeShip !== false;
-  const isOrderOverThreshold = checkoutSubtotal >= FREESHIP_THRESHOLD;
+  // Freeship cấu hình hoàn toàn theo settings khi thanh toán Chuyển Khoản VietQR
+  const FREESHIP_THRESHOLD = settings?.prepaidFreeShipThreshold !== undefined && settings?.prepaidFreeShipThreshold !== null
+    ? Number(settings.prepaidFreeShipThreshold)
+    : (settings?.freeShippingThreshold !== undefined && settings?.freeShippingThreshold !== null ? Number(settings.freeShippingThreshold) : 0);
+  const isPrepaidFreeshipEnabled = settings?.enablePrepaidFreeShip !== false && FREESHIP_THRESHOLD > 0;
+  const isOrderOverThreshold = FREESHIP_THRESHOLD > 0 && checkoutSubtotal >= FREESHIP_THRESHOLD;
   const missingForFreeship = Math.max(0, FREESHIP_THRESHOLD - checkoutSubtotal);
   const isPrepaidFreeship = isPrepaidFreeshipEnabled && isOrderOverThreshold && (paymentMethod === 'BANK');
   const effectiveShippingFee = isPrepaidFreeship ? 0 : checkoutShippingFee;
@@ -906,11 +908,13 @@ export default function CheckoutPage() {
   // MÀN HÌNH ĐÃ TẠO ĐƠN THÀNH CÔNG / CHỜ THANH TOÁN
   if (createdOrder) {
     const isPrepaidOrder = createdOrder.paymentMethod === 'BANK';
-    const zaloShopPhone = (settings?.zaloPhone || '0375408256').replace(/[^0-9]/g, '');
+    const zaloShopPhone = (settings?.zaloPhone || settings?.hotline || '').replace(/[^0-9]/g, '');
     const prefilledMsg = encodeURIComponent(
       `Chào shop Omachi! Mình vừa đặt đơn #${createdOrder.code} (${createdOrder.items.reduce((s: number, i: any) => s + i.quantity, 0)} món). Mình nhắn qua để shop tư vấn thêm nhé! 💕`
     );
-    const zaloShopUrl = `https://zalo.me/${zaloShopPhone}?text=${prefilledMsg}`;
+    const zaloShopUrl = settings?.zaloOfficialUrl
+      ? `${settings.zaloOfficialUrl}?text=${prefilledMsg}`
+      : (zaloShopPhone ? `https://zalo.me/${zaloShopPhone}?text=${prefilledMsg}` : 'https://zalo.me');
 
     return (
       <div className="py-8 max-w-lg mx-auto space-y-4 font-sans px-3">
@@ -1019,12 +1023,24 @@ export default function CheckoutPage() {
               <div className="bg-white p-3 rounded-xl border border-blue-200 flex flex-col items-center text-center space-y-2">
                 <div className="relative p-2 bg-white rounded-lg border border-blue-100 shadow-2xs">
                   {(() => {
-                    const rawBank = (settings?.bankId || 'VCB').toUpperCase().trim();
+                    const rawBank = (settings?.bankId || '').toUpperCase().trim();
                     const qrBank = rawBank.includes('VIETCOM') ? 'VCB' : rawBank.includes('MB') ? 'MB' : rawBank;
-                    const qrUrl = `https://img.vietqr.io/image/${qrBank}-${settings?.bankAccount || '1018880066'}-compact2.png?amount=${
+                    const bankAccount = (settings?.bankAccount || '').trim();
+                    const bankOwner = (settings?.bankOwner || '').trim();
+
+                    if (!bankAccount || !qrBank) {
+                      return (
+                        <div className="py-8 px-4 text-center space-y-2">
+                          <div className="w-7 h-7 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+                          <p className="text-xs text-stone-500 font-medium">Đang tải mã thanh toán VietQR từ hệ thống...</p>
+                        </div>
+                      );
+                    }
+
+                    const qrUrl = `https://img.vietqr.io/image/${qrBank}-${bankAccount}-compact2.png?amount=${
                       createdOrder.finalTotalAmount || createdOrder.totalAmount
                     }&addInfo=${encodeURIComponent(`DH ${createdOrder.code}`)}&accountName=${encodeURIComponent(
-                      settings?.bankOwner || 'DUONG QUOC KHANH'
+                      bankOwner
                     )}`;
                     return (
                       <>

@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { db } from '@/lib/db';
 
@@ -74,8 +74,8 @@ export async function POST(req: NextRequest) {
         banner_text: s.bannerText,
         shop_address: s.shopAddress,
         working_hours: s.workingHours,
-        free_shipping_threshold: s.freeShippingThreshold || 1000000,
-        prepaid_free_ship_threshold: s.prepaidFreeShipThreshold || 10000,
+        free_shipping_threshold: Number(s.freeShippingThreshold || 0),
+        prepaid_free_ship_threshold: Number(s.prepaidFreeShipThreshold || 0),
         enable_prepaid_free_ship: s.enablePrepaidFreeShip !== false,
         telegram_bot_token: s.telegramBotToken || '',
         telegram_chat_id: s.telegramChatId || '',
