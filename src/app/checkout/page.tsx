@@ -1558,9 +1558,6 @@ export default function CheckoutPage() {
                   )}
                 </div>
               </div>
-              <span className="text-xs font-bold text-rose-600 shrink-0">
-                +{formatVND(checkoutShippingFee)}
-              </span>
             </label>
 
             {/* Option 2: BANK TRANSFER */}
@@ -1604,9 +1601,11 @@ export default function CheckoutPage() {
                   </p>
                 </div>
               </div>
-              <span className={`text-xs font-black shrink-0 ${isPrepaidFreeship && paymentMethod === 'BANK' ? 'text-emerald-700' : 'text-rose-600'}`}>
-                {isPrepaidFreeship && paymentMethod === 'BANK' ? '0₫ (Miễn ship)' : `+${formatVND(checkoutShippingFee)}`}
-              </span>
+              {isPrepaidFreeship && (
+                <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
+                  🎁 0₫ Freeship
+                </span>
+              )}
             </label>
 
             {/* Option 3: MOMO WALLET */}
@@ -1653,9 +1652,11 @@ export default function CheckoutPage() {
                   </p>
                 </div>
               </div>
-              <span className={`text-xs font-black shrink-0 ${isPrepaidFreeship && paymentMethod === 'MOMO' ? 'text-emerald-700' : 'text-rose-600'}`}>
-                {isPrepaidFreeship && paymentMethod === 'MOMO' ? '0₫ (Miễn ship)' : `+${formatVND(checkoutShippingFee)}`}
-              </span>
+              {isPrepaidFreeship && (
+                <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
+                  🎁 0₫ Freeship
+                </span>
+              )}
             </label>
           </div>
         </div>
