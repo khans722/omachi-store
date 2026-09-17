@@ -3533,20 +3533,20 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* SECTION 4: BẢNG GIÁ SỈ BẬC THANG CHUẨN 1688 */}
+              {/* SECTION 4: BẢNG GIÁ SỈ BẬC THANG */}
               <div className="space-y-3.5 p-4 rounded-2xl bg-gradient-to-r from-pink-50/50 via-rose-50/30 to-amber-50/20 border border-pink-200">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
                     <h4 className="font-extrabold text-gray-800 flex items-center gap-1.5 text-xs">
                       <Tag className="w-4 h-4 text-rose-500" />
-                      <span>4. Bảng Mốc Giá Sỉ Bậc Thang (Chuẩn Sàn 1688 / Taobao)</span>
+                      <span>4. Bảng Mốc Giá Sỉ Bậc Thang</span>
                     </h4>
                     <p className="text-[11px] text-gray-500 mt-0.5">
                       Khách mua số lượng chạm mốc nào sẽ tự động nhận đơn giá sỉ mốc đó • Không lo bị giảm giá kép
                     </p>
                   </div>
                   
-                  {/* Preset Buttons for 1688 Wholesale */}
+                  {/* Preset Buttons for Wholesale */}
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="text-[10px] text-gray-400 font-semibold">Tạo nhanh:</span>
                     <button
@@ -3565,7 +3565,7 @@ export default function AdminPage() {
                       className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition"
                       title="Áp dụng 3 mốc sỉ phổ biến 10, 50, 100 cái"
                     >
-                      ⚡ Mẫu 1688 (10, 50, 100)
+                      ⚡ Mẫu phổ biến (10, 50, 100)
                     </button>
                     <button
                       type="button"

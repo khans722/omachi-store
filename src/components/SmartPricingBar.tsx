@@ -30,7 +30,7 @@ export default function SmartPricingBar({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800">
           <Sparkles className="w-4 h-4 text-pink-500 animate-pulse" />
-          <span>Bảng Giá Combo Tự Động (Mua nhiều giảm sâu):</span>
+          <span>Bảng Giá Sỉ Tự Động (Mua nhiều giảm sâu):</span>
         </div>
 
         {appliedTier ? (

@@ -245,12 +245,12 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
             </div>
           )}
 
-          {/* 2. 1688 Wholesale Tier Buttons */}
+          {/* 2. Wholesale Tier Buttons */}
           {product.comboTiers && product.comboTiers.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-stone-700 uppercase tracking-wider">
-                  Mốc Giá Sỉ Bậc Thang (1688)
+                  Bảng Giá Sỉ Theo Số Lượng
                 </span>
                 <span className="text-[10px] text-stone-400">
                   {smartPricing.appliedTier ? `Đã áp dụng: ${smartPricing.appliedTier.label}` : 'Mua nhiều tự động giảm'}
