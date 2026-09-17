@@ -1647,7 +1647,11 @@ export default function CheckoutPage() {
                 </p>
               </div>
             </div>
-            <span className="text-xs font-bold text-rose-600 shrink-0">+{formatVND(checkoutShippingFee)}</span>
+            {effectiveShippingFee === 0 ? (
+              <span className="text-xs font-bold text-emerald-600 shrink-0">0₫</span>
+            ) : (
+              <span className="text-xs font-bold text-rose-600 shrink-0">+{formatVND(checkoutShippingFee)}</span>
+            )}
           </div>
         </div>
 
@@ -1658,11 +1662,6 @@ export default function CheckoutPage() {
               <CreditCard className="w-4 h-4 text-stone-700" />
               <span className="text-xs font-bold text-gray-900">Phương thức thanh toán</span>
             </div>
-            {isOrderOverThreshold && isPrepaidFreeshipEnabled && (
-              <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                ✨ Đơn ≥ {formatVND(FREESHIP_THRESHOLD)} (Freeship khi CK/MoMo)
-              </span>
-            )}
           </div>
 
           <div className="space-y-2">
@@ -1741,11 +1740,6 @@ export default function CheckoutPage() {
                   </p>
                 </div>
               </div>
-              {isPrepaidFreeship && (
-                <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
-                  🎁 0₫ Freeship
-                </span>
-              )}
             </label>
 
             {/* Option 3: MOMO WALLET */}
@@ -1792,11 +1786,6 @@ export default function CheckoutPage() {
                   </p>
                 </div>
               </div>
-              {isPrepaidFreeship && (
-                <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
-                  🎁 0₫ Freeship
-                </span>
-              )}
             </label>
           </div>
         </div>
