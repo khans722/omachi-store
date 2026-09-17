@@ -35,7 +35,8 @@ import {
   ImagePlus,
   Search,
   AlertTriangle,
-  ArrowRight
+  ArrowRight,
+  Clock
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -1081,23 +1082,23 @@ export default function AdminPage() {
   const inStockProducts = products.filter((p) => (Number(p.stock) || 0) > 10);
 
   return (
-    <div className="py-6 space-y-6">
+    <div className="py-3 sm:py-6 space-y-3.5 sm:space-y-6">
       
-      {/* Admin Top Header */}
-      <div className="bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      {/* Admin Top Header - Compact, Modern & Elegant */}
+      <div className="bg-gradient-to-r from-rose-500 via-rose-600 to-pink-600 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-3xl">🎀</span>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+            <span className="text-xl sm:text-2xl">🎀</span>
+            <h1 className="text-lg sm:text-2xl font-black tracking-tight">
               Trung Tâm Quản Trị Omachi
             </h1>
           </div>
-          <p className="text-xs sm:text-sm text-pink-100 mt-1">
+          <p className="text-[11px] sm:text-xs text-rose-100 mt-0.5 sm:mt-1 line-clamp-1 sm:line-clamp-none">
             Xác nhận đơn, quản lý kho hàng, phân loại màu sắc &amp; cấu hình toàn diện
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
           <button
             onClick={() => {
               fetchOrders();
@@ -1105,14 +1106,14 @@ export default function AdminPage() {
               fetchFeedbacks();
               fetchSettings();
             }}
-            className="px-3.5 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+            className="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl text-xs font-bold transition flex items-center gap-1.5"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span>Làm mới</span>
           </button>
           <button
             onClick={handleLogout}
-            className="px-3 py-2 bg-black/20 hover:bg-black/30 rounded-xl text-xs font-bold transition flex items-center gap-1 text-pink-100"
+            className="px-3 py-1.5 sm:px-3 sm:py-2 bg-black/20 hover:bg-black/30 rounded-xl text-xs font-bold transition flex items-center gap-1 text-pink-100"
             title="Đăng xuất"
           >
             <LogOut className="w-3.5 h-3.5" />
@@ -1122,151 +1123,165 @@ export default function AdminPage() {
       </div>
 
       {actionSuccessMsg && (
-        <div className="bg-emerald-50 text-emerald-800 text-xs font-bold p-3.5 rounded-2xl border border-emerald-200 animate-fade-in flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-emerald-500" />
+        <div className="bg-emerald-50 text-emerald-800 text-xs font-bold p-3 rounded-xl sm:rounded-2xl border border-emerald-200 animate-fade-in flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
           <span>{actionSuccessMsg}</span>
         </div>
       )}
 
       {testZaloStatus && (
-        <div className="bg-purple-50 text-purple-800 text-xs font-bold p-3 rounded-2xl border border-purple-200 animate-fade-in">
+        <div className="bg-purple-50 text-purple-800 text-xs font-bold p-3 rounded-xl sm:rounded-2xl border border-purple-200 animate-fade-in">
           {testZaloStatus}
         </div>
       )}
 
-      {/* KPI Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-3xl border border-pink-100 shadow-xs flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-pink-100 text-rose-600 flex items-center justify-center text-xl">
-            💰
+      {/* KPI Stats Cards - 2x2 Grid on Mobile, 4-Cols on Desktop */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        {/* Doanh thu */}
+        <div className="bg-white p-3 sm:p-4 rounded-2xl border border-pink-100 shadow-xs flex items-center gap-2.5 sm:gap-3.5 transition hover:shadow-sm">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-pink-50 border border-pink-100 text-rose-600 flex items-center justify-center shrink-0">
+            <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <p className="text-xs text-gray-500 font-medium">Doanh thu đã thu:</p>
-            <p className="text-xl font-black text-rose-600">{formatVND(totalRevenue)}</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-3xl border border-amber-100 shadow-xs flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl">
-            ⏳
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 font-medium">Đơn chờ chốt Zalo:</p>
-            <p className="text-xl font-black text-amber-700">{pendingConfirmCount} đơn</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-xs text-gray-500 font-medium truncate">Doanh thu đã thu</p>
+            <p className="text-sm sm:text-lg font-black text-rose-600 truncate">{formatVND(totalRevenue)}</p>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-3xl border border-emerald-100 shadow-xs flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl">
-            🌸
+        {/* Chờ chốt */}
+        <div className="bg-white p-3 sm:p-4 rounded-2xl border border-amber-100 shadow-xs flex items-center gap-2.5 sm:gap-3.5 transition hover:shadow-sm">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-amber-50 border border-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+            <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <p className="text-xs text-gray-500 font-medium">Đang làm hàng:</p>
-            <p className="text-xl font-black text-emerald-700">{preparingCount} đơn</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-xs text-gray-500 font-medium truncate">Đơn chờ chốt</p>
+            <p className="text-sm sm:text-lg font-black text-amber-700 truncate">{pendingConfirmCount} đơn</p>
           </div>
         </div>
 
+        {/* Làm hàng */}
+        <div className="bg-white p-3 sm:p-4 rounded-2xl border border-emerald-100 shadow-xs flex items-center gap-2.5 sm:gap-3.5 transition hover:shadow-sm">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-xs text-gray-500 font-medium truncate">Đang làm hàng</p>
+            <p className="text-sm sm:text-lg font-black text-emerald-700 truncate">{preparingCount} đơn</p>
+          </div>
+        </div>
+
+        {/* Kho mẫu */}
         <div 
           onClick={() => setActiveTab('inventory')}
-          className="bg-white p-5 rounded-3xl border border-purple-100 shadow-xs flex items-center justify-between cursor-pointer hover:border-purple-300 hover:shadow-md transition group"
+          className="bg-white p-3 sm:p-4 rounded-2xl border border-purple-100 shadow-xs flex items-center justify-between cursor-pointer hover:border-purple-300 hover:shadow-sm transition group"
           title="Bấm để mở Quản Lý Kho & Nhập Hàng"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center text-xl group-hover:scale-105 transition">
-              📦
+          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-purple-50 border border-purple-100 text-purple-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition">
+              <Boxes className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <p className="text-xs text-gray-500 font-medium">Tổng tồn kho mẫu:</p>
-              <p className="text-xl font-black text-purple-700">{totalStockCount} cái</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] sm:text-xs text-gray-500 font-medium truncate">Tổng tồn kho</p>
+              <p className="text-sm sm:text-lg font-black text-purple-700 truncate">{totalStockCount} cái</p>
             </div>
           </div>
           {(lowStockProducts.length > 0 || outOfStockProducts.length > 0) && (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 shrink-0 animate-pulse">
-              {outOfStockProducts.length > 0 ? `! ${outOfStockProducts.length} hết` : `${lowStockProducts.length} sắp hết`}
+            <span className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-md sm:rounded-full bg-rose-100 text-rose-700 shrink-0 ml-1 animate-pulse">
+              {outOfStockProducts.length > 0 ? `!${outOfStockProducts.length}` : `${lowStockProducts.length}`}
             </span>
           )}
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-pink-100 pb-2 overflow-x-auto">
+      {/* Navigation Tabs - Clean Modern Responsive Strip */}
+      <div className="flex items-center gap-1.5 sm:gap-2 border-b border-pink-100 pb-2 overflow-x-auto no-scrollbar scroll-smooth">
         <button
           onClick={() => setActiveTab('orders')}
-          className={`px-4 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 shrink-0 ${
+          className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
             activeTab === 'orders'
-              ? 'bg-rose-500 text-white shadow-sm'
-              : 'bg-white text-gray-600 hover:bg-pink-50'
+              ? 'bg-rose-500 text-white shadow-xs'
+              : 'bg-white text-gray-600 hover:bg-pink-50 border border-pink-50 sm:border-0'
           }`}
         >
-          <Package className="w-4 h-4" />
-          <span>Quản Lý Đơn Hàng ({orders.length})</span>
+          <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden sm:inline">Quản Lý Đơn Hàng</span>
+          <span className="sm:hidden">Đơn hàng</span>
+          <span className="text-[10px] opacity-90">({orders.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('products')}
-          className={`px-4 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 shrink-0 ${
+          className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
             activeTab === 'products'
-              ? 'bg-rose-500 text-white shadow-sm'
-              : 'bg-white text-gray-600 hover:bg-pink-50'
+              ? 'bg-rose-500 text-white shadow-xs'
+              : 'bg-white text-gray-600 hover:bg-pink-50 border border-pink-50 sm:border-0'
           }`}
         >
-          <Sparkles className="w-4 h-4" />
-          <span>Cấu Hình &amp; Loại Sản Phẩm ({products.length})</span>
+          <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden sm:inline">Cấu Hình &amp; Loại Sản Phẩm</span>
+          <span className="sm:hidden">Sản phẩm</span>
+          <span className="text-[10px] opacity-90">({products.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('inventory')}
-          className={`px-4 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 shrink-0 ${
+          className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
             activeTab === 'inventory'
-              ? 'bg-rose-500 text-white shadow-sm'
-              : 'bg-white text-gray-600 hover:bg-pink-50'
+              ? 'bg-rose-500 text-white shadow-xs'
+              : 'bg-white text-gray-600 hover:bg-pink-50 border border-pink-50 sm:border-0'
           }`}
         >
-          <Boxes className="w-4 h-4" />
-          <span>Quản Lý Kho &amp; Nhập Hàng</span>
+          <Boxes className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden sm:inline">Quản Lý Kho &amp; Nhập Hàng</span>
+          <span className="sm:hidden">Kho hàng</span>
           {(lowStockProducts.length > 0 || outOfStockProducts.length > 0) && (
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
               activeTab === 'inventory' ? 'bg-white text-rose-600' : 'bg-rose-500 text-white animate-pulse'
             }`}>
-              {outOfStockProducts.length > 0 ? `! ${outOfStockProducts.length}` : `${lowStockProducts.length}`}
+              {outOfStockProducts.length > 0 ? `!${outOfStockProducts.length}` : `${lowStockProducts.length}`}
             </span>
           )}
         </button>
 
         <button
           onClick={() => setActiveTab('categories')}
-          className={`px-4 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 shrink-0 ${
+          className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
             activeTab === 'categories'
-              ? 'bg-rose-500 text-white shadow-sm'
-              : 'bg-white text-gray-600 hover:bg-pink-50'
+              ? 'bg-rose-500 text-white shadow-xs'
+              : 'bg-white text-gray-600 hover:bg-pink-50 border border-pink-50 sm:border-0'
           }`}
         >
-          <Tag className="w-4 h-4" />
-          <span>Quản Lý Danh Mục ({categories.length})</span>
+          <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden sm:inline">Quản Lý Danh Mục</span>
+          <span className="sm:hidden">Danh mục</span>
+          <span className="text-[10px] opacity-90">({categories.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('feedbacks')}
-          className={`px-4 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 shrink-0 ${
+          className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
             activeTab === 'feedbacks'
-              ? 'bg-rose-500 text-white shadow-sm'
-              : 'bg-white text-gray-600 hover:bg-pink-50'
+              ? 'bg-rose-500 text-white shadow-xs'
+              : 'bg-white text-gray-600 hover:bg-pink-50 border border-pink-50 sm:border-0'
           }`}
         >
-          <MessageSquare className="w-4 h-4" />
-          <span>Feedback &amp; Đánh Giá ({feedbacks.length})</span>
+          <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden sm:inline">Feedback &amp; Đánh Giá</span>
+          <span className="sm:hidden">Đánh giá</span>
+          <span className="text-[10px] opacity-90">({feedbacks.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('settings')}
-          className={`px-4 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 shrink-0 ${
+          className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
             activeTab === 'settings'
-              ? 'bg-rose-500 text-white shadow-sm'
-              : 'bg-white text-gray-600 hover:bg-pink-50'
+              ? 'bg-rose-500 text-white shadow-xs'
+              : 'bg-white text-gray-600 hover:bg-pink-50 border border-pink-50 sm:border-0'
           }`}
         >
-          <Settings className="w-4 h-4" />
-          <span>Cấu Hình Toàn Diện (IG, TikTok, Hotline)</span>
+          <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden sm:inline">Cấu Hình Toàn Diện (IG, TikTok)</span>
+          <span className="sm:hidden">Cài đặt shop</span>
         </button>
       </div>
 
@@ -1275,24 +1290,29 @@ export default function AdminPage() {
         <div className="space-y-4">
           
           {/* Status filter buttons */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             {[
-              { id: 'ALL', label: 'Tất cả đơn' },
-              { id: 'PENDING_CONFIRM', label: 'Chờ xác nhận đơn' },
-              { id: 'PREPARING', label: 'Đang làm hàng' },
-              { id: 'SHIPPING', label: 'Đang giao' },
-              { id: 'COMPLETED', label: 'Hoàn thành' },
+              { id: 'ALL', label: 'Tất cả đơn', count: orders.length },
+              { id: 'PENDING_CONFIRM', label: 'Chờ xác nhận', count: pendingConfirmCount },
+              { id: 'PREPARING', label: 'Đang làm hàng', count: preparingCount },
+              { id: 'SHIPPING', label: 'Đang giao', count: orders.filter((o) => o.orderStatus === 'SHIPPING').length },
+              { id: 'COMPLETED', label: 'Hoàn thành', count: orders.filter((o) => o.orderStatus === 'COMPLETED').length },
             ].map((st) => (
               <button
                 key={st.id}
                 onClick={() => setSelectedStatusFilter(st.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                className={`px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                   selectedStatusFilter === st.id
-                    ? 'bg-gray-800 text-white shadow-xs'
+                    ? 'bg-stone-800 text-white shadow-xs'
                     : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
                 }`}
               >
-                {st.label}
+                <span>{st.label}</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                  selectedStatusFilter === st.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {st.count}
+                </span>
               </button>
             ))}
           </div>
@@ -1324,7 +1344,7 @@ export default function AdminPage() {
                 return (
                   <div
                     key={order.id}
-                    className="bg-white rounded-3xl border border-pink-100 shadow-xs p-5 sm:p-6 space-y-4 transition hover:shadow-md"
+                    className="bg-white rounded-2xl sm:rounded-3xl border border-pink-100 shadow-xs p-3.5 sm:p-6 space-y-3 sm:space-y-4 transition hover:shadow-md"
                   >
                     {/* Order Card Header */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-pink-50">
