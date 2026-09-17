@@ -3812,21 +3812,12 @@ export default function AdminPage() {
                         </div>
                       </div>
 
-                      {/* Lợi nhuận hoặc cảnh báo bán xả kho */}
-                      {editingProduct.basePrice !== undefined && editingProduct.costPrice !== undefined && Number(editingProduct.costPrice) > 0 && (
-                        Number(editingProduct.basePrice) < Number(editingProduct.costPrice) ? (
-                          <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
-                            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                            <span>Lưu ý: Giá bán lẻ thấp hơn giá vốn (-{formatVND(Number(editingProduct.costPrice) - Number(editingProduct.basePrice))}/cái - Bán xả kho). Vẫn cho phép lưu.</span>
-                          </div>
-                        ) : (
-                          <div className="p-2.5 bg-emerald-50 rounded-lg border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between">
-                            <span>Lợi nhuận ước tính:</span>
-                            <strong className="text-emerald-700 text-xs">
-                              +{formatVND((editingProduct.basePrice || 0) - (editingProduct.costPrice || 0))} /cái (Tỷ suất ~{Math.round((((editingProduct.basePrice || 0) - (editingProduct.costPrice || 0)) / (editingProduct.basePrice || 1)) * 100)}%)
-                            </strong>
-                          </div>
-                        )
+                      {/* Cảnh báo bán xả kho (chỉ hiện khi giá bán < giá vốn) */}
+                      {editingProduct.basePrice !== undefined && editingProduct.costPrice !== undefined && Number(editingProduct.costPrice) > 0 && Number(editingProduct.basePrice) < Number(editingProduct.costPrice) && (
+                        <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span>Lưu ý: Giá bán lẻ thấp hơn giá vốn (-{formatVND(Number(editingProduct.costPrice) - Number(editingProduct.basePrice))}/cái - Bán xả kho). Vẫn cho phép lưu.</span>
+                        </div>
                       )}
                     </div>
 
