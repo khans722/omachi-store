@@ -1786,7 +1786,7 @@ export default function AdminPage() {
                             : '📋 Chờ xác nhận đơn'}
                         </span>
 
-                        {/* 2. Trạng thái Thanh toán (Huy hiệu cố định, chống bấm nhầm) */}
+                        {/* 2. Trạng thái & Phương thức Thanh toán */}
                         {order.paymentMethod === 'COD' ? (
                           order.paymentStatus === 'PAID' ? (
                             <span className="text-xs font-bold px-2.5 py-1 rounded-xl border flex items-center gap-1 bg-emerald-50 text-emerald-800 border-emerald-300">
@@ -1794,33 +1794,29 @@ export default function AdminPage() {
                             </span>
                           ) : (
                             <span className="text-xs font-bold px-2.5 py-1 rounded-xl border flex items-center gap-1 bg-stone-50 text-stone-700 border-stone-200">
-                              💵 Thu tiền khi giao (COD)
+                              💵 Thu tiền mặt COD
                             </span>
                           )
                         ) : (
-                          <span className={`text-xs font-bold px-2.5 py-1 rounded-xl border flex items-center gap-1 ${
-                            order.paymentStatus === 'PAID'
-                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                              : 'bg-amber-50 text-amber-800 border-amber-300'
-                          }`}>
-                            {order.paymentStatus === 'PAID' ? '✓ Đã thanh toán' : '⏳ Chờ chuyển khoản'}
-                          </span>
+                          <>
+                            <span className={`text-xs font-bold px-2.5 py-1 rounded-xl border flex items-center gap-1 ${
+                              order.paymentStatus === 'PAID'
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                : 'bg-amber-50 text-amber-800 border-amber-300'
+                            }`}>
+                              {order.paymentStatus === 'PAID' ? '✓ Đã thanh toán' : '⏳ Chờ chuyển khoản'}
+                            </span>
+                            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-lg border ${
+                              order.paymentMethod === 'MOMO'
+                                ? 'bg-pink-50 text-pink-700 border-pink-300'
+                                : 'bg-blue-50 text-blue-700 border-blue-200'
+                            }`}>
+                              {order.paymentMethod === 'MOMO'
+                                ? '🟣 Ví MoMo'
+                                : '💳 Chuyển khoản VietQR'}
+                            </span>
+                          </>
                         )}
-
-                        {/* 3. Phương thức thanh toán khách chọn */}
-                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-lg border ${
-                          order.paymentMethod === 'MOMO'
-                            ? 'bg-pink-50 text-pink-700 border-pink-300'
-                            : order.paymentMethod === 'BANK'
-                            ? 'bg-blue-50 text-blue-700 border-blue-200'
-                            : 'bg-stone-50 text-stone-700 border-stone-200'
-                        }`}>
-                          {order.paymentMethod === 'MOMO'
-                            ? '🟣 Ví MoMo'
-                            : order.paymentMethod === 'BANK'
-                            ? '💳 Chuyển khoản VietQR'
-                            : '💵 Thu tiền mặt COD'}
-                        </span>
                       </div>
 
                       {/* Right: Tổng tiền thanh toán chuẩn */}
