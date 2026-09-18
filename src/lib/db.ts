@@ -1671,7 +1671,12 @@ const INITIAL_DATABASE: DetailedDatabaseSchema = {
     "enablePrepaidFreeShip": true,
     "bankId": "VCB",
     "bankAccount": "1018880066",
-    "bankOwner": "DUONG QUOC KHANH"
+    "bankOwner": "DUONG QUOC KHANH",
+    "momoPhone": "0375408256",
+    "momoName": "Duong QUOC KHANH",
+    "momoQrImage": "",
+    "warehouseProvince": "Hà Nội",
+    "customWholesaleTiers": []
   }
 };
 
@@ -1939,23 +1944,24 @@ function mapSettingsFromSupabase(row: any, fallback: ShopSettings): ShopSettings
     telegramBotToken: row.telegram_bot_token ?? raw.telegramBotToken ?? fallback.telegramBotToken,
     telegramChatId: row.telegram_chat_id ?? raw.telegramChatId ?? fallback.telegramChatId,
     enableTelegramNotify: row.enable_telegram_notify ?? raw.enableTelegramNotify ?? fallback.enableTelegramNotify,
-    websiteUrl: raw.websiteUrl ?? fallback.websiteUrl,
-    warehouseProvince: raw.warehouseProvince ?? fallback.warehouseProvince,
+    websiteUrl: raw.websiteUrl ?? fallback.websiteUrl ?? '',
+    warehouseProvince: raw.warehouseProvince ?? fallback.warehouseProvince ?? 'Hà Nội',
     heroImage: raw.heroImage ?? fallback.heroImage,
-    heroImages: raw.heroImages ?? fallback.heroImages,
+    heroImages: raw.heroImages ?? fallback.heroImages ?? [],
     heroBadge: raw.heroBadge ?? fallback.heroBadge,
-    purchasePolicies: raw.purchasePolicies ?? fallback.purchasePolicies,
-    purchasePolicyDetail: raw.purchasePolicyDetail ?? fallback.purchasePolicyDetail,
-    customWholesaleTiers: raw.customWholesaleTiers ?? fallback.customWholesaleTiers,
+    purchasePolicies: raw.purchasePolicies ?? fallback.purchasePolicies ?? [],
+    purchasePolicyDetail: raw.purchasePolicyDetail ?? fallback.purchasePolicyDetail ?? '',
+    customWholesaleTiers: raw.customWholesaleTiers ?? fallback.customWholesaleTiers ?? [],
     prepaidFreeShipThreshold: Number(row.prepaid_free_ship_threshold ?? raw.prepaidFreeShipThreshold ?? fallback.prepaidFreeShipThreshold ?? 10000),
     enablePrepaidFreeShip: row.enable_prepaid_free_ship ?? raw.enablePrepaidFreeShip ?? fallback.enablePrepaidFreeShip ?? true,
-    momoPhone: row.momo_phone ?? raw.momoPhone ?? fallback.momoPhone,
-    momoName: row.momo_name ?? raw.momoName ?? fallback.momoName,
-    momoQrImage: raw.momoQrImage ?? fallback.momoQrImage,
-    bankId: row.bank_id ?? raw.bankId ?? fallback.bankId,
-    bankAccount: row.bank_account ?? raw.bankAccount ?? fallback.bankAccount,
-    bankOwner: row.bank_owner ?? raw.bankOwner ?? fallback.bankOwner,
-    sepayApiKey: (row as any).sepay_api_key ?? raw.sepayApiKey ?? fallback.sepayApiKey,
+    momoPhone: row.momo_phone ?? raw.momoPhone ?? fallback.momoPhone ?? '',
+    momoName: row.momo_name ?? raw.momoName ?? fallback.momoName ?? '',
+    momoQrImage: raw.momoQrImage ?? fallback.momoQrImage ?? '',
+    bankId: row.bank_id ?? raw.bankId ?? fallback.bankId ?? '',
+    bankAccount: row.bank_account ?? raw.bankAccount ?? fallback.bankAccount ?? '',
+    bankOwner: row.bank_owner ?? raw.bankOwner ?? fallback.bankOwner ?? '',
+    // sepayApiKey: ưu tiên env var > Supabase column > raw_data > fallback
+    sepayApiKey: process.env.SEPAY_API_KEY ?? (row as any).sepay_api_key ?? raw.sepayApiKey ?? fallback.sepayApiKey ?? '',
   };
 }
 
