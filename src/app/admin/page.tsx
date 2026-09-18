@@ -71,8 +71,6 @@ const DEFAULT_SETTINGS: ShopSettings = {
   freeShippingThreshold: 200000,
   prepaidFreeShipThreshold: 10000,
   enablePrepaidFreeShip: true,
-  momoPhone: '0375408256',
-  momoName: 'Duong QUOC KHANH',
   bankId: 'VCB',
   bankAccount: '1018880066',
   bankOwner: 'DUong QUOC KHANH',
@@ -1666,7 +1664,7 @@ export default function AdminPage() {
                         {isOrderEligibleFreeship && (
                           <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
                             <span>✨</span>
-                            <span>ĐƠN ≥ {formatVND(freeshipThreshold)} (FREESHIP CK/MOMO)</span>
+                            <span>ĐƠN ≥ {formatVND(freeshipThreshold)} (FREESHIP CHUYỂN KHOẢN)</span>
                           </span>
                         )}
                       </div>
@@ -3637,16 +3635,16 @@ export default function AdminPage() {
 
             </div>
 
-            {/* 7. CẤU HÌNH THANH TOÁN (MOMO, NGÂN HÀNG VIETQR) & FREESHIP */}
+            {/* 7. CẤU HÌNH THANH TOÁN (NGÂN HÀNG VIETQR) & FREESHIP */}
                 <div className="bg-gradient-to-r from-purple-50 via-pink-50 to-rose-50/40 p-5 rounded-2xl border border-purple-200 shadow-2xs space-y-4">
                   <div className="flex items-center gap-2.5 pb-3 border-b border-purple-100">
                     <span className="text-2xl">💳</span>
                     <div>
                       <h4 className="font-black text-purple-900 text-xs sm:text-sm">
-                        7. Cấu Hình Thanh Toán (MoMo &amp; VietQR) &amp; Ngưỡng Miễn Phí Ship
+                        7. Cấu Hình Thanh Toán Chuyển Khoản VietQR &amp; Ngưỡng Miễn Phí Ship
                       </h4>
                       <p className="text-[11px] text-purple-700">
-                        Thiết lập nhận tiền qua Ví MoMo, Ngân hàng và số tiền tối thiểu để được Freeship khi thanh toán trước
+                        Thiết lập thông tin nhận tiền qua Chuyển khoản VietQR và số tiền tối thiểu để được Freeship khi thanh toán trước
                       </p>
                     </div>
                   </div>
@@ -3688,40 +3686,8 @@ export default function AdminPage() {
                         <span className="text-xs text-gray-500 font-medium">VNĐ</span>
                       </div>
                       <p className="text-[10px] text-gray-500 mt-1">
-                        Khi khách đặt đơn từ số tiền này và chọn <strong>Chuyển khoản Ngân hàng</strong> hoặc <strong>Ví MoMo</strong>, cước ship sẽ tự động chuyển thành <strong>0đ</strong>.
+                        Khi khách đặt đơn từ số tiền này và chọn <strong>Chuyển khoản VietQR</strong>, cước ship sẽ tự động chuyển thành <strong>0đ</strong>.
                       </p>
-                    </div>
-                  </div>
-
-                  {/* Cấu hình Ví MoMo */}
-                  <div className="p-3.5 bg-white rounded-xl border border-pink-200 space-y-2.5">
-                    <div className="flex items-center gap-1.5 font-bold text-gray-800 text-xs">
-                      <span className="w-5 h-5 rounded-md bg-[#A50064] text-white flex items-center justify-center text-[11px] font-black">M</span>
-                      <span>Thông Tin Ví Điện Tử MoMo Shop</span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                      <div>
-                        <label className="font-bold text-gray-700 block mb-1">Số Điện Thoại MoMo:</label>
-                        <input
-                          type="text"
-                          placeholder="VD: 0398445122"
-                          value={settings.momoPhone || ''}
-                          onChange={(e) => setSettings({ ...settings, momoPhone: e.target.value })}
-                          className="w-full px-3 py-2 bg-white border border-pink-200 rounded-xl font-bold text-gray-800 focus:ring-2 focus:ring-pink-400 focus:outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="font-bold text-gray-700 block mb-1">Tên Chủ Tài Khoản MoMo:</label>
-                        <input
-                          type="text"
-                          placeholder="VD: OMACHI HANDMADE STORE"
-                          value={settings.momoName || ''}
-                          onChange={(e) => setSettings({ ...settings, momoName: e.target.value })}
-                          className="w-full px-3 py-2 bg-white border border-pink-200 rounded-xl font-bold text-gray-800 focus:ring-2 focus:ring-pink-400 focus:outline-none uppercase"
-                        />
-                      </div>
                     </div>
                   </div>
 

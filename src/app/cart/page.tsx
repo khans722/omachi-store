@@ -166,13 +166,13 @@ export default function CartPage() {
                   isFreeshipEligible ? 'text-emerald-800' : 'text-stone-800'
                 }`}>
                   {isFreeshipEligible ? (
-                    <span>Đã đủ điều kiện <span className="text-emerald-600 underline decoration-emerald-400">MIỄN PHÍ SHIP</span> khi Chuyển Khoản hoặc MoMo!</span>
+                    <span>Đã đủ điều kiện <span className="text-emerald-600 underline decoration-emerald-400">MIỄN PHÍ SHIP</span> khi Chuyển Khoản VietQR!</span>
                   ) : (
-                    <span>Mua thêm <strong className="text-rose-600 font-black">{formatVND(missingForFreeship)}</strong> để được <strong className="text-emerald-700">MIỄN PHÍ SHIP</strong> khi Chuyển Khoản / MoMo!</span>
+                    <span>Mua thêm <strong className="text-rose-600 font-black">{formatVND(missingForFreeship)}</strong> để được <strong className="text-emerald-700">MIỄN PHÍ SHIP</strong> khi Chuyển Khoản VietQR!</span>
                   )}
                 </p>
                 <p className="text-[10px] sm:text-[11px] text-stone-500 font-medium">
-                  Áp dụng cho đơn hàng từ {formatVND(FREESHIP_THRESHOLD)} thanh toán trước (Ngân hàng / MoMo) toàn quốc
+                  Áp dụng cho đơn hàng từ {formatVND(FREESHIP_THRESHOLD)} thanh toán Chuyển Khoản VietQR toàn quốc
                 </p>
               </div>
             </div>

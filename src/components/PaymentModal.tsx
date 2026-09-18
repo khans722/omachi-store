@@ -110,12 +110,12 @@ export default function PaymentModal({
                   className="w-52 h-auto sm:w-60 object-contain rounded-xl"
                 />
                 <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 text-white text-[10px] font-black px-3 py-0.5 rounded-full shadow-xs whitespace-nowrap bg-blue-600">
-                  Quét bằng App Ngân Hàng hoặc MoMo
+                  Quét bằng App Ngân Hàng (VietQR)
                 </div>
               </div>
 
               <p className="text-xs text-gray-600 pt-4 font-medium">
-                Mở App <strong>Ngân hàng bất kỳ</strong> hoặc <strong>Ví MoMo</strong> &gt; Chọn <strong>Quét mã QR</strong> để chuyển tiền nhanh tự động
+                Mở App <strong>Ngân hàng bất kỳ</strong> &gt; Chọn <strong>Quét mã QR</strong> để chuyển tiền nhanh tự động
               </p>
 
               {/* Nút tải mã QR về máy dành cho khách dùng 1 điện thoại */}
@@ -137,7 +137,7 @@ export default function PaymentModal({
               </p>
               <ol className="list-decimal list-inside space-y-1 text-[10.5px] text-blue-700 leading-relaxed">
                 <li>Bấm nút <strong>&quot;Tải ảnh mã QR về máy&quot;</strong> ở trên.</li>
-                <li>Mở App Ngân hàng hoặc MoMo &gt; Bấm <strong>Quét QR</strong>.</li>
+                <li>Mở App Ngân hàng &gt; Bấm <strong>Quét QR</strong>.</li>
                 <li>Chọn biểu tượng <strong>&quot;Ảnh / Thư viện&quot;</strong> để chọn mã vừa tải về là xong!</li>
               </ol>
             </div>

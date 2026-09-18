@@ -335,9 +335,7 @@ export default function OrderTrackingPage() {
             <div className="flex items-center justify-between pt-1 border-t border-gray-100">
               <span className="text-gray-500">Hình thức thanh toán:</span>
               <strong className="text-gray-800">
-                {order.paymentMethod === 'MOMO'
-                  ? '🟣 Ví MoMo'
-                  : order.paymentMethod === 'BANK'
+                {order.paymentMethod === 'BANK' || (order.paymentMethod as any) === 'MOMO'
                   ? '💳 Chuyển khoản VietQR'
                   : order.paymentMethod === 'COD'
                   ? '💵 COD (Tiền mặt khi nhận)'
@@ -353,7 +351,7 @@ export default function OrderTrackingPage() {
           </div>
 
           {/* VietQR Box if Unpaid and BANK */}
-          {order.paymentStatus !== 'PAID' && order.paymentMethod === 'BANK' && (
+          {order.paymentStatus !== 'PAID' && (order.paymentMethod === 'BANK' || (order.paymentMethod as any) === 'MOMO') && (
             <div id="payment-box" className="bg-white p-5 rounded-3xl border-2 border-blue-200 shadow-xs space-y-3 text-xs">
               <div className="flex items-center gap-2 pb-2 border-b border-blue-100">
                 <div className="w-7 h-7 rounded-lg bg-blue-600 text-white font-black flex items-center justify-center text-xs shrink-0">
@@ -398,7 +396,7 @@ export default function OrderTrackingPage() {
                       <span>{isDownloadingQr ? 'Đang tải ảnh...' : '📥 Tải ảnh mã QR về máy (Để quét từ ảnh)'}</span>
                     </button>
                     <p className="text-[11px] text-gray-500 font-medium">
-                      Mở App <strong>Ngân hàng</strong> hoặc <strong>Ví MoMo</strong> &gt; Chọn <strong>Quét mã QR</strong>
+                      Mở App <strong>Ngân hàng bất kỳ</strong> &gt; Chọn <strong>Quét mã QR</strong>
                     </p>
 
                     {/* Hướng dẫn quét từ ảnh trên cùng 1 điện thoại */}
@@ -409,7 +407,7 @@ export default function OrderTrackingPage() {
                       </p>
                       <ol className="list-decimal list-inside space-y-0.5 text-[10.5px] text-blue-700 leading-relaxed">
                         <li>Bấm nút <strong>&quot;Tải ảnh mã QR về máy&quot;</strong> ở trên (hoặc chụp màn hình).</li>
-                        <li>Mở App Ngân hàng hoặc MoMo &gt; Bấm <strong>Quét QR</strong>.</li>
+                        <li>Mở App Ngân hàng &gt; Bấm <strong>Quét QR</strong>.</li>
                         <li>Chọn biểu tượng <strong>&quot;Ảnh / Thư viện&quot;</strong> để chọn mã vừa tải về là xong!</li>
                       </ol>
                     </div>

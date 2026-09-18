@@ -18,7 +18,10 @@ import {
   Edit2,
   Check,
   CreditCard,
-  Download
+  Download,
+  CheckCircle2,
+  Loader2,
+  Bookmark,
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -555,10 +558,110 @@ export default function CheckoutPage() {
 
   const [errorMessage, setErrorMessage] = useState('');
   const [saveAsDefault, setSaveAsDefault] = useState(true);
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
+  const [addressSavedNotice, setAddressSavedNotice] = useState(false);
 
-  // Restore guest checkout shipping info from localStorage if available (GUESTS ONLY)
+  const savedAddresses = useMemo(() => {
+    if (!loggedInCustomer) return [];
+    if (loggedInCustomer.savedAddresses && loggedInCustomer.savedAddresses.length > 0) {
+      return loggedInCustomer.savedAddresses;
+    }
+    if (loggedInCustomer.address) {
+      return [{
+        id: 'default-legacy',
+        fullName: loggedInCustomer.fullName,
+        phone: loggedInCustomer.phone,
+        address: loggedInCustomer.address,
+        ward: (loggedInCustomer as any).ward || '',
+        district: loggedInCustomer.district || '',
+        city: loggedInCustomer.city || '',
+        isDefault: true,
+      }];
+    }
+    return [];
+  }, [loggedInCustomer]);
+
+  const applySavedAddress = (addr: { id?: string; address: string; district?: string; city?: string; ward?: string; fullName?: string; phone?: string }) => {
+    if (addr.fullName) setCustomer((prev) => ({ ...prev, fullName: addr.fullName || prev.fullName }));
+    if (addr.phone) setCustomer((prev) => ({ ...prev, phone: addr.phone || prev.phone }));
+    setSelectedProvince(addr.city || '');
+    setSelectedDistrict(addr.district || '');
+    setSelectedWard((addr as any).ward || '');
+    setSpecificAddress(addr.address || '');
+  };
+
+  // 1. Khôi phục thông tin địa chỉ (ưu tiên tài khoản, sau đó đến bản nháp đã lưu)
   useEffect(() => {
-    if (!loggedInCustomer) {
+    if (loggedInCustomer) {
+      // Ưu tiên tên và SĐT từ tài khoản
+      setCustomer((prev) => ({
+        ...prev,
+        fullName: loggedInCustomer.fullName || prev.fullName || '',
+        phone: loggedInCustomer.phone || prev.phone || '',
+      }));
+
+      const hasValidSavedAddress = (loggedInCustomer.savedAddresses || []).length > 0;
+      const hasProfileAddress = Boolean(loggedInCustomer.address && loggedInCustomer.address.trim());
+
+      // Bản nháp gần nhất của tài khoản này
+      let userDraft: any = null;
+      try {
+        const raw = localStorage.getItem(`omachi_customer_shipping_info_${loggedInCustomer.id}`);
+        if (raw) userDraft = JSON.parse(raw);
+      } catch (e) {}
+
+      if (hasValidSavedAddress) {
+        const defaultSaved = (loggedInCustomer.savedAddresses || []).find((a) => a.isDefault) || loggedInCustomer.savedAddresses![0];
+        applySavedAddress(defaultSaved);
+        setIsEditingAddress(false);
+      } else if (hasProfileAddress) {
+        setSelectedProvince(loggedInCustomer.city || '');
+        setSelectedDistrict(loggedInCustomer.district || '');
+        setSelectedWard((loggedInCustomer as any).ward || '');
+        setSpecificAddress(loggedInCustomer.address || '');
+        setIsEditingAddress(false);
+      } else if (userDraft && userDraft.specificAddress && userDraft.selectedProvince) {
+        if (userDraft.fullName) setCustomer((p) => ({ ...p, fullName: userDraft.fullName }));
+        if (userDraft.phone) setCustomer((p) => ({ ...p, phone: userDraft.phone }));
+        setSelectedProvince(userDraft.selectedProvince || '');
+        setSelectedDistrict(userDraft.selectedDistrict || '');
+        setSelectedWard(userDraft.selectedWard || '');
+        setSpecificAddress(userDraft.specificAddress || '');
+
+        const isComplete = Boolean(
+          userDraft.fullName?.trim() &&
+          userDraft.phone?.trim() &&
+          userDraft.selectedProvince?.trim() &&
+          userDraft.selectedWard?.trim() &&
+          userDraft.specificAddress?.trim()
+        );
+        setIsEditingAddress(!isComplete);
+
+        // Tự động đồng bộ lên tài khoản database nếu draft đã hoàn chỉnh
+        if (isComplete && updateProfile) {
+          updateProfile({
+            fullName: userDraft.fullName?.trim(),
+            phone: userDraft.phone?.trim(),
+            address: userDraft.specificAddress?.trim(),
+            city: userDraft.selectedProvince?.trim(),
+            ward: userDraft.selectedWard?.trim(),
+            district: userDraft.selectedDistrict?.trim(),
+            saveNewAddress: {
+              fullName: userDraft.fullName?.trim(),
+              phone: userDraft.phone?.trim(),
+              address: userDraft.specificAddress?.trim(),
+              city: userDraft.selectedProvince?.trim(),
+              ward: userDraft.selectedWard?.trim(),
+              district: userDraft.selectedDistrict?.trim(),
+              isDefault: true,
+            },
+          }).catch(() => {});
+        }
+      } else {
+        setIsEditingAddress(true);
+      }
+    } else {
+      // Khách vãng lai: Khôi phục từ localStorage
       try {
         const cached = localStorage.getItem('omachi_checkout_shipping_info');
         if (cached) {
@@ -585,26 +688,94 @@ export default function CheckoutPage() {
         setIsEditingAddress(true);
       }
     }
-  }, [loggedInCustomer]);
+  }, [loggedInCustomer?.id, loggedInCustomer?.address, loggedInCustomer?.savedAddresses?.length]);
 
-  // Auto save shipping info to localStorage for guest convenience ONLY
+  // 2. Tự động ghi nhớ ngay lập tức khi khách gõ địa chỉ
   useEffect(() => {
     try {
-      if (!loggedInCustomer && (customer.fullName || customer.phone || specificAddress || selectedProvince)) {
-        localStorage.setItem(
-          'omachi_checkout_shipping_info',
-          JSON.stringify({
-            fullName: customer.fullName,
-            phone: customer.phone,
-            selectedProvince,
-            selectedDistrict,
-            selectedWard,
-            specificAddress,
-          })
-        );
+      if (customer.fullName || customer.phone || specificAddress || selectedProvince || selectedWard) {
+        const dataToSave = {
+          fullName: customer.fullName,
+          phone: customer.phone,
+          selectedProvince,
+          selectedDistrict,
+          selectedWard,
+          specificAddress,
+        };
+        if (loggedInCustomer?.id) {
+          localStorage.setItem(`omachi_customer_shipping_info_${loggedInCustomer.id}`, JSON.stringify(dataToSave));
+        } else {
+          localStorage.setItem('omachi_checkout_shipping_info', JSON.stringify(dataToSave));
+        }
       }
     } catch (e) {}
-  }, [loggedInCustomer, customer.fullName, customer.phone, selectedProvince, selectedDistrict, selectedWard, specificAddress]);
+  }, [loggedInCustomer?.id, customer.fullName, customer.phone, selectedProvince, selectedDistrict, selectedWard, specificAddress]);
+
+  // 3. Hàm Xác nhận & Lưu địa chỉ vào tài khoản
+  const handleSaveAndConfirmAddress = async () => {
+    const errors: any = {};
+    if (!customer.fullName.trim()) errors.fullName = 'Vui lòng nhập họ và tên';
+    if (!customer.phone.trim()) errors.phone = 'Vui lòng nhập số điện thoại';
+    else if (!/^[0-9]{9,11}$/.test(customer.phone.replace(/[^0-9]/g, ''))) errors.phone = 'Số điện thoại không hợp lệ (10 số)';
+    if (!selectedProvince.trim()) errors.province = 'Vui lòng chọn Tỉnh / Thành phố';
+    if (!selectedWard.trim()) errors.ward = 'Vui lòng chọn Phường / Xã';
+    if (!specificAddress.trim()) errors.specificAddress = 'Vui lòng nhập số nhà, tên đường hoặc thôn xóm';
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setErrorMessage('Vui lòng điền đầy đủ các mục địa chỉ bắt buộc (*)');
+      return;
+    }
+
+    setFieldErrors({});
+    setErrorMessage('');
+
+    if (loggedInCustomer?.id && updateProfile) {
+      setIsSavingAddress(true);
+      try {
+        await updateProfile({
+          fullName: customer.fullName.trim(),
+          address: specificAddress.trim(),
+          city: selectedProvince.trim(),
+          ward: selectedWard.trim(),
+          district: selectedDistrict.trim(),
+          saveNewAddress: {
+            fullName: customer.fullName.trim(),
+            phone: customer.phone.trim(),
+            address: specificAddress.trim(),
+            city: selectedProvince.trim(),
+            ward: selectedWard.trim(),
+            district: selectedDistrict.trim(),
+            isDefault: saveAsDefault,
+          },
+        });
+        setAddressSavedNotice(true);
+        setTimeout(() => setAddressSavedNotice(false), 4000);
+      } catch (err) {
+        console.error('Lỗi khi lưu địa chỉ vào tài khoản:', err);
+      } finally {
+        setIsSavingAddress(false);
+      }
+    }
+
+    try {
+      const dataToSave = {
+        fullName: customer.fullName,
+        phone: customer.phone,
+        selectedProvince,
+        selectedDistrict,
+        selectedWard,
+        specificAddress,
+      };
+      if (loggedInCustomer?.id) {
+        localStorage.setItem(`omachi_customer_shipping_info_${loggedInCustomer.id}`, JSON.stringify(dataToSave));
+      } else {
+        localStorage.setItem('omachi_checkout_shipping_info', JSON.stringify(dataToSave));
+      }
+    } catch (e) {}
+
+    setIsEditingAddress(false);
+  };
 
   // Reactive auto-clear error banner when customer fixes corresponding field
   useEffect(() => {
@@ -636,67 +807,6 @@ export default function CheckoutPage() {
       setErrorMessage('');
     }
   }, [specificAddress, errorMessage]);
-
-  const savedAddresses = useMemo(() => {
-    if (!loggedInCustomer) return [];
-    if (loggedInCustomer.savedAddresses && loggedInCustomer.savedAddresses.length > 0) {
-      return loggedInCustomer.savedAddresses;
-    }
-    if (loggedInCustomer.address) {
-      return [{
-        id: 'default-legacy',
-        address: loggedInCustomer.address,
-        district: loggedInCustomer.district || '',
-        city: loggedInCustomer.city || '',
-        isDefault: true,
-      }];
-    }
-    return [];
-  }, [loggedInCustomer]);
-
-  const applySavedAddress = (addr: { id?: string; address: string; district?: string; city?: string; ward?: string }) => {
-    setSelectedProvince(addr.city || '');
-    setSelectedDistrict(addr.district || '');
-    setSelectedWard((addr as any).ward || '');
-    setSpecificAddress(addr.address || '');
-  };
-
-  useEffect(() => {
-    if (loggedInCustomer) {
-      // Purge any guest checkout residue from localStorage
-      try { localStorage.removeItem('omachi_checkout_shipping_info'); } catch (e) {}
-
-      // Prioritize account's name and phone
-      setCustomer((prev) => ({
-        ...prev,
-        fullName: loggedInCustomer.fullName || '',
-        phone: loggedInCustomer.phone || '',
-      }));
-
-      const hasValidSavedAddress = savedAddresses.length > 0;
-      const hasProfileAddress = Boolean(loggedInCustomer.address && loggedInCustomer.address.trim());
-
-      if (hasValidSavedAddress) {
-        const defaultSaved = savedAddresses.find((a) => a.isDefault) || savedAddresses[0];
-        applySavedAddress(defaultSaved);
-        setIsEditingAddress(false);
-      } else if (hasProfileAddress) {
-        setSelectedProvince(loggedInCustomer.city || '');
-        setSelectedDistrict(loggedInCustomer.district || '');
-        setSelectedWard((loggedInCustomer as any).ward || '');
-        setSpecificAddress(loggedInCustomer.address || '');
-        setIsEditingAddress(false);
-      } else {
-        // Brand new customer with NO saved address:
-        // Clear all fields so user can enter their own address cleanly!
-        setSelectedProvince('');
-        setSelectedDistrict('');
-        setSelectedWard('');
-        setSpecificAddress('');
-        setIsEditingAddress(true);
-      }
-    }
-  }, [loggedInCustomer, savedAddresses]);
 
   const provinceOptions = useMemo(() => {
     return VIETNAM_PROVINCES.map((p) => ({
@@ -880,13 +990,19 @@ export default function CheckoutPage() {
           origin: { y: 0.6 },
         });
 
-        if (loggedInCustomer) {
+        if (loggedInCustomer && updateProfile) {
           updateProfile({
+            fullName: customer.fullName.trim(),
+            phone: customer.phone.trim(),
             address: specificAddress.trim(),
+            ward: selectedWard.trim(),
             district: selectedDistrict.trim(),
             city: selectedProvince.trim(),
             saveNewAddress: {
+              fullName: customer.fullName.trim(),
+              phone: customer.phone.trim(),
               address: specificAddress.trim(),
+              ward: selectedWard.trim(),
               district: selectedDistrict.trim(),
               city: selectedProvince.trim(),
               isDefault: saveAsDefault || savedAddresses.length === 0,
@@ -1065,7 +1181,7 @@ export default function CheckoutPage() {
                   })()}
                 </div>
                 <p className="text-[11px] text-stone-500 font-medium">
-                  Mở App <strong>Ngân hàng bất kỳ</strong> hoặc <strong>Ví MoMo</strong> &gt; Chọn <strong>Quét mã QR</strong> để chuyển tiền nhanh tự động
+                  Mở App <strong>Ngân hàng bất kỳ</strong> &gt; Chọn <strong>Quét mã QR</strong> để chuyển tiền nhanh tự động
                 </p>
 
                 {/* Hướng dẫn quét từ ảnh trên cùng 1 điện thoại */}
@@ -1076,7 +1192,7 @@ export default function CheckoutPage() {
                   </p>
                   <ol className="list-decimal list-inside space-y-0.5 text-[10.5px] text-blue-700 leading-relaxed">
                     <li>Bấm nút <strong>&quot;Tải ảnh mã QR về máy&quot;</strong> ở trên (hoặc chụp màn hình).</li>
-                    <li>Mở App Ngân hàng hoặc MoMo &gt; Bấm <strong>Quét QR</strong>.</li>
+                    <li>Mở App Ngân hàng &gt; Bấm <strong>Quét QR</strong>.</li>
                     <li>Chọn biểu tượng <strong>&quot;Ảnh / Thư viện&quot;</strong> để chọn mã vừa tải về là xong!</li>
                   </ol>
                 </div>
@@ -1221,31 +1337,75 @@ export default function CheckoutPage() {
 
         {/* 2. SHOPEE ADDRESS CARD */}
         <div ref={addressSectionRef} className="bg-white rounded-2xl shadow-2xs overflow-hidden border border-gray-100">
+          {/* Top Shipping ribbon (Shopee envelope stripe) */}
+          <div
+            className="h-1.5 w-full"
+            style={{
+              backgroundImage: curr.ribbonBg,
+            }}
+          />
+
           <div className="p-3.5 space-y-3">
             {/* Header / Click to toggle */}
             <div
-              onClick={() => setIsEditingAddress(!isEditingAddress)}
-              className="flex items-start gap-2.5 cursor-pointer select-none"
+              onClick={() => {
+                if (isEditingAddress) {
+                  if (isAddressComplete) {
+                    handleSaveAndConfirmAddress();
+                  } else {
+                    setIsEditingAddress(false);
+                    setErrorMessage('');
+                  }
+                } else {
+                  setIsEditingAddress(true);
+                }
+              }}
+              className="flex items-start gap-2.5 cursor-pointer select-none group"
             >
               <MapPin className={`w-4 h-4 ${curr.priceText} shrink-0 mt-0.5`} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-gray-900">Địa chỉ nhận hàng</span>
-                  <div className="flex items-center gap-1 text-[11px] text-gray-500">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-gray-900">Địa chỉ nhận hàng</span>
+                    {loggedInCustomer && (
+                      <span className="px-1.5 py-0.2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-[9px] font-bold">
+                        Tài khoản
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 text-[11px] text-gray-500 group-hover:opacity-80">
                     <span className={`${curr.priceText} font-semibold`}>{isEditingAddress ? 'Thu gọn' : 'Thay đổi'}</span>
                     <ChevronRight className={`w-3.5 h-3.5 text-gray-400 transition-transform ${isEditingAddress ? 'rotate-90' : ''}`} />
                   </div>
                 </div>
 
-                {/* Collapsed Address Preview */}
+                {/* Collapsed Address Preview (Chuẩn Shopee) */}
                 {!isEditingAddress && (
-                  <div className="mt-1 space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-gray-900">{customer.fullName || '(Chưa có tên)'}</span>
-                      <span className="text-xs text-gray-500 font-medium">({customer.phone || 'Chưa có SĐT'})</span>
+                  <div className="mt-1.5 space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-extrabold text-gray-900">
+                        {customer.fullName || '(Chưa nhập tên người nhận)'}
+                      </span>
+                      <span className="text-xs font-bold text-gray-600">
+                        {customer.phone || '(Chưa có SĐT)'}
+                      </span>
+                      {isAddressComplete && (
+                        <span className="px-1.5 py-0.5 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-sm">
+                          Mặc định
+                        </span>
+                      )}
+                      {loggedInCustomer && (
+                        <span className="px-1.5 py-0.5 text-[9px] font-semibold text-sky-700 bg-sky-50 border border-sky-200 rounded-sm">
+                          Đã lưu
+                        </span>
+                      )}
                     </div>
-                    <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
-                      {[specificAddress, selectedWard, selectedProvince].filter(Boolean).join(', ') || 'Chưa nhập địa chỉ chi tiết - Bấm để thêm'}
+                    <p className="text-xs text-gray-700 font-medium leading-relaxed">
+                      {[specificAddress, selectedWard, selectedProvince].filter(Boolean).join(', ') || (
+                        <span className="text-rose-500 font-medium italic">
+                          Chưa có địa chỉ chi tiết - Bấm &quot;Thay đổi&quot; để thêm địa chỉ nhận hàng
+                        </span>
+                      )}
                     </p>
                   </div>
                 )}
@@ -1254,7 +1414,62 @@ export default function CheckoutPage() {
 
             {/* Expanded Address Form */}
             {isEditingAddress && (
-              <div className="space-y-2.5 pt-2 border-t border-gray-100 animate-fade-in">
+              <div className="space-y-3 pt-2 border-t border-gray-100 animate-fade-in">
+                {/* Sổ địa chỉ đã lưu trong tài khoản nếu có */}
+                {loggedInCustomer && savedAddresses.length > 0 && (
+                  <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-2.5 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-amber-900 flex items-center gap-1.5">
+                        <Bookmark className="w-3.5 h-3.5 text-amber-600" />
+                        Sổ địa chỉ trong tài khoản ({savedAddresses.length}):
+                      </span>
+                      <span className="text-[10px] text-amber-700 font-medium">Bấm chọn nhanh</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-1.5 max-h-44 overflow-y-auto pr-0.5">
+                      {savedAddresses.map((addr, idx) => {
+                        const isSelected =
+                          specificAddress.trim().toLowerCase() === (addr.address || '').trim().toLowerCase() &&
+                          selectedProvince.trim().toLowerCase() === (addr.city || '').trim().toLowerCase();
+                        return (
+                          <div
+                            key={addr.id || idx}
+                            onClick={() => applySavedAddress(addr)}
+                            className={`p-2 rounded-lg border text-left cursor-pointer transition flex items-start justify-between gap-2 ${
+                              isSelected
+                                ? 'bg-white border-emerald-500 ring-1 ring-emerald-400 shadow-xs'
+                                : 'bg-white/90 border-amber-200/70 hover:bg-white hover:border-amber-400'
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-xs font-bold text-gray-900">
+                                  {addr.fullName || customer.fullName || 'Địa chỉ'}
+                                </span>
+                                {(addr.phone || customer.phone) && (
+                                  <span className="text-[11px] text-gray-500">
+                                    ({addr.phone || customer.phone})
+                                  </span>
+                                )}
+                                {addr.isDefault && (
+                                  <span className="px-1 py-0.2 text-[9px] font-bold bg-emerald-100 text-emerald-800 rounded">
+                                    Mặc định
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-gray-600 truncate mt-0.5">
+                                {[addr.address, (addr as any).ward, addr.district, addr.city].filter(Boolean).join(', ')}
+                              </p>
+                            </div>
+                            {isSelected && (
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
                     <label className="text-[11px] font-bold text-gray-700 block mb-1">
@@ -1374,22 +1589,68 @@ export default function CheckoutPage() {
                   )}
                 </div>
 
-                {/* Nút Thu gọn địa chỉ nhẹ nhàng */}
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-[11px] text-gray-400 font-medium">
-                    Cuộn xuống để chọn thanh toán &amp; đặt hàng
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsEditingAddress(false);
-                      setErrorMessage('');
-                    }}
-                    className="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1"
-                  >
-                    <span>Thu gọn</span>
-                    <span className="text-[10px]">▲</span>
-                  </button>
+                {/* KHU VỰC LƯU & GHI NHỚ ĐỊA CHỈ (KHUNG ĐỎ ĐƯỢC KHOANH TRONG ẢNH) */}
+                <div className="pt-1 space-y-2">
+                  {/* Checkbox lưu mặc định */}
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={saveAsDefault}
+                      onChange={(e) => setSaveAsDefault(e.target.checked)}
+                      className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-gray-300"
+                    />
+                    <span className="text-[11px] font-semibold text-gray-700">
+                      {loggedInCustomer
+                        ? 'Lưu làm địa chỉ nhận hàng mặc định trong tài khoản của bạn'
+                        : 'Ghi nhớ thông tin địa chỉ này cho các lần mua sau'}
+                    </span>
+                  </label>
+
+                  {/* Thông báo đã lưu thành công */}
+                  {addressSavedNotice && (
+                    <div className="flex items-center gap-1.5 p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-bold text-emerald-800 animate-fade-in">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>✓ Đã lưu địa chỉ vào tài khoản thành công! Lần sau sẽ tự động điền sẵn. ✨</span>
+                    </div>
+                  )}
+
+                  {/* Hàng nút hành động: Xác nhận & Lưu địa chỉ + Thu gọn */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={handleSaveAndConfirmAddress}
+                      disabled={isSavingAddress}
+                      className={`flex-1 py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition shadow-xs cursor-pointer ${curr.btnPrimary}`}
+                    >
+                      {isSavingAddress ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Đang lưu địa chỉ...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>{loggedInCustomer ? 'Xác nhận & Lưu địa chỉ' : 'Xác nhận & Ghi nhớ địa chỉ'}</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isAddressComplete) {
+                          handleSaveAndConfirmAddress();
+                        } else {
+                          setIsEditingAddress(false);
+                          setErrorMessage('');
+                        }
+                      }}
+                      className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 shrink-0"
+                    >
+                      <span>Thu gọn</span>
+                      <span className="text-[10px]">▲</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -1508,7 +1769,7 @@ export default function CheckoutPage() {
                   </p>
                   {isOrderOverThreshold && isPrepaidFreeshipEnabled && (
                     <p className="text-[10px] text-amber-700 font-bold mt-1 bg-amber-50 px-1.5 py-0.5 rounded inline-block border border-amber-200">
-                      💡 Mẹo: Chuyển khoản hoặc MoMo để được MIỄN PHÍ SHIP 0đ (tiết kiệm {formatVND(checkoutShippingFee)})
+                      💡 Mẹo: Chuyển khoản để được MIỄN PHÍ SHIP 0đ (tiết kiệm {formatVND(checkoutShippingFee)})
                     </p>
                   )}
                 </div>
@@ -1534,7 +1795,7 @@ export default function CheckoutPage() {
                 />
                 <div>
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-xs font-bold text-gray-900">Chuyển khoản VietQR (Mọi App Ngân hàng &amp; Ví MoMo)</span>
+                    <span className="text-xs font-bold text-gray-900">Chuyển khoản VietQR (Mọi App Ngân hàng)</span>
                   </div>
                   <p className="text-[11px] text-gray-500 mt-0.5">
                     {isOrderOverThreshold && isPrepaidFreeshipEnabled ? (
@@ -1542,7 +1803,7 @@ export default function CheckoutPage() {
                         Đơn từ {formatVND(FREESHIP_THRESHOLD)} được shop MIỄN 100% cước ship khi thanh toán chuyển khoản!
                       </strong>
                     ) : (
-                      <span>Quét mã VietQR tiện lợi qua mọi App ngân hàng ({settings?.bankId || 'Vietcombank'}) hoặc App MoMo.</span>
+                      <span>Quét mã VietQR tiện lợi qua mọi App ngân hàng ({settings?.bankId || 'Vietcombank'}).</span>
                     )}
                   </p>
                 </div>

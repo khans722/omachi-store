@@ -83,8 +83,6 @@ export async function POST(req: NextRequest) {
         bank_id: s.bankId || '',
         bank_account: s.bankAccount || '',
         bank_owner: s.bankOwner || '',
-        momo_phone: s.momoPhone || '',
-        momo_name: s.momoName || '',
         raw_data: s,
         updated_at: new Date().toISOString(),
       });

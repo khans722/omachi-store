@@ -7,10 +7,10 @@ import ProductCard from '@/components/ProductCard';
 import { INITIAL_PRODUCTS } from '@/data/products';
 import { INITIAL_CATEGORIES } from '@/data/categories';
 import { INITIAL_SETTINGS } from '@/data/settings';
-import { Product, ShopSettings } from '@/types';
+import { Product, ShopSettings, CustomerFeedback } from '@/types';
 import { useTheme } from '@/context/ThemeContext';
 import { createProductSearchIndex, smartFilterProducts } from '@/lib/search';
-import { Sparkles, ShieldCheck, RefreshCw, Camera, Truck } from 'lucide-react';
+import { Sparkles, ShieldCheck, RefreshCw, Camera, Truck, Star } from 'lucide-react';
 
 export default function HomePage() {
   const { theme } = useTheme();
@@ -18,14 +18,16 @@ export default function HomePage() {
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [categories, setCategories] = useState<any[]>(INITIAL_CATEGORIES);
   const [settings, setSettings] = useState<ShopSettings | null>(INITIAL_SETTINGS);
+  const [feedbacks, setFeedbacks] = useState<CustomerFeedback[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [prodRes, setRes, catRes] = await Promise.all([
+        const [prodRes, setRes, catRes, fbRes] = await Promise.all([
           fetch('/api/products').then((r) => r.json()).catch(() => null),
           fetch('/api/settings').then((r) => r.json()).catch(() => null),
           fetch('/api/categories').then((r) => r.json()).catch(() => null),
+          fetch('/api/feedbacks').then((r) => r.json()).catch(() => null),
         ]);
 
         if (prodRes && prodRes.success && prodRes.data && prodRes.data.length > 0) {
@@ -36,6 +38,9 @@ export default function HomePage() {
         }
         if (catRes && catRes.success && catRes.data) {
           setCategories(catRes.data);
+        }
+        if (fbRes && fbRes.success && Array.isArray(fbRes.data)) {
+          setFeedbacks(fbRes.data);
         }
       } catch (err) {
         console.error(err);
@@ -247,6 +252,72 @@ export default function HomePage() {
           </div>
         )}
       </section>
+
+      {/* Customer Feedback Section (#OmachiFeedback) */}
+      {settings?.showFeedbacks !== false && feedbacks.length > 0 && (
+        <section className="rounded-2xl p-6 sm:p-8 bg-white border border-stone-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-6 animate-fade-in">
+          <div className="text-center space-y-1.5 max-w-xl mx-auto">
+            <span className={`text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${curr.tagBg}`}>
+              #OmachiFeedback
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black text-stone-900 pt-1">
+              Đánh Giá Từ Khách Hàng Yêu Quý 🌸
+            </h2>
+            <p className="text-xs text-stone-500">
+              Cảm ơn các nàng đã luôn tin yêu và đồng hành cùng các mẫu charm, kẹp hoa handmade tại tiệm.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {feedbacks.map((fb) => (
+              <div
+                key={fb.id}
+                className="bg-stone-50/70 p-5 rounded-2xl border border-stone-200/70 hover:border-stone-300 transition-all flex flex-col justify-between space-y-3"
+              >
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-3.5 h-3.5 ${
+                            i < (fb.rating || 5)
+                              ? 'text-amber-400 fill-amber-400'
+                              : 'text-stone-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-[10px] text-stone-400 font-medium">
+                      {new Date(fb.createdAt).toLocaleDateString('vi-VN')}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-stone-700 leading-relaxed italic">
+                    &ldquo;{fb.comment}&rdquo;
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2.5 pt-2 border-t border-stone-200/50">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-300 to-rose-300 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                    {fb.avatarText || fb.customerName?.slice(0, 2).toUpperCase() || 'KH'}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-xs font-bold text-stone-900 truncate">
+                      {fb.customerName} {fb.customerLocation ? `(${fb.customerLocation})` : ''}
+                    </h4>
+                    {fb.purchasedProduct && (
+                      <p className="text-[10px] text-stone-500 truncate">
+                        Đã mua: {fb.purchasedProduct}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Shop Purchase Policies */}
       <section className="rounded-2xl p-6 sm:p-8 bg-white border border-stone-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-6">

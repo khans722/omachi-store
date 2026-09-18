@@ -163,8 +163,11 @@ export interface Order {
 
 export interface SavedAddress {
   id: string;
+  fullName?: string;
+  phone?: string;
   address: string;      // Số nhà, ngõ ngách, thôn/xóm
-  district: string;     // Quận / Huyện / Thị xã
+  ward?: string;        // Phường / Xã / Thị trấn
+  district?: string;    // Quận / Huyện / Thị xã
   city: string;         // Tỉnh / Thành phố
   isDefault: boolean;   // Đặt làm địa chỉ mặc định
   createdAt?: string;
@@ -180,6 +183,7 @@ export interface Customer {
   address: string;      // Địa chỉ mặc định (số nhà, ngõ...)
   city: string;         // Tỉnh/TP mặc định
   district?: string;    // Quận/Huyện mặc định
+  ward?: string;        // Phường/Xã mặc định
   savedAddresses?: SavedAddress[]; // Danh sách các địa chỉ đã lưu
   customerType: 'NEW' | 'REGULAR_VIP' | 'WHOLESALE';
   totalOrdersCount: number;

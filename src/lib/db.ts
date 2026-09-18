@@ -77,8 +77,11 @@ export interface Product {
 
 export interface SavedAddress {
   id: string;
+  fullName?: string;
+  phone?: string;
   address: string; // Chi tiết: số nhà, thôn/xóm, đường
-  district: string; // Quận / Huyện / Thị xã
+  ward?: string; // Phường / Xã / Thị trấn
+  district?: string; // Quận / Huyện / Thị xã
   city: string; // Tỉnh / Thành phố
   isDefault: boolean; // Đặt làm địa chỉ mặc định
   createdAt?: string;
@@ -94,6 +97,7 @@ export interface Customer {
   address: string;
   city: string;
   district?: string;
+  ward?: string;
   savedAddresses?: SavedAddress[];
   customerType: 'NEW' | 'REGULAR_VIP' | 'WHOLESALE'; // Khách mới, Khách quen, Khách sỉ
   totalOrdersCount: number;
@@ -1598,41 +1602,7 @@ const INITIAL_DATABASE: DetailedDatabaseSchema = {
       "paidAt": "2026-09-14T09:15:52.342Z"
     }
   ],
-  "feedbacks": [
-    {
-      "id": "fb-1",
-      "customerName": "Nguyễn Linh",
-      "customerLocation": "Hà Nội",
-      "comment": "Vòng cườm hoa bướm dạ quang xinh dã man luôn ạ! Shop làm đúng theo số đo cổ tay mình yêu cầu, đeo vừa in. Chốt đơn qua Zalo rất nhiệt tình, còn được tặng kèm túi mù charm nữa!",
-      "rating": 5,
-      "purchasedProduct": "Vòng tay bướm dạ quang",
-      "avatarText": "NL",
-      "isActive": true,
-      "createdAt": "2026-09-01T08:00:00.000Z"
-    },
-    {
-      "id": "fb-2",
-      "customerName": "Thu Hương",
-      "customerLocation": "TP. HCM",
-      "comment": "Mình gom mua chung với lớp gói combo 100 kẹp tóc hoa kem bơ, giá rẻ giật mình luôn, rẻ hơn mua lẻ nhiều. Kẹp chắc chắn, màu pastel xinh xuất sắc!",
-      "rating": 5,
-      "purchasedProduct": "Combo 100 kẹp tóc hoa",
-      "avatarText": "TH",
-      "isActive": true,
-      "createdAt": "2026-09-05T08:00:00.000Z"
-    },
-    {
-      "id": "fb-3",
-      "customerName": "Minh Anh",
-      "customerLocation": "Đà Nẵng",
-      "comment": "Set cườm beads haul trong suốt lấp lánh cực kỳ, đủ các mẫu hoa, nơ, quả dâu tây. Mua combo 200 hạt tha hồ xâu móc khóa phone charm tặng bạn bè.",
-      "rating": 5,
-      "purchasedProduct": "Combo 200 hạt cườm pastel",
-      "avatarText": "MA",
-      "isActive": true,
-      "createdAt": "2026-09-10T08:00:00.000Z"
-    }
-  ],
+  "feedbacks": [],
   "settings": {
     "shopName": "Omachi 🌸 Phụ Kiện Handmade & Charm",
     "brandTitle": "OMACHI HANDMADE STORE",
@@ -1690,8 +1660,6 @@ const INITIAL_DATABASE: DetailedDatabaseSchema = {
     "enableTelegramNotify": true,
     "prepaidFreeShipThreshold": 10000,
     "enablePrepaidFreeShip": true,
-    "momoPhone": "0375408256",
-    "momoName": "DUONG QUOC KHANH",
     "bankId": "VCB",
     "bankAccount": "1018880066",
     "bankOwner": "DUONG QUOC KHANH"
@@ -1735,8 +1703,8 @@ function readDb(): DetailedDatabaseSchema {
       parsed.products = INITIAL_DATABASE.products;
       needResave = true;
     }
-    if (!parsed.feedbacks || parsed.feedbacks.length === 0) {
-      parsed.feedbacks = INITIAL_DATABASE.feedbacks;
+    if (!parsed.feedbacks || !Array.isArray(parsed.feedbacks)) {
+      parsed.feedbacks = [];
       needResave = true;
     }
     if (!parsed.categories || parsed.categories.length === 0) {
@@ -2395,7 +2363,7 @@ export const db = {
       return { customer };
     },
 
-    async saveOrUpdateAddress(customerIdOrPhone: string, addr: { address: string; district?: string; city?: string; isDefault?: boolean }): Promise<Customer | null> {
+    async saveOrUpdateAddress(customerIdOrPhone: string, addr: { address: string; district?: string; city?: string; ward?: string; isDefault?: boolean }): Promise<Customer | null> {
       const dbData = readDb();
       if (!dbData.customers) return null;
       const clean = customerIdOrPhone.replace(/[^0-9]/g, '');
@@ -2406,7 +2374,8 @@ export const db = {
       const makeDefault = addr.isDefault !== false || !cust.address || cust.savedAddresses.length === 0;
       const addrSpecific = (addr.address || '').trim();
       const addrDistrict = (addr.district || '').trim();
-      const addrCity = (addr.city || 'Bắc Giang').trim();
+      const addrWard = (addr.ward || (addr as any).ward || '').trim();
+      const addrCity = (addr.city || '').trim();
 
       if (makeDefault && addrSpecific) {
         cust.savedAddresses.forEach((a) => { a.isDefault = false; });
@@ -2423,6 +2392,8 @@ export const db = {
 
       if (existingAddrIdx !== -1) {
         if (makeDefault) cust.savedAddresses[existingAddrIdx].isDefault = true;
+        cust.savedAddresses[existingAddrIdx].ward = addrWard;
+        cust.savedAddresses[existingAddrIdx].district = addrDistrict;
       } else if (addrSpecific) {
         cust.savedAddresses.push({
           id: `addr-${Date.now()}`,
@@ -3136,8 +3107,6 @@ export const db = {
           bank_id: s.bankId || '',
           bank_account: s.bankAccount || '',
           bank_owner: s.bankOwner || '',
-          momo_phone: s.momoPhone || '',
-          momo_name: s.momoName || '',
           raw_data: s,
           updated_at: new Date().toISOString(),
         });
@@ -3158,7 +3127,7 @@ export const db = {
           .select('*')
           .eq('is_active', true)
           .order('created_at', { ascending: false });
-        if (!error && Array.isArray(data) && data.length > 0) {
+        if (!error && Array.isArray(data)) {
           return data.map(mapFeedbackFromSupabase);
         }
       } catch (err) {

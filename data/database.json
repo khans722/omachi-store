@@ -634,41 +634,7 @@
   ],
   "customers": [],
   "orders": [],
-  "feedbacks": [
-    {
-      "id": "fb-1",
-      "customerName": "Nguyễn Linh",
-      "customerLocation": "Hà Nội",
-      "comment": "Vòng cườm hoa bướm dạ quang xinh dã man luôn ạ! Shop làm đúng theo số đo cổ tay mình yêu cầu, đeo vừa in. Chốt đơn qua Zalo rất nhiệt tình, còn được tặng kèm túi mù charm nữa!",
-      "rating": 5,
-      "purchasedProduct": "Vòng tay bướm dạ quang",
-      "avatarText": "NL",
-      "isActive": true,
-      "createdAt": "2026-09-01T08:00:00.000Z"
-    },
-    {
-      "id": "fb-2",
-      "customerName": "Thu Hương",
-      "customerLocation": "TP. HCM",
-      "comment": "Mình gom mua chung với lớp gói combo 100 kẹp tóc hoa kem bơ, giá rẻ giật mình luôn, rẻ hơn mua lẻ nhiều. Kẹp chắc chắn, màu pastel xinh xuất sắc!",
-      "rating": 5,
-      "purchasedProduct": "Combo 100 kẹp tóc hoa",
-      "avatarText": "TH",
-      "isActive": true,
-      "createdAt": "2026-09-05T08:00:00.000Z"
-    },
-    {
-      "id": "fb-3",
-      "customerName": "Minh Anh",
-      "customerLocation": "Đà Nẵng",
-      "comment": "Set cườm beads haul trong suốt lấp lánh cực kỳ, đủ các mẫu hoa, nơ, quả dâu tây. Mua combo 200 hạt tha hồ xâu móc khóa phone charm tặng bạn bè.",
-      "rating": 5,
-      "purchasedProduct": "Combo 200 hạt cườm pastel",
-      "avatarText": "MA",
-      "isActive": true,
-      "createdAt": "2026-09-10T08:00:00.000Z"
-    }
-  ],
+  "feedbacks": [],
   "settings": {
     "shopName": "Omachi 🌸 Phụ Kiện Handmade & Charm",
     "brandTitle": "OMACHI HANDMADE STORE",
@@ -726,8 +692,6 @@
     "enableTelegramNotify": true,
     "prepaidFreeShipThreshold": 10000,
     "enablePrepaidFreeShip": true,
-    "momoPhone": "0375408256",
-    "momoName": "DUONG QUOC KHANH",
     "bankId": "VCB",
     "bankAccount": "1018880066",
     "bankOwner": "DUONG QUOC KHANH"
