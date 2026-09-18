@@ -1759,7 +1759,7 @@ export default function AdminPage() {
                           {new Date(order.createdAt).toLocaleString('vi-VN')}
                         </span>
 
-                        {/* 1. Trạng thái Tiến độ đơn hàng (Huy hiệu cố định, không bấm nhầm) */}
+                        {/* 1. Trạng thái Tiến độ đơn hàng */}
                         <span className={`text-xs font-black px-2.5 py-1 rounded-xl border flex items-center gap-1 ${
                           order.orderStatus === 'CANCELLED'
                             ? 'bg-rose-50 text-rose-700 border-rose-300'
@@ -1776,7 +1776,7 @@ export default function AdminPage() {
                           {order.orderStatus === 'CANCELLED'
                             ? '❌ Đã hủy đơn'
                             : (order.paymentMethod === 'BANK' || order.paymentMethod === 'MOMO') && order.paymentStatus !== 'PAID'
-                            ? '⏳ Chờ khách chuyển khoản'
+                            ? '⏳ Chờ thanh toán'
                             : order.orderStatus === 'COMPLETED'
                             ? '✅ Đã hoàn thành'
                             : order.orderStatus === 'SHIPPING'
@@ -1798,24 +1798,16 @@ export default function AdminPage() {
                             </span>
                           )
                         ) : (
-                          <>
-                            <span className={`text-xs font-bold px-2.5 py-1 rounded-xl border flex items-center gap-1 ${
-                              order.paymentStatus === 'PAID'
-                                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                                : 'bg-amber-50 text-amber-800 border-amber-300'
-                            }`}>
-                              {order.paymentStatus === 'PAID' ? '✓ Đã thanh toán' : '⏳ Chờ chuyển khoản'}
-                            </span>
-                            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-lg border ${
-                              order.paymentMethod === 'MOMO'
-                                ? 'bg-pink-50 text-pink-700 border-pink-300'
-                                : 'bg-blue-50 text-blue-700 border-blue-200'
-                            }`}>
-                              {order.paymentMethod === 'MOMO'
-                                ? '🟣 Ví MoMo'
-                                : '💳 Chuyển khoản VietQR'}
-                            </span>
-                          </>
+                          <span className={`text-xs font-bold px-2.5 py-1 rounded-xl border flex items-center gap-1 ${
+                            order.paymentStatus === 'PAID'
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                              : 'bg-blue-50 text-blue-700 border-blue-200'
+                          }`}>
+                            {order.paymentStatus === 'PAID' 
+                              ? (order.paymentMethod === 'MOMO' ? '✓ Đã thanh toán MoMo' : '✓ Đã thanh toán VietQR')
+                              : (order.paymentMethod === 'MOMO' ? '🟣 Ví MoMo' : '💳 Chuyển khoản VietQR')
+                            }
+                          </span>
                         )}
                       </div>
 

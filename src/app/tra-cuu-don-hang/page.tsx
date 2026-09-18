@@ -130,29 +130,21 @@ function OrderCard({
               <span className={`w-2 h-2 rounded-full ${status.dot} ${order.orderStatus !== 'CANCELLED' ? 'animate-pulse' : ''}`} />
               <span>{status.label}</span>
             </span>
-            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
-              order.paymentMethod === 'MOMO'
-                ? 'bg-pink-50 text-[#A50064] border-pink-200'
-                : order.paymentMethod === 'BANK'
-                ? 'bg-blue-50 text-blue-700 border-blue-200'
-                : 'bg-stone-50 text-stone-700 border-stone-200'
-            }`}>
-              {order.paymentMethod === 'MOMO'
-                ? '🟣 Ví MoMo'
-                : order.paymentMethod === 'BANK'
-                ? '💳 VietQR'
-                : '💵 COD'}
-            </span>
-            {order.paymentStatus === 'PAID' ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <span>✓ Đã thanh toán</span>
+            {order.paymentMethod === 'COD' ? (
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border bg-stone-50 text-stone-700 border-stone-200">
+                {order.paymentStatus === 'PAID' ? '✓ Đã thu tiền COD' : '💵 Thu tiền mặt COD'}
               </span>
-            ) : order.paymentMethod !== 'COD' ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                <span>Chờ thanh toán</span>
+            ) : (
+              <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                order.paymentStatus === 'PAID'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : 'bg-blue-50 text-blue-700 border-blue-200'
+              }`}>
+                {order.paymentStatus === 'PAID'
+                  ? (order.paymentMethod === 'MOMO' ? '✓ Đã thanh toán MoMo' : '✓ Đã thanh toán VietQR')
+                  : (order.paymentMethod === 'MOMO' ? '🟣 Ví MoMo' : '💳 VietQR')}
               </span>
-            ) : null}
+            )}
           </div>
           <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" />
