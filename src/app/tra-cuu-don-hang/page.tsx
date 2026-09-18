@@ -501,6 +501,8 @@ function OrderLookupContent() {
   const [myOrders, setMyOrders] = useState<Order[]>([]);
   const [isLoadingMyOrders, setIsLoadingMyOrders] = useState(false);
   const [filterKeyword, setFilterKeyword] = useState('');
+  type OrderStatusFilter = 'ALL' | 'UNPAID' | 'PROCESSING' | 'SHIPPING' | 'COMPLETED' | 'CANCELLED';
+  const [statusFilter, setStatusFilter] = useState<OrderStatusFilter>('ALL');
 
   // Other / Manual Lookup State
   const [manualQuery, setManualQuery] = useState('');
@@ -736,13 +738,75 @@ function OrderLookupContent() {
     executeManualSearch(manualQuery);
   };
 
-  // Filtered My Orders
+  // Status count stats for Shopee-style tabs
+  const statusCounts = useMemo(() => {
+    const isUnpaid = (o: Order) =>
+      (o.paymentMethod === 'BANK' || (o.paymentMethod as any) === 'MOMO') &&
+      o.paymentStatus !== 'PAID' &&
+      o.orderStatus !== 'CANCELLED';
+
+    const unpaid = myOrders.filter(isUnpaid).length;
+    const processing = myOrders.filter(
+      (o) => !isUnpaid(o) && (o.orderStatus === 'PENDING_CONFIRM' || o.orderStatus === 'PREPARING')
+    ).length;
+    const shipping = myOrders.filter((o) => o.orderStatus === 'SHIPPING').length;
+    const completed = myOrders.filter((o) => o.orderStatus === 'COMPLETED').length;
+    const cancelled = myOrders.filter((o) => o.orderStatus === 'CANCELLED').length;
+
+    return {
+      ALL: myOrders.length,
+      UNPAID: unpaid,
+      PROCESSING: processing,
+      SHIPPING: shipping,
+      COMPLETED: completed,
+      CANCELLED: cancelled,
+    };
+  }, [myOrders]);
+
+  const STATUS_TABS: { key: OrderStatusFilter; label: string; count: number }[] = [
+    { key: 'ALL', label: 'Tất cả', count: statusCounts.ALL },
+    { key: 'UNPAID', label: 'Chờ thanh toán', count: statusCounts.UNPAID },
+    { key: 'PROCESSING', label: 'Đang xử lý', count: statusCounts.PROCESSING },
+    { key: 'SHIPPING', label: 'Đang giao hàng', count: statusCounts.SHIPPING },
+    { key: 'COMPLETED', label: 'Hoàn thành', count: statusCounts.COMPLETED },
+    { key: 'CANCELLED', label: 'Đã hủy', count: statusCounts.CANCELLED },
+  ];
+
+  // Filtered My Orders by both Status Tab & Search Keyword
   const filteredMyOrders = useMemo(() => {
-    if (!filterKeyword.trim()) return myOrders;
+    let list = myOrders;
+
+    // 1. Lọc theo Tab trạng thái
+    if (statusFilter !== 'ALL') {
+      const isUnpaid = (o: Order) =>
+        (o.paymentMethod === 'BANK' || (o.paymentMethod as any) === 'MOMO') &&
+        o.paymentStatus !== 'PAID' &&
+        o.orderStatus !== 'CANCELLED';
+
+      list = list.filter((order) => {
+        switch (statusFilter) {
+          case 'UNPAID':
+            return isUnpaid(order);
+          case 'PROCESSING':
+            return !isUnpaid(order) && (order.orderStatus === 'PENDING_CONFIRM' || order.orderStatus === 'PREPARING');
+          case 'SHIPPING':
+            return order.orderStatus === 'SHIPPING';
+          case 'COMPLETED':
+            return order.orderStatus === 'COMPLETED';
+          case 'CANCELLED':
+            return order.orderStatus === 'CANCELLED';
+          default:
+            return true;
+        }
+      });
+    }
+
+    // 2. Lọc theo từ khóa tìm kiếm
+    if (!filterKeyword.trim()) return list;
     const kw = filterKeyword.toLowerCase().trim().replace(/^#/, '');
     const cleanDigits = filterKeyword.replace(/[^0-9]/g, '');
 
-    return myOrders.filter((order) => {
+    return list.filter((order) => {
       const code = (order.code || '').toLowerCase();
       const receiver = (order.customer?.fullName || '').toLowerCase();
       const phone = (order.customer?.phone || '').replace(/[^0-9]/g, '');
@@ -757,7 +821,7 @@ function OrderLookupContent() {
         hasProduct
       );
     });
-  }, [myOrders, filterKeyword]);
+  }, [myOrders, statusFilter, filterKeyword]);
 
   // Order count stats
   const activeOrdersCount = useMemo(() => {
@@ -889,8 +953,44 @@ function OrderLookupContent() {
             </div>
           )}
 
+          {/* Shopee-style Status Filter Tabs */}
+          {myOrders.length > 0 && (
+            <div className="bg-white rounded-2xl border border-pink-100 p-1.5 shadow-2xs">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 px-0.5">
+                {STATUS_TABS.map((tab) => {
+                  const isActive = statusFilter === tab.key;
+                  return (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => setStatusFilter(tab.key)}
+                      className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                        isActive
+                          ? 'bg-rose-500 text-white shadow-xs'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-pink-50/60'
+                      }`}
+                    >
+                      <span>{tab.label}</span>
+                      {tab.count > 0 && (
+                        <span
+                          className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                            isActive
+                              ? 'bg-white/25 text-white'
+                              : 'bg-pink-100 text-rose-600'
+                          }`}
+                        >
+                          {tab.count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Quick Filter Search Bar */}
-          {myOrders.length > 1 && (
+          {myOrders.length > 0 && (
             <div className="relative">
               <input
                 type="text"
@@ -960,17 +1060,36 @@ function OrderLookupContent() {
           {!isLoadingMyOrders && myOrders.length > 0 && filteredMyOrders.length === 0 && (
             <div className="bg-white rounded-3xl p-8 text-center border border-pink-100 shadow-xs space-y-3">
               <AlertCircle className="w-8 h-8 text-amber-500 mx-auto" />
-              <h4 className="font-bold text-gray-800 text-sm">Không tìm thấy đơn hàng phù hợp với từ khóa</h4>
+              <h4 className="font-bold text-gray-800 text-sm">
+                {filterKeyword
+                  ? 'Không tìm thấy đơn hàng phù hợp với từ khóa'
+                  : 'Không có đơn hàng nào trong trạng thái này'}
+              </h4>
               <p className="text-xs text-gray-500">
-                Thử tìm lại với mã đơn hàng khác hoặc xóa bộ lọc để xem toàn bộ danh sách.
+                {filterKeyword
+                  ? 'Thử tìm lại với mã đơn hàng khác hoặc xóa bộ lọc để xem toàn bộ danh sách.'
+                  : 'Bạn chưa có đơn hàng nào thuộc trạng thái này. Hãy chọn mục khác để xem nhé!'}
               </p>
-              <button
-                type="button"
-                onClick={() => setFilterKeyword('')}
-                className="text-xs font-bold text-rose-600 hover:underline cursor-pointer"
-              >
-                Xóa bộ lọc tìm kiếm
-              </button>
+              <div className="flex items-center justify-center gap-3 pt-1">
+                {filterKeyword && (
+                  <button
+                    type="button"
+                    onClick={() => setFilterKeyword('')}
+                    className="text-xs font-bold text-rose-600 hover:underline cursor-pointer"
+                  >
+                    Xóa từ khóa tìm kiếm
+                  </button>
+                )}
+                {statusFilter !== 'ALL' && (
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter('ALL')}
+                    className="px-4 py-2 bg-pink-50 hover:bg-pink-100 border border-pink-200 text-rose-600 text-xs font-bold rounded-xl transition cursor-pointer"
+                  >
+                    Xem tất cả ({myOrders.length} đơn)
+                  </button>
+                )}
+              </div>
             </div>
           )}
 

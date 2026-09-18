@@ -4,8 +4,9 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Order, OrderStatus, ShopSettings } from '@/types';
 import { formatVND } from '@/lib/utils';
-import { CheckCircle2, Clock, PackageCheck, Truck, Sparkles, ArrowLeft, Phone, MessageCircle, Download } from 'lucide-react';
+import { CheckCircle2, Clock, PackageCheck, Truck, Sparkles, ArrowLeft, Phone, MessageCircle, Download, Copy, Check, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import confetti from 'canvas-confetti';
 
 export default function OrderTrackingPage() {
   const params = useParams();
@@ -15,6 +16,53 @@ export default function OrderTrackingPage() {
   const [settings, setSettings] = useState<ShopSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDownloadingQr, setIsDownloadingQr] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, field: string) => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        setCopiedField(field);
+        setTimeout(() => setCopiedField(null), 2000);
+      }).catch(() => {});
+    }
+  };
+
+  // Auto-polling SePay khi đơn chưa thanh toán
+  useEffect(() => {
+    if (!order) return;
+    if (order.paymentStatus === 'PAID') return;
+    if (order.paymentMethod !== 'BANK' && (order.paymentMethod as any) !== 'MOMO') return;
+    if (order.orderStatus === 'CANCELLED') return;
+
+    let isMounted = true;
+    const checkPayment = async () => {
+      try {
+        const codeOrId = order.code || order.id;
+        const res = await fetch(`/api/orders/${encodeURIComponent(codeOrId)}`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.success && data.data) {
+          if (data.data.paymentStatus === 'PAID') {
+            if (isMounted) {
+              setOrder(data.data);
+              confetti({
+                particleCount: 120,
+                spread: 80,
+                origin: { y: 0.5 },
+              });
+              showToast('🎉 Thanh toán thành công! Shop đã nhận được tiền.');
+            }
+          }
+        }
+      } catch (e) {}
+    };
+
+    const intervalId = setInterval(checkPayment, 2500);
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, [order?.id, order?.code, order?.paymentStatus, order?.paymentMethod, order?.orderStatus]);
 
   // Cancellation State
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
@@ -454,72 +502,133 @@ export default function OrderTrackingPage() {
             </div>
           </div>
 
-          {/* VietQR Box if Unpaid and BANK */}
+          {/* VietQR Box if Unpaid and BANK: ĐỒNG BỘ 1 KIỂU VỚI PAYMENTMODAL */}
           {order.paymentStatus !== 'PAID' && (order.paymentMethod === 'BANK' || (order.paymentMethod as any) === 'MOMO') && (
-            <div id="payment-box" className="bg-white p-5 rounded-3xl border-2 border-blue-200 shadow-xs space-y-3 text-xs">
-              <div className="flex items-center gap-2 pb-2 border-b border-blue-100">
-                <div className="w-7 h-7 rounded-lg bg-blue-600 text-white font-black flex items-center justify-center text-xs shrink-0">
-                  QR
+            <div id="payment-box" className="bg-white rounded-3xl shadow-md border border-blue-200 overflow-hidden flex flex-col animate-fade-in">
+              {/* Header đồng bộ PaymentModal */}
+              <div className="p-4 sm:p-5 text-white flex items-center justify-between bg-gradient-to-r from-blue-600 to-indigo-700">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-lg shrink-0">
+                    💳
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-sm sm:text-base font-black uppercase tracking-wide">
+                      Chuyển Khoản VietQR
+                    </h3>
+                    <p className="text-[11px] text-white/80 font-medium">
+                      Đơn hàng: <strong className="font-mono text-white">#{order.code}</strong> • {formatVND(order.finalTotalAmount || order.totalAmount)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-black text-blue-700 uppercase text-xs">Chuyển Khoản VietQR</h4>
-                  <p className="text-[11px] text-gray-500">Quét mã bằng app ngân hàng bất kỳ</p>
-                </div>
+                <span className="px-2.5 py-0.5 bg-amber-500 text-white font-black text-[10px] rounded-full shadow-2xs animate-pulse">
+                  ⏳ Chờ thanh toán
+                </span>
               </div>
 
-              {(() => {
-                const rawBank = (settings?.bankId || '').toUpperCase().trim();
-                const isVietin = rawBank.includes('VIETIN') || rawBank.includes('CTG') || rawBank.includes('ICB') || (settings?.bankAccount || '').trim() === '106873248315';
-                const qrBank = rawBank.includes('VIETCOM') ? 'VCB' : rawBank.includes('MB') ? 'MB' : isVietin ? 'ICB' : rawBank;
-                const bankAccount = (settings?.bankAccount || '').trim();
-                const bankOwner = (settings?.bankOwner || 'DUONG QUOC KHANH').trim().toUpperCase();
-                const transferContent = isVietin ? `SEVQR DH ${order.code}` : `DH ${order.code}`;
+              {/* Body */}
+              <div className="p-4 sm:p-5 space-y-3">
+                {(() => {
+                  const rawBank = (settings?.bankId || '').toUpperCase().trim();
+                  const isVietin = rawBank.includes('VIETIN') || rawBank.includes('CTG') || rawBank.includes('ICB') || (settings?.bankAccount || '').trim() === '106873248315';
+                  const qrBank = rawBank.includes('VIETCOM') ? 'VCB' : rawBank.includes('MB') ? 'MB' : isVietin ? 'ICB' : rawBank;
+                  const bankAccount = (settings?.bankAccount || '').trim();
+                  const bankOwner = (settings?.bankOwner ? settings.bankOwner.trim().toUpperCase() : 'DUONG QUOC KHANH');
+                  const transferContent = isVietin ? `SEVQR DH ${order.code}` : `DH ${order.code}`;
 
-                if (!bankAccount || !qrBank) {
+                  if (!bankAccount || !qrBank) {
+                    return (
+                      <div className="py-8 px-4 text-center space-y-2 bg-blue-50/40 rounded-2xl border border-blue-100">
+                        <div className="w-7 h-7 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+                        <p className="text-xs text-gray-500 font-medium">Đang tải mã thanh toán VietQR từ hệ thống...</p>
+                      </div>
+                    );
+                  }
+
+                  const qrUrl = `https://img.vietqr.io/image/${qrBank}-${bankAccount}-compact2.png?amount=${order.finalTotalAmount || order.totalAmount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(bankOwner)}`;
                   return (
-                    <div className="py-8 px-4 text-center space-y-2 bg-blue-50/40 rounded-2xl border border-blue-100">
-                      <div className="w-7 h-7 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
-                      <p className="text-xs text-gray-500 font-medium">Đang tải mã thanh toán VietQR từ hệ thống...</p>
+                    <div className="flex flex-col items-center text-center p-3 sm:p-4 bg-blue-50/40 rounded-2xl border border-blue-100 space-y-2.5">
+                      <div className="relative p-2 bg-white rounded-2xl border border-blue-200 shadow-sm">
+                        <img
+                          src={qrUrl}
+                          alt="VietQR"
+                          className="w-48 h-auto sm:w-52 object-contain rounded-xl"
+                        />
+                        <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 text-white text-[10px] font-black px-3 py-0.5 rounded-full shadow-xs whitespace-nowrap bg-blue-600">
+                          Quét bằng App Ngân Hàng
+                        </div>
+                      </div>
+
+                      {/* Nút tải mã QR về máy */}
+                      <button
+                        type="button"
+                        disabled={isDownloadingQr}
+                        onClick={() => downloadQrImage(qrUrl, `vietqr-omachi-${order.code}.png`)}
+                        className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer disabled:opacity-50 mt-1"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>{isDownloadingQr ? 'Đang tải ảnh...' : '📥 Tải ảnh mã QR về máy (Để quét từ thư viện)'}</span>
+                      </button>
+
+                      {/* Bảng thông tin chuyển khoản: 1 khung duy nhất, nút sao chép dạng pill tinh gọn */}
+                      <div className="w-full bg-stone-50/90 border border-stone-200 rounded-2xl p-2.5 space-y-2 text-xs text-left">
+                        {/* Hàng 1: Ngân hàng & Chủ tài khoản */}
+                        <div className="flex items-center justify-between gap-2 px-1 text-[11px]">
+                          <div>
+                            <span className="text-stone-400">Ngân hàng: </span>
+                            <strong className="text-stone-800 font-bold">{rawBank || 'VietinBank'}</strong>
+                          </div>
+                          <div className="text-right truncate">
+                            <span className="text-stone-400">Chủ TK: </span>
+                            <strong className="text-stone-800 font-bold uppercase">{bankOwner}</strong>
+                          </div>
+                        </div>
+
+                        {/* Hàng 2: Số tài khoản dạng pill */}
+                        <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-stone-200/60 px-1">
+                          <span className="text-stone-500 text-[11px] font-medium">Số tài khoản:</span>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(bankAccount, 'stk')}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white border border-stone-300 hover:border-blue-400 hover:bg-blue-50/40 text-blue-700 font-mono text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
+                            title="Bấm để sao chép số tài khoản"
+                          >
+                            <span>{bankAccount}</span>
+                            {copiedField === 'stk' ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                            )}
+                          </button>
+                        </div>
+
+                        {/* Hàng 3: Nội dung CK dạng pill */}
+                        <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-stone-200/60 px-1">
+                          <span className="text-stone-500 text-[11px] font-medium">Nội dung CK:</span>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(transferContent, 'nd')}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50/90 border border-amber-300 hover:bg-amber-100/80 text-rose-600 font-mono text-xs font-black transition shadow-2xs cursor-pointer active:scale-95"
+                            title="Bấm để sao chép nội dung chuyển khoản"
+                          >
+                            <span>{transferContent}</span>
+                            {copiedField === 'nd' ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   );
-                }
+                })()}
 
-                const qrUrl = `https://img.vietqr.io/image/${qrBank}-${bankAccount}-compact2.png?amount=${order.finalTotalAmount || order.totalAmount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(bankOwner)}`;
-                return (
-                  <div className="flex flex-col items-center bg-blue-50/40 p-3 rounded-2xl border border-blue-100 text-center space-y-2">
-                    <img
-                      src={qrUrl}
-                      alt="VietQR"
-                      className="w-48 h-auto object-contain rounded-xl bg-white p-1 border border-blue-200"
-                    />
-                    <button
-                      type="button"
-                      disabled={isDownloadingQr}
-                      onClick={() => downloadQrImage(qrUrl, `vietqr-omachi-${order.code}.png`)}
-                      className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer disabled:opacity-50"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>{isDownloadingQr ? 'Đang tải ảnh...' : '📥 Tải ảnh mã QR về máy (Để quét từ ảnh)'}</span>
-                    </button>
-                    <p className="text-[11px] text-gray-500 font-medium">
-                      Mở App <strong>Ngân hàng bất kỳ</strong> &gt; Chọn <strong>Quét mã QR</strong>
-                    </p>
-
-                    {/* Hướng dẫn quét từ ảnh trên cùng 1 điện thoại */}
-                    <div className="p-2.5 bg-white rounded-xl border border-blue-100 text-[11px] text-blue-900 text-left space-y-1 w-full">
-                      <p className="font-bold flex items-center gap-1 text-[11px] text-blue-800">
-                        <span>💡</span>
-                        <span>Thanh toán dễ dàng trên 1 chiếc điện thoại:</span>
-                      </p>
-                      <ol className="list-decimal list-inside space-y-0.5 text-[10.5px] text-blue-700 leading-relaxed">
-                        <li>Bấm nút <strong>&quot;Tải ảnh mã QR về máy&quot;</strong> ở trên (hoặc chụp màn hình).</li>
-                        <li>Mở App Ngân hàng &gt; Bấm <strong>Quét QR</strong>.</li>
-                        <li>Chọn biểu tượng <strong>&quot;Ảnh / Thư viện&quot;</strong> để chọn mã vừa tải về là xong!</li>
-                      </ol>
-                    </div>
-                  </div>
-                );
-              })()}
+                {/* Trạng thái thanh toán: Gọn gàng 1 dòng */}
+                <div className="py-2 px-3 bg-blue-50 border border-blue-200/80 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-blue-800">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600 shrink-0" />
+                  <span>Đang chờ thanh toán (Tự động cập nhật qua SePay)</span>
+                </div>
+              </div>
             </div>
           )}
 
