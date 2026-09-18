@@ -617,39 +617,37 @@ function OrderLookupContent() {
         const res = await fetch(`/api/orders/lookup?customerId=${encodeURIComponent(customer.id)}`);
         const data = await res.json();
         
-        let serverList: Order[] = (data.success && Array.isArray(data.data)) ? data.data : [];
+        if (data.success && Array.isArray(data.data)) {
+          const serverList: Order[] = data.data;
+          if (isMounted) {
+            setMyOrders(serverList);
+          }
+          // Đồng bộ trực tiếp localStorage theo danh sách thật từ server
+          // Nếu server đã reset/xóa đơn thì cập nhật lại cache client
+          try {
+            localStorage.setItem('omachi_customer_orders', JSON.stringify(serverList));
+          } catch (e) {}
+          return;
+        }
 
-        // Scan local storage for client-side fallback/merge
-        let localList: Order[] = [];
+        if (isMounted) {
+          setMyOrders([]);
+        }
+      } catch (err) {
+        console.error('Error loading my orders:', err);
+        // Chỉ fallback về local storage khi mạng mất kết nối hoàn toàn
         try {
+          const cleanCustPhone = (customer.phone || '').replace(/[^0-9]/g, '');
           const custOrders = JSON.parse(localStorage.getItem('omachi_customer_orders') || '[]');
-          const adminOrders = JSON.parse(localStorage.getItem('omachi_admin_orders_v2') || '[]');
-          const allLocal: Order[] = [...custOrders, ...adminOrders];
-          localList = allLocal.filter((o: any) => {
+          const localList = custOrders.filter((o: any) => {
             const oCustId = o.customerId;
             const oPhone = (o.customer?.phone || '').replace(/[^0-9]/g, '');
             return (oCustId && oCustId === customer.id) || (cleanCustPhone && oPhone === cleanCustPhone);
           });
-        } catch (e) {}
-
-        // Merge and deduplicate by code or id
-        const orderMap = new Map<string, Order>();
-        [...serverList, ...localList].forEach((o) => {
-          const key = o.code || o.id;
-          if (key && !orderMap.has(key)) {
-            orderMap.set(key, o);
+          if (isMounted) {
+            setMyOrders(localList);
           }
-        });
-
-        const mergedOrders = Array.from(orderMap.values()).sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-
-        if (isMounted) {
-          setMyOrders(mergedOrders);
-        }
-      } catch (err) {
-        console.error('Error loading my orders:', err);
+        } catch (e) {}
       } finally {
         if (isMounted) {
           setIsLoadingMyOrders(false);
@@ -692,37 +690,8 @@ function OrderLookupContent() {
       if (data.success && data.data && data.data.length > 0) {
         setManualOrders(data.data);
       } else {
-        // Fallback local storage lookup
-        const cleanQuery = q.toLowerCase().replace(/^#/, '').trim();
-        const cleanDigits = q.replace(/[^0-9]/g, '');
-        let localMatches: Order[] = [];
-        try {
-          const custOrders = JSON.parse(localStorage.getItem('omachi_customer_orders') || '[]');
-          const adminOrders = JSON.parse(localStorage.getItem('omachi_admin_orders_v2') || '[]');
-          const allLocal: Order[] = [...custOrders, ...adminOrders];
-          const map = new Map<string, Order>();
-          allLocal.forEach((o: any) => {
-            const oPhone = (o.customer?.phone || '').replace(/[^0-9]/g, '');
-            const oCode = (o.code || '').toLowerCase().replace(/^#/, '').trim();
-            const oId = (o.id || '').toLowerCase().replace(/^#/, '').trim();
-            const matches = (cleanDigits.length >= 4 && oPhone.includes(cleanDigits)) ||
-                            oCode.includes(cleanQuery) ||
-                            oId.includes(cleanQuery);
-            if (matches) {
-              const key = o.id || o.code;
-              if (key && !map.has(key)) map.set(key, o);
-            }
-          });
-          localMatches = Array.from(map.values());
-        } catch (e) {}
-
-        if (localMatches.length > 0) {
-          setManualOrders(localMatches);
-          setManualErrorMsg('');
-        } else {
-          setManualOrders(data.data || []);
-          setManualErrorMsg(data.error || 'Không tìm thấy đơn hàng nào khớp với thông tin này');
-        }
+        setManualOrders([]);
+        setManualErrorMsg(data.error || 'Không tìm thấy đơn hàng nào khớp với thông tin này');
       }
     } catch (err: any) {
       // Local storage fallback on network failure

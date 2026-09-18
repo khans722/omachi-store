@@ -98,20 +98,7 @@ export default function OrderTrackingPage() {
         if (data.success && data.data) {
           setOrder(data.data);
         } else {
-          // Check local cache if serverless container hasn't synced yet
-          try {
-            const cleanCode = (orderCode || '').toLowerCase().replace(/^#/, '').trim();
-            const custOrders = JSON.parse(localStorage.getItem('omachi_customer_orders') || '[]');
-            const adminOrders = JSON.parse(localStorage.getItem('omachi_admin_orders_v2') || '[]');
-            const allLocal = [...custOrders, ...adminOrders];
-            const found = allLocal.find((o: any) => 
-              (o.code && o.code.toLowerCase().replace(/^#/, '').trim() === cleanCode) ||
-              (o.id && o.id.toLowerCase().replace(/^#/, '').trim() === cleanCode)
-            );
-            if (found) {
-              setOrder(found);
-            }
-          } catch (e) {}
+          setOrder(null);
         }
       } catch (err) {
         console.error(err);
