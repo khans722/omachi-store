@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     const transferAmount = Number(body.transferAmount || body.transfer_amount || body.amount || 0);
 
     if (!content) {
-      return NextResponse.json({ success: false, message: 'Nội dung giao dịch trống' }, { status: 400 });
+      return NextResponse.json({ success: true, message: 'Nội dung giao dịch trống hoặc ping thử nghiệm' });
     }
 
     // Tìm mã đơn hàng từ nội dung: Hỗ trợ "OM-1234", "DH OM-1234", "DH 1234", "OM1234", "SEVQR DH OM-1234", "SEVQR 1234"
