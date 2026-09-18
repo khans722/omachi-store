@@ -587,7 +587,7 @@ export default function OrderTrackingPage() {
                         />
                       </div>
 
-                      {/* Nút tải mã QR */}
+                      {/* Nút tải mã QR: 1 nút duy nhất */}
                       <button
                         type="button"
                         disabled={isDownloadingQr}
@@ -597,32 +597,6 @@ export default function OrderTrackingPage() {
                         <Download className="w-3.5 h-3.5" />
                         <span>{isDownloadingQr ? 'Đang tải...' : 'Tải mã QR'}</span>
                       </button>
-
-                      {/* Nút kiểm tra thanh toán ngay */}
-                      <button
-                        type="button"
-                        onClick={handleCheckPaymentNow}
-                        disabled={isCheckingPayment}
-                        className="w-full py-2 px-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs rounded-xl shadow-sm hover:shadow-md flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer disabled:opacity-60"
-                      >
-                        {isCheckingPayment ? (
-                          <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin text-white shrink-0" />
-                            <span>Đang kiểm tra giao dịch...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />
-                            <span>Tôi đã chuyển khoản xong • Kiểm tra ngay</span>
-                          </>
-                        )}
-                      </button>
-
-                      {checkPaymentNotice && (
-                        <div className="w-full p-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs text-center font-medium animate-fade-in shadow-2xs">
-                          {checkPaymentNotice}
-                        </div>
-                      )}
 
                       {/* Bảng thông tin chuyển khoản: 1 khung duy nhất, nút sao chép dạng pill tinh gọn */}
                       <div className="w-full bg-stone-50/90 border border-stone-200 rounded-2xl p-2.5 space-y-2 text-xs text-left">

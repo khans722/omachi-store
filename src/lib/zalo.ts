@@ -24,8 +24,19 @@ export async function sendOrderNotification(
   const isPaid = (order.paymentStatus === 'PAID' || trigger === 'PAYMENT_SUCCESS') && !isCancelled;
   const isPrepaid = (order.paymentMethod === 'BANK' || order.paymentMethod === 'MOMO') && !isCancelled;
 
-  // Luôn luôn gửi thông báo Telegram cho mọi đơn mới và mọi cập nhật (kể cả Chuyển khoản và Hủy đơn)
-  // Không bỏ qua để chủ shop luôn nhận được tin tức thì 100%!
+  // 1. Khách vừa tạo đơn Chuyển khoản (BANK / MOMO) nhưng CHƯA thanh toán:
+  //    -> Bỏ qua không gửi Telegram (tránh tin rác/đặt thử). Chỉ gửi khi SePay báo tiền về tài khoản.
+  if (trigger === 'NEW_ORDER' && isPrepaid && !isPaid && !options?.forceSend) {
+    console.log(`[TELEGRAM]: Bỏ qua thông báo đơn #${order.code} (đơn Chuyển khoản đang chờ khách thanh toán).`);
+    return { success: true, skipped: true, reason: 'Chờ khách chuyển khoản' };
+  }
+
+  // 2. Đơn Chuyển khoản chưa từng thanh toán mà bị hủy:
+  //    -> Bỏ qua không gửi Telegram (vì shop chưa từng nhận tin đơn này, tránh làm phiền).
+  if (isCancelled && (order.paymentMethod === 'BANK' || order.paymentMethod === 'MOMO') && order.paymentStatus !== 'PAID' && !options?.forceSend) {
+    console.log(`[TELEGRAM]: Bỏ qua thông báo hủy đơn #${order.code} (đơn Chuyển khoản chưa từng thanh toán).`);
+    return { success: true, skipped: true, reason: 'Đơn chuyển khoản chưa thanh toán bị hủy' };
+  }
 
   const cleanFullName = escapeHtml(order.customer?.fullName || 'Khách hàng');
   const cleanPhone = escapeHtml(order.customer?.phone || '');

@@ -5,14 +5,27 @@ import { sendOrderNotification } from '@/lib/zalo';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+import { checkAndSyncSepayForOrder } from '@/lib/sepay';
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const order = await db.orders.getById(params.id);
+  let order = await db.orders.getById(params.id);
   if (!order) {
     return NextResponse.json({ success: false, message: 'Order not found' }, { status: 404 });
   }
+
+  // Tự động đối soát SePay realtime nếu là đơn Chuyển khoản VietQR chưa thanh toán
+  if (order.paymentMethod === 'BANK' && order.paymentStatus !== 'PAID') {
+    try {
+      const sepaySync = await checkAndSyncSepayForOrder(order as any);
+      if (sepaySync.isPaid && sepaySync.order) {
+        order = sepaySync.order as any;
+      }
+    } catch (e) {}
+  }
+
   return NextResponse.json(
     { success: true, data: order },
     {
