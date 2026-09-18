@@ -85,6 +85,15 @@ export async function checkAndSyncSepayForOrder(
       const amountIn = Number(tx.amount_in || tx.amount || 0);
       if (amountIn < expectedAmount) return false;
 
+      // Đảm bảo an toàn: Bỏ qua các giao dịch ngân hàng đã xảy ra trước khi đơn hàng được tạo
+      if (tx.transaction_date && order.createdAt) {
+        const txTime = new Date(tx.transaction_date.replace(' ', 'T')).getTime();
+        const orderTime = new Date(order.createdAt).getTime();
+        if (!isNaN(txTime) && !isNaN(orderTime) && txTime < orderTime - 30 * 60 * 1000) {
+          return false;
+        }
+      }
+
       const content = (tx.transaction_content || tx.description || tx.content || '').toUpperCase();
 
       // Khớp theo mã đầy đủ (VD: OM-1095 hoặc SEVQR DH OM1095)

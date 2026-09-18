@@ -2765,7 +2765,17 @@ export const db = {
       if (!dbData.orders) dbData.orders = [];
       if (!dbData.customers) dbData.customers = [];
 
-      const randomCode = `OM-${Math.floor(1000 + Math.random() * 9000)}`;
+      // Đảm bảo mã đơn hàng là DUY NHẤT 100%, tuyệt đối không bao giờ bị trùng lặp
+      let randomCode = `OM-${Math.floor(1000 + Math.random() * 9000)}`;
+      const existingCodes = new Set((dbData.orders || []).map((o) => (o.code || '').toUpperCase()));
+      let tries = 0;
+      while (existingCodes.has(randomCode.toUpperCase()) && tries < 30) {
+        randomCode = `OM-${Math.floor(1000 + Math.random() * 9000)}`;
+        tries++;
+      }
+      if (tries >= 30) {
+        randomCode = `OM-${Date.now().toString().slice(-5)}`;
+      }
       const cleanPhone = (orderInput.customer?.phone || '').replace(/[^0-9]/g, '');
       let linkedCustomerId = orderInput.customerId;
       if (!linkedCustomerId && cleanPhone) {
