@@ -281,36 +281,172 @@ export default function AdminPage() {
   const initialProductSnapshotRef = useRef<string>('');
   const initialCategorySnapshotRef = useRef<string>('');
   const initialFeedbackSnapshotRef = useRef<string>('');
+  const initialSettingsSnapshotRef = useRef<string>('');
 
-  // Close handlers: Đóng modal ngay lập tức, không dùng hộp thoại window.confirm gây phiền toái
-  const handleCloseProductModal = () => {
-    setIsProductModalOpen(false);
-    setEditingProduct(null);
+  // Custom Theme Omachi MessageBox Modal state (Thay thế hoàn toàn window.alert / confirm)
+  const [customMessageBox, setCustomMessageBox] = useState<{
+    isOpen: boolean;
+    type?: 'warning' | 'danger' | 'info';
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm: () => void;
+    onCancel?: () => void;
+  } | null>(null);
+
+  // Dirty checkers
+  const isProductDirty = () => {
+    if (!initialProductSnapshotRef.current || !editingProduct) return false;
+    return JSON.stringify(editingProduct) !== initialProductSnapshotRef.current;
   };
 
-  const handleCloseRestockModal = () => {
+  const isCategoryDirty = () => {
+    if (!initialCategorySnapshotRef.current || !editingCategory) return false;
+    return JSON.stringify(editingCategory) !== initialCategorySnapshotRef.current;
+  };
+
+  const isFeedbackDirty = () => {
+    if (!initialFeedbackSnapshotRef.current || !editingFeedback) return false;
+    return JSON.stringify(editingFeedback) !== initialFeedbackSnapshotRef.current;
+  };
+
+  const isSettingsDirty = () => {
+    if (!initialSettingsSnapshotRef.current) return false;
+    return JSON.stringify(settings) !== initialSettingsSnapshotRef.current;
+  };
+
+  // Close handlers: Kiểm tra thay đổi chưa lưu, hiển thị MessageBox theo theme nếu có thay đổi
+  const handleCloseProductModal = (force?: boolean | React.SyntheticEvent) => {
+    const isForced = force === true;
+    if (!isForced && isProductDirty()) {
+      setCustomMessageBox({
+        isOpen: true,
+        type: 'warning',
+        title: 'Chưa Lưu Mẫu Sản Phẩm!',
+        message: 'Bạn đã thay đổi một số thông tin sản phẩm nhưng chưa bấm Lưu. Nếu đóng lại bây giờ, các thay đổi sẽ bị mất.',
+        confirmText: 'Đóng & Hủy Thay Đổi',
+        cancelText: 'Tiếp Tục Sửa',
+        onConfirm: () => {
+          setIsProductModalOpen(false);
+          setEditingProduct(null);
+          initialProductSnapshotRef.current = '';
+        }
+      });
+      return;
+    }
+    setIsProductModalOpen(false);
+    setEditingProduct(null);
+    initialProductSnapshotRef.current = '';
+  };
+
+  const handleCloseRestockModal = (force?: boolean | React.SyntheticEvent) => {
+    const isForced = force === true;
+    const hasEnteredQty = Object.values(restockQuantities).some((qty) => Number(qty) > 0);
+    if (!isForced && hasEnteredQty) {
+      setCustomMessageBox({
+        isOpen: true,
+        type: 'warning',
+        title: 'Chưa Lưu Số Lượng Nhập Kho!',
+        message: 'Bạn đã điền số lượng nhập hàng nhưng chưa bấm Xác nhận nhập kho. Nếu đóng bây giờ, các số lượng này sẽ không được lưu.',
+        confirmText: 'Đóng & Hủy',
+        cancelText: 'Tiếp Tục Nhập Kho',
+        onConfirm: () => {
+          setRestockProduct(null);
+          setRestockQuantities({});
+        }
+      });
+      return;
+    }
     setRestockProduct(null);
     setRestockQuantities({});
   };
 
-  const handleCloseCategoryModal = () => {
+  const handleCloseCategoryModal = (force?: boolean | React.SyntheticEvent) => {
+    const isForced = force === true;
+    if (!isForced && isCategoryDirty()) {
+      setCustomMessageBox({
+        isOpen: true,
+        type: 'warning',
+        title: 'Chưa Lưu Danh Mục!',
+        message: 'Bạn đang chỉnh sửa thông tin danh mục nhưng chưa bấm Lưu. Nếu đóng lại bây giờ, các thay đổi sẽ bị mất.',
+        confirmText: 'Đóng & Hủy Thay Đổi',
+        cancelText: 'Tiếp Tục Sửa',
+        onConfirm: () => {
+          setIsCategoryModalOpen(false);
+          setEditingCategory(null);
+          initialCategorySnapshotRef.current = '';
+        }
+      });
+      return;
+    }
     setIsCategoryModalOpen(false);
     setEditingCategory(null);
+    initialCategorySnapshotRef.current = '';
   };
 
-  const handleCloseFeedbackModal = () => {
+  const handleCloseFeedbackModal = (force?: boolean | React.SyntheticEvent) => {
+    const isForced = force === true;
+    if (!isForced && isFeedbackDirty()) {
+      setCustomMessageBox({
+        isOpen: true,
+        type: 'warning',
+        title: 'Chưa Lưu Phản Hồi!',
+        message: 'Bạn đang chỉnh sửa nội dung phản hồi nhưng chưa bấm Lưu. Nếu đóng lại bây giờ, thay đổi sẽ không được ghi lại.',
+        confirmText: 'Đóng & Hủy Thay Đổi',
+        cancelText: 'Tiếp Tục Sửa',
+        onConfirm: () => {
+          setIsFeedbackModalOpen(false);
+          setEditingFeedback(null);
+          initialFeedbackSnapshotRef.current = '';
+        }
+      });
+      return;
+    }
     setIsFeedbackModalOpen(false);
     setEditingFeedback(null);
+    initialFeedbackSnapshotRef.current = '';
+  };
+
+  // Chuyển tab có kiểm tra thay đổi chưa lưu ở Tab Cài đặt (Settings)
+  const handleSwitchTab = (targetTab: typeof activeTab) => {
+    if (activeTab === targetTab) return;
+    if (activeTab === 'settings' && isSettingsDirty()) {
+      setCustomMessageBox({
+        isOpen: true,
+        type: 'warning',
+        title: 'Chưa Lưu Cấu Hình Shop!',
+        message: 'Bạn vừa thay đổi cài đặt shop nhưng chưa bấm "Lưu Toàn Bộ Cấu Hình". Nếu chuyển mục bây giờ, các thay đổi chưa lưu sẽ bị hủy bỏ.',
+        confirmText: 'Bỏ Thay Đổi & Chuyển Mục',
+        cancelText: 'Ở Lại Để Lưu',
+        onConfirm: () => {
+          if (initialSettingsSnapshotRef.current) {
+            try {
+              setSettings(JSON.parse(initialSettingsSnapshotRef.current));
+            } catch (e) {}
+          }
+          setActiveTab(targetTab);
+        }
+      });
+      return;
+    }
+    setActiveTab(targetTab);
   };
 
   // Keyboard Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (customMessageBox?.isOpen) {
+          customMessageBox.onCancel?.();
+          setCustomMessageBox(null);
+          return;
+        }
         if (isProductModalOpen) handleCloseProductModal();
         else if (restockProduct) handleCloseRestockModal();
         else if (isCategoryModalOpen) handleCloseCategoryModal();
         else if (isFeedbackModalOpen) handleCloseFeedbackModal();
+        else if (cancellingOrder) setCancellingOrder(null);
       }
     };
 
@@ -318,7 +454,24 @@ export default function AdminPage() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isProductModalOpen, restockProduct, isCategoryModalOpen, isFeedbackModalOpen]);
+  }, [isProductModalOpen, restockProduct, isCategoryModalOpen, isFeedbackModalOpen, cancellingOrder, customMessageBox, editingProduct, editingCategory, editingFeedback, restockQuantities]);
+
+  // Browser Tab Close / Reload warning if unsaved changes exist
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const isDirty =
+        (isProductModalOpen && isProductDirty()) ||
+        (isCategoryModalOpen && isCategoryDirty()) ||
+        (isFeedbackModalOpen && isFeedbackDirty()) ||
+        (activeTab === 'settings' && isSettingsDirty());
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isProductModalOpen, isCategoryModalOpen, isFeedbackModalOpen, activeTab, editingProduct, editingCategory, editingFeedback, settings]);
 
   // Image upload state
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -481,6 +634,7 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (data.success) {
+        initialSettingsSnapshotRef.current = JSON.stringify(updatedSettings);
         setActionSuccessMsg('Đã lưu cấu hình các mốc này làm "Mẫu của Shop" thành công! 🎉');
         setTimeout(() => setActionSuccessMsg(''), 4000);
         confetti({ particleCount: 35, spread: 60 });
@@ -638,7 +792,11 @@ export default function AdminPage() {
       const cached = localStorage.getItem('omachi_shop_settings');
       if (cached) {
         localSaved = JSON.parse(cached);
-        setSettings((prev) => ({ ...prev, ...localSaved }));
+        const mergedLocal = { ...DEFAULT_SETTINGS, ...localSaved };
+        setSettings(mergedLocal);
+        if (!initialSettingsSnapshotRef.current) {
+          initialSettingsSnapshotRef.current = JSON.stringify(mergedLocal);
+        }
       }
     } catch (e) {}
 
@@ -653,6 +811,7 @@ export default function AdminPage() {
           websiteUrl: data.data.websiteUrl || currentOrigin,
         };
         setSettings(merged);
+        initialSettingsSnapshotRef.current = JSON.stringify(merged);
         try {
           localStorage.setItem('omachi_shop_settings', JSON.stringify(merged));
         } catch (e) {}
@@ -1490,7 +1649,7 @@ export default function AdminPage() {
         <div className="flex items-center p-1 bg-stone-100/90 rounded-2xl border border-stone-200/70 shadow-2xs">
           <button
             type="button"
-            onClick={() => setActiveTab('orders')}
+            onClick={() => handleSwitchTab('orders')}
             className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
               activeTab === 'orders'
                 ? 'bg-rose-500 text-white shadow-xs'
@@ -1508,7 +1667,7 @@ export default function AdminPage() {
 
           <button
             type="button"
-            onClick={() => setActiveTab('revenue')}
+            onClick={() => handleSwitchTab('revenue')}
             className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
               activeTab === 'revenue'
                 ? 'bg-rose-500 text-white shadow-xs'
@@ -1524,7 +1683,7 @@ export default function AdminPage() {
         <div className="flex items-center p-1 bg-stone-100/90 rounded-2xl border border-stone-200/70 shadow-2xs">
           <button
             type="button"
-            onClick={() => setActiveTab('categories')}
+            onClick={() => handleSwitchTab('categories')}
             className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
               activeTab === 'categories'
                 ? 'bg-rose-500 text-white shadow-xs'
@@ -1542,7 +1701,7 @@ export default function AdminPage() {
 
           <button
             type="button"
-            onClick={() => setActiveTab('products')}
+            onClick={() => handleSwitchTab('products')}
             className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
               activeTab === 'products'
                 ? 'bg-rose-500 text-white shadow-xs'
@@ -1560,7 +1719,7 @@ export default function AdminPage() {
 
           <button
             type="button"
-            onClick={() => setActiveTab('inventory')}
+            onClick={() => handleSwitchTab('inventory')}
             className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
               activeTab === 'inventory'
                 ? 'bg-rose-500 text-white shadow-xs'
@@ -1584,7 +1743,7 @@ export default function AdminPage() {
 
           <button
             type="button"
-            onClick={() => setActiveTab('settings')}
+            onClick={() => handleSwitchTab('settings')}
             className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
               activeTab === 'settings'
                 ? 'bg-rose-500 text-white shadow-xs'
@@ -1709,9 +1868,17 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={() => {
-                  if (confirm('⚠️ BẠN CÓ CHẮC MUỐN XÓA TOÀN BỘ ĐƠN HÀNG?\\n\\nThao tác này sẽ xóa sạch tất cả đơn hàng trên Supabase/hệ thống và khôi phục tồn kho sản phẩm về mặc định để test từ đầu!')) {
-                    handleClearAllOrders();
-                  }
+                  setCustomMessageBox({
+                    isOpen: true,
+                    type: 'danger',
+                    title: 'Xóa Toàn Bộ Đơn Hàng Test?',
+                    message: 'Thao tác này sẽ xóa sạch tất cả đơn hàng trên hệ thống và khôi phục tồn kho sản phẩm về mặc định để bạn test từ đầu. Thao tác này không thể hoàn tác!',
+                    confirmText: 'Xác Nhận Xóa Sạch',
+                    cancelText: 'Giữ Lại Đơn',
+                    onConfirm: () => {
+                      handleClearAllOrders();
+                    }
+                  });
                 }}
                 className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition flex items-center gap-1 shrink-0 cursor-pointer"
                 title="Xóa sạch toàn bộ đơn hàng và đặt lại tồn kho để test"
@@ -2709,7 +2876,17 @@ export default function AdminPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDeleteProduct(prod.id, prod.name)}
+                        onClick={() => {
+                          setCustomMessageBox({
+                            isOpen: true,
+                            type: 'danger',
+                            title: 'Xóa Mẫu Sản Phẩm?',
+                            message: `Bạn có chắc chắn muốn xóa sản phẩm "${prod.name}" không? Thao tác này sẽ gỡ sản phẩm khỏi danh mục hiển thị.`,
+                            confirmText: 'Xác Nhận Xóa',
+                            cancelText: 'Giữ Lại',
+                            onConfirm: () => handleDeleteProduct(prod.id, prod.name),
+                          });
+                        }}
                         className="px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -3125,7 +3302,7 @@ export default function AdminPage() {
                       type="button"
                       onClick={() => {
                         setProductCategoryFilter(cat.id);
-                        setActiveTab('products');
+                        handleSwitchTab('products');
                       }}
                       className="text-xs font-bold text-rose-600 hover:underline flex items-center gap-1"
                     >
@@ -3143,8 +3320,18 @@ export default function AdminPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDeleteCategory(cat.id, cat.name)}
-                        className="px-2 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 text-xs font-bold transition flex items-center gap-1"
+                        onClick={() => {
+                          setCustomMessageBox({
+                            isOpen: true,
+                            type: 'danger',
+                            title: 'Xóa Danh Mục Này?',
+                            message: `Bạn có chắc chắn muốn xóa danh mục "${cat.name}" không?`,
+                            confirmText: 'Xác Nhận Xóa',
+                            cancelText: 'Giữ Lại',
+                            onConfirm: () => handleDeleteCategory(cat.id, cat.name),
+                          });
+                        }}
+                        className="px-2 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
                         title="Xóa danh mục"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -3221,8 +3408,18 @@ export default function AdminPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleDeleteFeedback(fb.id, fb.customerName)}
-                      className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-100 transition"
+                      onClick={() => {
+                        setCustomMessageBox({
+                          isOpen: true,
+                          type: 'danger',
+                          title: 'Xóa Đánh Giá Này?',
+                          message: `Bạn có chắc chắn muốn xóa phản hồi của khách "${fb.customerName}" không?`,
+                          confirmText: 'Xác Nhận Xóa',
+                          cancelText: 'Giữ Lại',
+                          onConfirm: () => handleDeleteFeedback(fb.id, fb.customerName),
+                        });
+                      }}
+                      className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-100 transition cursor-pointer"
                       title="Xóa"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -3266,12 +3463,14 @@ export default function AdminPage() {
                 });
                 const data = await res.json();
                 if (data.success) {
+                  initialSettingsSnapshotRef.current = JSON.stringify(settings);
                   setActionSuccessMsg('Đã lưu toàn bộ cấu hình shop thành công! ✨');
                   setTimeout(() => setActionSuccessMsg(''), 3000);
                   confetti({ particleCount: 40, spread: 50, origin: { y: 0.8 } });
                 }
               } catch (err) {
                 console.error(err);
+                initialSettingsSnapshotRef.current = JSON.stringify(settings);
                 setActionSuccessMsg('Đã lưu cấu hình vào máy thành công! ✨');
                 setTimeout(() => setActionSuccessMsg(''), 3000);
               }
@@ -5333,6 +5532,81 @@ export default function AdminPage() {
                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-extrabold text-xs shadow-md shadow-rose-200 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 <span>{isSubmittingCancel ? 'Đang xử lý hủy...' : 'Xác Nhận Hủy Đơn ❌'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* THEME OMACHI CUSTOM MESSAGEBOX MODAL (THAY THẾ WINDOW.ALERT / CONFIRM)   */}
+      {/* ========================================================================= */}
+      {customMessageBox?.isOpen && (
+        <div 
+          className="fixed inset-0 z-[200] bg-stone-950/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              customMessageBox.onCancel?.();
+              setCustomMessageBox(null);
+            }
+          }}
+        >
+          <div className="bg-white rounded-3xl border border-pink-200/90 shadow-2xl shadow-rose-950/20 max-w-md w-full p-6 sm:p-7 text-center space-y-5 animate-scale-up relative overflow-hidden">
+            {/* Background glowing pastel aura */}
+            <div className={`absolute -top-14 -right-14 w-36 h-36 rounded-full blur-3xl pointer-events-none opacity-40 ${
+              customMessageBox.type === 'danger' ? 'bg-red-400' : 'bg-amber-300'
+            }`} />
+            <div className="absolute -bottom-14 -left-14 w-36 h-36 rounded-full blur-3xl pointer-events-none opacity-30 bg-pink-300" />
+
+            {/* Cute Icon Badge */}
+            <div className={`w-16 h-16 mx-auto rounded-3xl flex items-center justify-center text-3xl shadow-sm border relative z-10 transition-transform ${
+              customMessageBox.type === 'danger'
+                ? 'bg-gradient-to-br from-red-50 to-rose-100 text-rose-600 border-rose-200 shadow-rose-100'
+                : 'bg-gradient-to-br from-amber-50 to-orange-100 text-amber-600 border-amber-200 shadow-amber-100'
+            }`}>
+              {customMessageBox.type === 'danger' ? (
+                <Trash2 className="w-8 h-8 text-rose-600 animate-pulse" />
+              ) : (
+                <AlertTriangle className="w-8 h-8 text-amber-600 animate-bounce" />
+              )}
+            </div>
+
+            {/* Content info */}
+            <div className="space-y-2 relative z-10">
+              <h4 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
+                {customMessageBox.title}
+              </h4>
+              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed font-medium px-2">
+                {customMessageBox.message}
+              </p>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-3 pt-2 relative z-10">
+              <button
+                type="button"
+                onClick={() => {
+                  customMessageBox.onCancel?.();
+                  setCustomMessageBox(null);
+                }}
+                className="flex-1 py-3 px-4 rounded-2xl border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 font-extrabold text-xs sm:text-sm transition cursor-pointer active:scale-95"
+              >
+                {customMessageBox.cancelText || 'Tiếp tục chỉnh sửa'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const onConfirmAction = customMessageBox.onConfirm;
+                  setCustomMessageBox(null);
+                  onConfirmAction();
+                }}
+                className={`flex-1 py-3 px-4 rounded-2xl font-black text-xs sm:text-sm text-white transition shadow-md cursor-pointer active:scale-95 ${
+                  customMessageBox.type === 'danger'
+                    ? 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 shadow-rose-200'
+                    : 'bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 shadow-pink-200'
+                }`}
+              >
+                {customMessageBox.confirmText || 'Rời đi & Hủy thay đổi'}
               </button>
             </div>
           </div>

@@ -1324,34 +1324,6 @@ export default function CheckoutPage() {
                   )}
                 </div>
               </div>
-
-              {/* Nút Khách Xác Nhận Đã Chuyển Khoản Ngay */}
-              <div className="space-y-2 pt-1">
-                <button
-                  type="button"
-                  onClick={handleCheckPaymentNow}
-                  disabled={isCheckingPayment}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-md hover:shadow-lg flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer disabled:opacity-60"
-                >
-                  {isCheckingPayment ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                      <span>Đang kiểm tra giao dịch với ngân hàng...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>⚡</span>
-                      <span>Tôi đã chuyển khoản xong • Kiểm tra ngay</span>
-                    </>
-                  )}
-                </button>
-
-                {checkPaymentNotice && (
-                  <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium text-center animate-fade-in">
-                    {checkPaymentNotice}
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* Footer đồng bộ: Dãy nút điều hướng cân đối trên cả Desktop & Điện thoại */}
