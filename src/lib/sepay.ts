@@ -41,8 +41,8 @@ export async function checkAndSyncSepayForOrder(
       return { isPaid: false, message: 'Chưa cấu hình SePay API Token' };
     }
 
-    // 2. Gọi SePay User API lấy danh sách giao dịch mới nhất
-    const response = await fetch('https://my.sepay.vn/userapi/transactions/list?limit=30', {
+    // 2. Gọi SePay User API v2 lấy danh sách giao dịch mới nhất
+    let response = await fetch('https://userapi.sepay.vn/v2/transactions?limit=30', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -52,18 +52,31 @@ export async function checkAndSyncSepayForOrder(
     });
 
     if (!response.ok) {
+      // Fallback v1 nếu cần
+      response = await fetch('https://my.sepay.vn/userapi/transactions/list?limit=30', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store',
+      });
+    }
+
+    if (!response.ok) {
       console.warn('[SEPAY API ERROR]: HTTP', response.status, response.statusText);
       return { isPaid: false, message: `Lỗi kết nối SePay: HTTP ${response.status}` };
     }
 
     const resData = await response.json();
-    const transactions: SepayTransaction[] = resData?.transactions || [];
+    const transactions: SepayTransaction[] = resData?.data || resData?.transactions || [];
 
     if (!Array.isArray(transactions) || transactions.length === 0) {
       return { isPaid: false, message: 'Chưa có giao dịch mới trên SePay' };
     }
 
     const orderCodeClean = (order.code || '').replace(/^#/, '').toUpperCase().trim();
+    const orderCodeNoDash = orderCodeClean.replace(/[^0-9A-Z]/g, '');
     const targetDigits = orderCodeClean.replace(/[^0-9]/g, '');
     const expectedAmount = Number(order.finalTotalAmount || order.totalAmount || 0);
 
@@ -74,12 +87,18 @@ export async function checkAndSyncSepayForOrder(
 
       const content = (tx.transaction_content || tx.description || tx.content || '').toUpperCase();
 
-      // Khớp theo mã đầy đủ (VD: OM-2442 hoặc SEVQR DH OM-2442)
+      // Khớp theo mã đầy đủ (VD: OM-1095 hoặc SEVQR DH OM1095)
       if (orderCodeClean && content.includes(orderCodeClean)) return true;
+      if (orderCodeNoDash && content.includes(orderCodeNoDash)) return true;
 
-      // Khớp theo các số cuối (VD: 2442 trong SEVQR DH OM-2442 hoặc SEVQR 2442)
+      // Khớp theo các số cuối (VD: 1095 trong SEVQR DH OM1095 hoặc SEVQR 1095)
       if (targetDigits.length >= 4) {
-        if (content.includes(`OM-${targetDigits}`) || content.includes(`OM ${targetDigits}`) || content.includes(`DH ${targetDigits}`)) {
+        if (
+          content.includes(`OM-${targetDigits}`) ||
+          content.includes(`OM${targetDigits}`) ||
+          content.includes(`OM ${targetDigits}`) ||
+          content.includes(`DH ${targetDigits}`)
+        ) {
           return true;
         }
         // Kiểm tra xem chuỗi số có xuất hiện riêng lẻ không
