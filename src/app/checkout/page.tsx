@@ -1139,9 +1139,6 @@ export default function CheckoutPage() {
                   </p>
                 </div>
               </div>
-              <span className="px-2.5 py-0.5 bg-amber-500 text-white font-black text-[10px] rounded-full shadow-2xs animate-pulse">
-                ⏳ Chờ chuyển khoản
-              </span>
             </div>
 
             {/* Content đồng bộ chuẩn PaymentModal */}
@@ -1253,12 +1250,34 @@ export default function CheckoutPage() {
                 <OrderCountdownTimer createdAt={createdOrder.createdAt} compact />
               </div>
 
-              {/* Thông tin nhận hàng rút gọn 1 dòng (KHÔNG LẶP LẠI GIÁ TIỀN THỪA THÃI) */}
-              <div className="px-3 py-2 bg-gray-50 rounded-xl border border-gray-200/80 text-[11px] text-left text-gray-600 flex items-start gap-1.5">
-                <span className="shrink-0 text-gray-400">📍</span>
-                <p className="truncate">
-                  <strong className="text-gray-800">{createdOrder.customer.fullName}</strong> ({createdOrder.customer.phone}) - {createdOrder.customer.address}
-                </p>
+              {/* Thông tin nhận hàng & Tiền hàng */}
+              <div className="p-3 rounded-2xl bg-gray-50/90 border border-gray-200 text-xs text-left space-y-1.5">
+                <div className="flex items-center justify-between pb-1.5 border-b border-gray-200/80">
+                  <span className="text-gray-500 font-medium text-[11px]">Thông tin nhận hàng:</span>
+                  <span className="text-[11px] font-bold text-gray-800">
+                    {createdOrder.customer.fullName} • {createdOrder.customer.phone}
+                  </span>
+                </div>
+                <div className="text-[11px] text-gray-600 flex justify-between gap-2">
+                  <span className="shrink-0 text-gray-500 font-medium">Địa chỉ:</span>
+                  <span className="text-right font-medium text-gray-800 truncate">
+                    {createdOrder.customer.address}
+                  </span>
+                </div>
+                <div className="flex justify-between text-[11px] pt-1 border-t border-gray-100">
+                  <span className="text-gray-500 font-medium">Tiền hàng tạm tính:</span>
+                  <strong className="text-gray-800">
+                    {formatVND(createdOrder.subtotal || createdOrder.totalAmount || 0)}
+                  </strong>
+                </div>
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-gray-500 font-medium">Phí vận chuyển:</span>
+                  {(createdOrder.shippingFee || 0) > 0 ? (
+                    <strong className="text-rose-600 font-bold">+{formatVND(createdOrder.shippingFee)}</strong>
+                  ) : (
+                    <span className="text-emerald-600 font-bold">Freeship (0đ)</span>
+                  )}
+                </div>
               </div>
             </div>
 

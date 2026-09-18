@@ -520,9 +520,6 @@ export default function OrderTrackingPage() {
                     </p>
                   </div>
                 </div>
-                <span className="px-2.5 py-0.5 bg-amber-500 text-white font-black text-[10px] rounded-full shadow-2xs animate-pulse">
-                  ⏳ Chờ thanh toán
-                </span>
               </div>
 
               {/* Body */}
