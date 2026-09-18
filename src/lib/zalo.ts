@@ -38,20 +38,40 @@ export async function sendOrderNotification(
     return { success: true, skipped: true, reason: 'Đơn chuyển khoản chưa thanh toán bị hủy' };
   }
 
+function formatVietnamDateTime(dateStr?: string | Date): string {
+  try {
+    const d = dateStr ? new Date(dateStr) : new Date();
+    return new Intl.DateTimeFormat('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour12: false,
+    }).format(d);
+  } catch (e) {
+    return new Date().toLocaleString('vi-VN');
+  }
+}
+
   const cleanFullName = escapeHtml(order.customer?.fullName || 'Khách hàng');
   const cleanPhone = escapeHtml(order.customer?.phone || '');
   const cleanAddress = escapeHtml(order.customer?.address || '');
   const cleanNote = escapeHtml(order.customer?.note || '');
+  const vnTime = formatVietnamDateTime(order.createdAt);
+  const totalAmountFormatted = formatVND(order.finalTotalAmount || order.totalAmount);
+  const itemsCount = (order.items || []).reduce((sum: number, it: any) => sum + Number(it.quantity || 1), 0);
 
   const itemsHtml = (order.items || [])
-    .map((item: any, idx: number) => {
+    .map((item: any) => {
       const name = escapeHtml(item.productName || item.product?.name || 'Mẫu Charm');
       const variant = escapeHtml(item.variantName || item.selectedVariant?.name || '');
       const qty = item.quantity || 1;
       const total = item.totalPrice || 0;
-      const pkg = escapeHtml(item.selectedPackage?.name || '');
-      const details = [variant, pkg ? `Quy cách: ${pkg}` : ''].filter(Boolean).join(' • ');
-      return `   ${idx + 1}. <b>${name}</b> ${details ? `(${details})` : ''} x${qty} gói = <b>${formatVND(total)}</b>`;
+      const details = variant ? ` <i>(${variant})</i>` : '';
+      return `• <b>${name}</b>${details} x${qty} = <b>${formatVND(total)}</b>`;
     })
     .join('\n');
 
@@ -72,63 +92,80 @@ export async function sendOrderNotification(
   const orderViewUrl = `${baseUrl}/order/${order.code || order.id}`;
   const adminUrl = `${baseUrl}/admin`;
 
-  let title = '';
-  let methodText = '';
-  let paymentStatusText = '';
-  let shippingFeeText = '';
-  let shopNoteText = '';
+  let messageHtml = '';
 
   if (isCancelled) {
-    title = `❌ <b>[ĐƠN ĐÃ HỦY] - ĐƠN HÀNG #${order.code}</b> ❌`;
-    methodText = order.paymentMethod === 'BANK' ? '💳 Chuyển khoản VietQR' : '💵 Thu tiền mặt COD';
-    paymentStatusText = '❌ <b>ĐÃ HỦY ĐƠN HÀNG</b>';
-    shippingFeeText = '0đ';
-    shopNoteText = `⚠️ <b>LÝ DO HỦY:</b> ${escapeHtml(order.cancelReason || 'Khách hàng / Shop đã hủy đơn')}\n<i>(Số lượng tồn kho sản phẩm đã được tự động hoàn trả lại)</i>`;
-  } else if (isPaid) {
-    title = `🎉 <b>[ĐÃ NHẬN TIỀN THÀNH CÔNG] - ĐƠN #${order.code}</b> ✅`;
-    methodText = '💳 Chuyển khoản VietQR (SEPAY TỰ ĐỘNG KHỚP)';
-    paymentStatusText = `✅ <b>ĐÃ THANH TOÁN ĐỦ TIỀN (+${formatVND(order.finalTotalAmount || order.totalAmount)})</b>`;
-    shippingFeeText = '🎁 <b>0đ</b> <i>(Miễn phí ship)</i>';
-    shopNoteText = `✨ <b>TIỀN ĐÃ VỀ TÀI KHOẢN QUA SEPAY:</b> Hợp lệ 100%! Shop an tâm đóng hàng và bàn giao cho bưu tá SPX!`;
-  } else if (isPrepaid) {
-    title = `⏳ <b>[CHỜ CHUYỂN KHOẢN] - ĐƠN HÀNG MỚI #${order.code}</b> ⚠️`;
-    methodText = '💳 Chuyển khoản VietQR (Chờ khách quét mã QR)';
-    paymentStatusText = '⛔ <b>CHƯA THANH TOÁN - CHƯA NHẬN TIỀN!</b>';
-    shippingFeeText = '0đ <i>(Tạm tính Freeship theo ưu đãi CK)</i>';
-    shopNoteText = `🚨 <b>CẢNH BÁO CHO SHOP:</b> Khách vừa tạo mã QR trên web. <b>KHÔNG ĐÓNG GỬI HÀNG</b> cho đến khi nhận được tin nhắn báo <b>"ĐÃ NHẬN TIỀN THÀNH CÔNG"</b> từ SePay!\n<i>(Hệ thống sẽ tự động hủy sau 24h nếu khách không chuyển khoản)</i>`;
-  } else {
-    // Đơn COD
-    title = `📦 <b>[ĐƠN COD - THU TIỀN TẬN NƠI] - ĐƠN HÀNG MỚI #${order.code}</b> 🚚`;
-    methodText = '💵 Thanh toán COD (Tiền mặt khi nhận hàng)';
-    paymentStatusText = '📦 <b>ĐƠN COD - Shipper SPX thu tiền khi giao</b>';
-    shippingFeeText = order.shippingFee ? `<b>${formatVND(order.shippingFee)}</b>` : '15.000đ';
-    shopNoteText = `💡 <b>ĐƠN COD HỢP LỆ:</b> Shop tiến hành in đơn và đóng gói giao bưu tá SPX. Shipper sẽ thu <b>${formatVND(order.finalTotalAmount || order.totalAmount)}</b> khi giao tận tay khách.`;
-  }
+    messageHtml = `
+❌ <b>ĐƠN HÀNG ĐÃ HỦY</b>
+━━━━━━━━━━━━━━━━━━━━
+🧾 <b>Mã đơn:</b> <code>#${order.code}</code>
+💵 <b>Giá trị đơn:</b> ${totalAmountFormatted}
+⚠️ <b>Lý do hủy:</b> ${escapeHtml(order.cancelReason || 'Khách hàng / Shop đã hủy đơn')}
+⏰ <b>Thời gian:</b> ${vnTime}
 
-  const messageHtml = `
-${title}
-----------------------------------------
-🧾 <b>Mã đơn:</b> #${order.code}
 👤 <b>Khách hàng:</b> ${cleanFullName}
-📞 <b>Số điện thoại:</b> ${cleanPhone}
+📞 <b>Điện thoại:</b> <code>${cleanPhone}</code>
 📍 <b>Địa chỉ:</b> ${cleanAddress}
 ${cleanNote ? `📝 <b>Ghi chú:</b> <i>"${cleanNote}"</i>\n` : ''}
-🛒 <b>Danh sách sản phẩm:</b>
+♻️ <i>Số lượng tồn kho sản phẩm đã được tự động hoàn lại.</i>
+`.trim();
+  } else if (isPaid) {
+    messageHtml = `
+🎉 <b>TIỀN ĐÃ VỀ • ĐÃ THANH TOÁN</b>
+━━━━━━━━━━━━━━━━━━━━
+🧾 <b>Mã đơn:</b> <code>#${order.code}</code>
+💵 <b>Số tiền nhận:</b> <b>${totalAmountFormatted}</b> <i>(Chuyển khoản VietQR)</i>
+⏰ <b>Thời gian:</b> ${vnTime}
+
+👤 <b>Khách hàng:</b> ${cleanFullName}
+📞 <b>Điện thoại:</b> <code>${cleanPhone}</code>
+📍 <b>Địa chỉ:</b> ${cleanAddress}
+${cleanNote ? `📝 <b>Ghi chú:</b> <i>"${cleanNote}"</i>\n` : ''}
+🛒 <b>Sản phẩm (${itemsCount} món):</b>
 ${itemsHtml}
 
-💰 <b>Tiền hàng:</b> ${formatVND(order.subtotal || (order as any).subtotalAmount || (order.totalAmount - (order.shippingFee || 0)))}
-🚚 <b>Phí ship:</b> ${shippingFeeText}
-💵 <b>TỔNG TIỀN:</b> <b>${formatVND(order.finalTotalAmount || order.totalAmount)}</b>
-💳 <b>Phương thức:</b> ${methodText}
-📌 <b>Trạng thái:</b> ${paymentStatusText}
+🚚 <b>Vận chuyển:</b> SPX Express (Freeship 0đ)
+✨ <i>Tiền đã khớp SePay 100%. Shop an tâm đóng hàng gửi khách!</i>
+`.trim();
+  } else if (isPrepaid) {
+    messageHtml = `
+⏳ <b>ĐƠN MỚI • CHỜ CHUYỂN KHOẢN</b>
+━━━━━━━━━━━━━━━━━━━━
+🧾 <b>Mã đơn:</b> <code>#${order.code}</code>
+💵 <b>Cần thanh toán:</b> <b>${totalAmountFormatted}</b> <i>(VietQR)</i>
+⏰ <b>Thời gian:</b> ${vnTime}
 
-${shopNoteText}
+👤 <b>Khách hàng:</b> ${cleanFullName}
+📞 <b>Điện thoại:</b> <code>${cleanPhone}</code>
+📍 <b>Địa chỉ:</b> ${cleanAddress}
+${cleanNote ? `📝 <b>Ghi chú:</b> <i>"${cleanNote}"</i>\n` : ''}
+🛒 <b>Sản phẩm (${itemsCount} món):</b>
+${itemsHtml}
 
-⏰ <b>Thời gian:</b> ${new Date(order.createdAt).toLocaleString('vi-VN')}
-----------------------------------------
-👉 <a href="${orderViewUrl}"><b>Bấm vào đây để xem chi tiết đơn #${order.code}</b></a>
-👉 <a href="${adminUrl}"><b>Bấm vào đây để mở Trang Quản Trị Shop</b></a>
-`;
+⚠️ <i>Chờ khách quét QR. KHÔNG gửi hàng cho đến khi SePay báo đã nhận tiền!</i>
+`.trim();
+  } else {
+    // Đơn COD
+    const goodsSubtotal = formatVND(order.subtotal || (order as any).subtotalAmount || (order.totalAmount - (order.shippingFee || 0)));
+    const shippingFeeStr = order.shippingFee ? formatVND(order.shippingFee) : '15.000đ';
+    messageHtml = `
+📦 <b>ĐƠN HÀNG MỚI • THU TIỀN COD</b>
+━━━━━━━━━━━━━━━━━━━━
+🧾 <b>Mã đơn:</b> <code>#${order.code}</code>
+💵 <b>Cần thu khi giao:</b> <b>${totalAmountFormatted}</b>
+⏰ <b>Thời gian:</b> ${vnTime}
+
+👤 <b>Khách hàng:</b> ${cleanFullName}
+📞 <b>Điện thoại:</b> <code>${cleanPhone}</code>
+📍 <b>Địa chỉ:</b> ${cleanAddress}
+${cleanNote ? `📝 <b>Ghi chú:</b> <i>"${cleanNote}"</i>\n` : ''}
+🛒 <b>Sản phẩm (${itemsCount} món):</b>
+${itemsHtml}
+
+🚚 <b>Tiền hàng:</b> ${goodsSubtotal} • <b>Ship:</b> ${shippingFeeStr}
+💡 <i>Shop đóng hàng giao bưu tá SPX. Shipper sẽ thu ${totalAmountFormatted} khi giao.</i>
+`.trim();
+  }
 
   console.log('[NOTIFICATION LOG]:\n', messageHtml);
 
