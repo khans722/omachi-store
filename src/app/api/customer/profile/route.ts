@@ -34,9 +34,27 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Thiếu ID khách hàng' }, { status: 400 });
     }
 
-    const currentCustomer = await db.customers.getById(id);
+    let currentCustomer = await db.customers.getById(id);
+    if (!currentCustomer && phone) {
+      currentCustomer = await db.customers.findByPhone(phone);
+    }
     if (!currentCustomer) {
-      return NextResponse.json({ success: false, error: 'Không tìm thấy khách hàng' }, { status: 404 });
+      currentCustomer = {
+        id,
+        fullName: fullName ? fullName.trim() : 'Khách hàng',
+        phone: phone ? phone.trim() : '',
+        hasAccount: true,
+        address: address ? address.trim() : '',
+        city: city ? city.trim() : '',
+        district: district ? district.trim() : '',
+        ward: ward ? ward.trim() : '',
+        customerType: 'NEW',
+        totalOrdersCount: 0,
+        totalSpent: 0,
+        savedAddresses: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
     }
 
     const updateData: any = {};

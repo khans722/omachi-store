@@ -658,7 +658,28 @@ export default function CheckoutPage() {
           }).catch(() => {});
         }
       } else {
-        setIsEditingAddress(true);
+        // Nếu tài khoản mới chưa lưu địa chỉ, kiểm tra xem đã từng đặt đơn nào trước đây chưa
+        try {
+          const pastOrders = JSON.parse(localStorage.getItem('omachi_customer_orders') || '[]');
+          const myRecentOrder = pastOrders.find((o: any) => 
+            (o.customerId && o.customerId === loggedInCustomer.id) ||
+            (o.customer?.phone && loggedInCustomer.phone && o.customer.phone.replace(/[^0-9]/g, '') === loggedInCustomer.phone.replace(/[^0-9]/g, ''))
+          );
+          if (myRecentOrder && myRecentOrder.customer) {
+            const oc = myRecentOrder.customer;
+            if (oc.city) setSelectedProvince(oc.city);
+            if (oc.district) setSelectedDistrict(oc.district);
+            if (oc.ward) setSelectedWard(oc.ward);
+            if (oc.specificAddress || oc.address) setSpecificAddress(oc.specificAddress || oc.address);
+            if (oc.fullName) setCustomer((p) => ({ ...p, fullName: oc.fullName }));
+            if (oc.phone) setCustomer((p) => ({ ...p, phone: oc.phone }));
+            setIsEditingAddress(false);
+          } else {
+            setIsEditingAddress(true);
+          }
+        } catch (e) {
+          setIsEditingAddress(true);
+        }
       }
     } else {
       // Khách vãng lai: Khôi phục từ localStorage
@@ -688,7 +709,7 @@ export default function CheckoutPage() {
         setIsEditingAddress(true);
       }
     }
-  }, [loggedInCustomer?.id, loggedInCustomer?.address, loggedInCustomer?.savedAddresses?.length]);
+  }, [loggedInCustomer?.id, loggedInCustomer?.address, loggedInCustomer?.savedAddresses?.length, loggedInCustomer?.city, (loggedInCustomer as any)?.ward]);
 
   // 2. Tự động ghi nhớ ngay lập tức khi khách gõ địa chỉ
   useEffect(() => {
@@ -1033,171 +1054,282 @@ export default function CheckoutPage() {
       : (zaloShopPhone ? `https://zalo.me/${zaloShopPhone}?text=${prefilledMsg}` : 'https://zalo.me');
 
     return (
-      <div className="py-8 max-w-lg mx-auto space-y-4 font-sans px-3">
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 text-center space-y-4">
+      <div className="py-5 max-w-lg mx-auto space-y-3 font-sans px-3">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 text-center space-y-3.5">
           {isPrepaidOrder ? (
-            <div className="space-y-2.5">
-              <div className="w-14 h-14 mx-auto rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-2xl shadow-xs border border-amber-200">
-                ⏳
+            /* ========================================================
+               MÀN HÌNH CHUYỂN KHOẢN VIETQR: ĐƯA MÃ QR LÊN ĐẦU, TỐI ƯU KHÔNG GIAN
+               ======================================================== */
+            <div className="space-y-3">
+              {/* 1. Header siêu gọn: 1 hàng duy nhất */}
+              <div className="flex items-center justify-between gap-2 p-3 bg-gradient-to-r from-blue-50/90 via-indigo-50/80 to-blue-50/90 border border-blue-200/80 rounded-2xl text-left shadow-2xs">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="px-2 py-0.5 bg-amber-500 text-white font-black text-[10px] rounded-full shadow-2xs">
+                      ⏳ Chờ chuyển khoản
+                    </span>
+                    <span className="text-xs font-black text-gray-900">
+                      Đơn #{createdOrder.code}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-600 truncate mt-0.5">
+                    Khách hàng: <strong>{createdOrder.customer.fullName}</strong>
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="text-[9px] text-gray-400 block uppercase font-bold tracking-wider">Số tiền cần chuyển</span>
+                  <span className="text-base sm:text-lg font-black text-rose-600">
+                    {formatVND(createdOrder.finalTotalAmount || createdOrder.totalAmount)}
+                  </span>
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-3 py-1 rounded-full border border-amber-200 inline-block">
-                  ĐANG CHỜ THANH TOÁN
-                </span>
-                <h2 className="text-xl font-black text-gray-900 pt-1">
-                  Mã Đơn: #{createdOrder.code}
-                </h2>
-                <p className="text-xs text-gray-500">
-                  Chào <strong>{createdOrder.customer.fullName}</strong>! Vui lòng quét mã bên dưới để thanh toán đơn hàng nhé!
-                </p>
+              {/* 2. KHUNG VIETQR NỔI BẬT ĐƯA LÊN VỊ TRÍ TRUNG TÂM (ABOVE THE FOLD) */}
+              <div className="rounded-2xl border-2 border-blue-300/80 bg-gradient-to-b from-blue-50/40 via-white to-white p-3.5 sm:p-4 text-center space-y-3 shadow-sm">
+                <div className="flex items-center justify-between pb-2 border-b border-blue-100/80">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-6 h-6 rounded-md bg-blue-600 text-white font-black flex items-center justify-center text-[10px] shadow-2xs">
+                      QR
+                    </div>
+                    <span className="text-xs font-black text-blue-800 uppercase tracking-wide">
+                      Quét mã VietQR Chuyển Tiền
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-blue-600 font-bold bg-blue-100/70 px-2 py-0.5 rounded-full">
+                    Khớp tự động
+                  </span>
+                </div>
+
+                {/* QR Image Box */}
+                {(() => {
+                  const rawBank = (settings?.bankId || '').toUpperCase().trim();
+                  const isVietin = rawBank.includes('VIETIN') || rawBank.includes('CTG') || rawBank.includes('ICB') || (settings?.bankAccount || '').trim() === '106873248315';
+                  const qrBank = rawBank.includes('VIETCOM') ? 'VCB' : rawBank.includes('MB') ? 'MB' : isVietin ? 'ICB' : rawBank;
+                  const bankAccount = (settings?.bankAccount || '').trim();
+                  const bankOwner = (settings?.bankOwner || '').trim();
+                  const transferContent = isVietin ? `SEVQR DH ${createdOrder.code}` : `DH ${createdOrder.code}`;
+
+                  if (!bankAccount || !qrBank) {
+                    return (
+                      <div className="py-8 px-4 text-center space-y-2">
+                        <div className="w-7 h-7 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+                        <p className="text-xs text-stone-500 font-medium">Đang tải mã thanh toán VietQR từ hệ thống...</p>
+                      </div>
+                    );
+                  }
+
+                  const qrUrl = `https://img.vietqr.io/image/${qrBank}-${bankAccount}-compact2.png?amount=${
+                    createdOrder.finalTotalAmount || createdOrder.totalAmount
+                  }&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(
+                    bankOwner
+                  )}`;
+
+                  return (
+                    <div className="space-y-2.5">
+                      {/* Ảnh QR */}
+                      <div className="inline-block p-2 bg-white rounded-xl border border-blue-200 shadow-xs">
+                        <img
+                          src={qrUrl}
+                          alt="VietQR Chuyển khoản"
+                          className="w-48 sm:w-52 h-auto object-contain mx-auto rounded-lg"
+                        />
+                      </div>
+
+                      {/* Nút Tải ảnh QR */}
+                      <div>
+                        <button
+                          type="button"
+                          disabled={isDownloadingQr}
+                          onClick={() => downloadQrImage(qrUrl, `vietqr-omachi-${createdOrder.code}.png`)}
+                          className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer disabled:opacity-50"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>{isDownloadingQr ? 'Đang tải ảnh...' : '📥 Tải ảnh mã QR về máy (Để quét từ thư viện ảnh)'}</span>
+                        </button>
+                      </div>
+
+                      {/* Bảng chi tiết chuyển khoản có nút Copy 1 chạm */}
+                      <div className="grid grid-cols-2 gap-2 text-left pt-1">
+                        {/* Ngân hàng */}
+                        <div className="p-2 rounded-lg bg-gray-50 border border-gray-200/80">
+                          <span className="text-[10px] text-gray-500 block font-medium">Ngân hàng:</span>
+                          <span className="text-xs font-bold text-gray-900 block truncate">
+                            {rawBank || 'VietinBank'}
+                          </span>
+                        </div>
+
+                        {/* Số tài khoản */}
+                        <div className="p-2 rounded-lg bg-gray-50 border border-gray-200/80 flex items-center justify-between gap-1">
+                          <div className="min-w-0 flex-1">
+                            <span className="text-[10px] text-gray-500 block font-medium">Số tài khoản:</span>
+                            <span className="text-xs font-extrabold text-blue-700 font-mono block truncate">
+                              {bankAccount}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(bankAccount, 'stk')}
+                            className="px-1.5 py-1 text-[10px] font-bold bg-white hover:bg-blue-50 text-blue-600 border border-blue-200 rounded shrink-0 transition"
+                          >
+                            {copiedField === 'stk' ? '✓' : 'Copy'}
+                          </button>
+                        </div>
+
+                        {/* Chủ tài khoản */}
+                        <div className="p-2 rounded-lg bg-gray-50 border border-gray-200/80">
+                          <span className="text-[10px] text-gray-500 block font-medium">Chủ tài khoản:</span>
+                          <span className="text-xs font-bold text-gray-900 block truncate">
+                            {bankOwner || 'DUONG QUOC KHANH'}
+                          </span>
+                        </div>
+
+                        {/* Nội dung CK */}
+                        <div className="p-2 rounded-lg bg-amber-50 border border-amber-300 flex items-center justify-between gap-1">
+                          <div className="min-w-0 flex-1">
+                            <span className="text-[10px] text-amber-800 block font-bold">Nội dung CK (bắt buộc):</span>
+                            <span className="text-xs font-black text-rose-600 font-mono block truncate">
+                              {transferContent}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(transferContent, 'nd')}
+                            className="px-1.5 py-1 text-[10px] font-bold bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 rounded shrink-0 transition"
+                          >
+                            {copiedField === 'nd' ? '✓' : 'Copy'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Ghi chú mẹo thanh toán */}
+                      <p className="text-[10.5px] text-stone-500 text-center font-medium">
+                        💡 Mở App <strong>Ngân hàng</strong> &gt; Chọn <strong>Quét mã QR</strong> &gt; Tiền &amp; Nội dung được điền tự động 100%.
+                      </p>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* 3. Nút Xác nhận đã chuyển khoản */}
+              {!hasNotifiedPaid ? (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await fetch('/api/orders', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          id: createdOrder.id,
+                          paymentStatus: 'PAID',
+                        }),
+                      });
+                      setHasNotifiedPaid(true);
+                      confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+                    } catch {
+                      setHasNotifiedPaid(true);
+                    }
+                  }}
+                  className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Tôi Đã Chuyển Khoản Xong</span>
+                </button>
+              ) : (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-emerald-800 text-xs font-bold flex items-center justify-center gap-2 animate-fade-in">
+                  <span>🎉</span>
+                  <span>Đã ghi nhận! SePay/Shop sẽ đối soát và xuất kho gửi bạn sớm nhất.</span>
+                </div>
+              )}
+
+              {/* 4. Thông tin người nhận & Hóa đơn (Được xếp gọn bên dưới) */}
+              <div className="p-3 rounded-xl bg-gray-50/90 border border-gray-200 text-xs text-left space-y-1.5">
+                <div className="flex items-center justify-between pb-1.5 border-b border-gray-200">
+                  <span className="text-gray-500 font-semibold text-[11px]">Thông tin nhận hàng:</span>
+                  <span className="text-[11px] font-bold text-gray-800">
+                    {createdOrder.customer.fullName} • {createdOrder.customer.phone}
+                  </span>
+                </div>
+                <div className="text-[11px] text-gray-600 flex justify-between gap-2">
+                  <span className="shrink-0 text-gray-500">Địa chỉ:</span>
+                  <span className="text-right font-medium text-gray-800 truncate">
+                    {createdOrder.customer.address}
+                  </span>
+                </div>
+                <div className="flex justify-between text-[11px] pt-1 border-t border-gray-100">
+                  <span className="text-gray-500">Tiền hàng tạm tính:</span>
+                  <strong className="text-gray-800">
+                    {formatVND(createdOrder.subtotal || createdOrder.totalAmount || 0)}
+                  </strong>
+                </div>
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-gray-500">Phí vận chuyển:</span>
+                  {(createdOrder.shippingFee || 0) > 0 ? (
+                    <strong className="text-rose-600 font-bold">+{formatVND(createdOrder.shippingFee)}</strong>
+                  ) : (
+                    <span className="text-emerald-600 font-bold">Freeship (0đ)</span>
+                  )}
+                </div>
               </div>
             </div>
           ) : (
-            <div className="space-y-2">
+            /* ========================================================
+               MÀN HÌNH ĐẶT HÀNG COD THÀNH CÔNG
+               ======================================================== */
+            <div className="space-y-3">
               <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl shadow-xs">
                 ✨
               </div>
-
               <div className="space-y-1">
-                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 inline-block">
+                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 inline-block">
                   ĐẶT HÀNG THÀNH CÔNG
                 </span>
-                <h2 className="text-xl font-black text-gray-900 pt-1.5">
+                <h2 className="text-xl font-black text-gray-900 pt-1">
                   Mã Đơn: #{createdOrder.code}
                 </h2>
                 <p className="text-xs text-gray-500">
                   Cảm ơn bạn <strong>{createdOrder.customer.fullName}</strong> đã đặt hàng tại Omachi!
                 </p>
               </div>
-            </div>
-          )}
 
-          {/* Shopee Style Compact Receipt */}
-          <div className="p-3.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-left space-y-2">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Tiền hàng tạm tính:</span>
-              <strong className="text-gray-900 font-bold">
-                {formatVND(createdOrder.subtotal || createdOrder.totalAmount || 0)}
-              </strong>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-500">Phí vận chuyển:</span>
-              {(createdOrder.shippingFee || 0) > 0 ? (
-                <strong className="text-rose-600 font-bold">
-                  +{formatVND(createdOrder.shippingFee)}
-                </strong>
-              ) : (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-gray-400 line-through text-[11px]">15.000đ</span>
-                  <strong className="text-emerald-600 font-bold text-xs">0đ</strong>
+              {/* Compact Receipt */}
+              <div className="p-3.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-left space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Tiền hàng tạm tính:</span>
+                  <strong className="text-gray-900">{formatVND(createdOrder.subtotal || createdOrder.totalAmount || 0)}</strong>
                 </div>
-              )}
-            </div>
-            <div className="flex justify-between items-baseline pt-2 border-t border-gray-200">
-              <span className="font-bold text-gray-800">Tổng thanh toán:</span>
-              <strong className={`${curr.priceText} text-base font-black`}>
-                {formatVND(createdOrder.finalTotalAmount || createdOrder.totalAmount)}
-              </strong>
-            </div>
-            <div className="pt-2 border-t border-gray-100 flex justify-between text-gray-600">
-              <span>Địa chỉ nhận:</span>
-              <strong className="text-gray-800 text-right max-w-[200px] truncate">{createdOrder.customer.address}</strong>
-            </div>
-            <div className="flex justify-between text-gray-600">
-              <span>Số điện thoại:</span>
-              <strong className="text-gray-800">{createdOrder.customer.phone}</strong>
-            </div>
-            <div className="flex justify-between text-gray-600">
-              <span>Hình thức:</span>
-              <strong className="text-gray-800">
-                {createdOrder.paymentMethod === 'BANK'
-                  ? '💳 Chuyển khoản VietQR'
-                  : '💵 COD (Khi nhận hàng)'}
-              </strong>
-            </div>
-          </div>
-
-          {/* 💳 VIETQR BANK PAYMENT BOX */}
-          {createdOrder.paymentMethod === 'BANK' && (
-            <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-b from-blue-50/50 to-white p-4 text-left space-y-3 shadow-sm">
-              <div className="flex items-center gap-2.5 pb-2.5 border-b border-blue-100">
-                <div className="w-8 h-8 rounded-lg bg-blue-600 text-white font-black flex items-center justify-center text-xs shrink-0 shadow-xs">
-                  QR
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500">Phí vận chuyển:</span>
+                  {(createdOrder.shippingFee || 0) > 0 ? (
+                    <strong className="text-rose-600">+{formatVND(createdOrder.shippingFee)}</strong>
+                  ) : (
+                    <span className="text-emerald-600 font-bold">0đ (Miễn phí)</span>
+                  )}
                 </div>
-                <div>
-                  <h3 className="text-xs font-black text-blue-700 uppercase tracking-wider">
-                    Chuyển Khoản Ngân Hàng (VietQR)
-                  </h3>
-                  <p className="text-[11px] text-stone-500">
-                    Quét mã VietQR bằng bất kỳ App ngân hàng nào (MB, VCB, BIDV, Techcombank...)
-                  </p>
+                <div className="flex justify-between items-baseline pt-2 border-t border-gray-200">
+                  <span className="font-bold text-gray-800">Tổng thanh toán (COD):</span>
+                  <strong className={`${curr.priceText} text-base font-black`}>
+                    {formatVND(createdOrder.finalTotalAmount || createdOrder.totalAmount)}
+                  </strong>
+                </div>
+                <div className="pt-2 border-t border-gray-100 flex justify-between text-gray-600">
+                  <span>Địa chỉ nhận:</span>
+                  <strong className="text-gray-800 text-right max-w-[200px] truncate">{createdOrder.customer.address}</strong>
+                </div>
+                <div className="flex justify-between text-gray-600">
+                  <span>Số điện thoại:</span>
+                  <strong className="text-gray-800">{createdOrder.customer.phone}</strong>
                 </div>
               </div>
 
-              {/* VietQR Dynamic Code */}
-              <div className="bg-white p-3 rounded-xl border border-blue-200 flex flex-col items-center text-center space-y-2">
-                <div className="relative p-2 bg-white rounded-lg border border-blue-100 shadow-2xs">
-                  {(() => {
-                    const rawBank = (settings?.bankId || '').toUpperCase().trim();
-                    const isVietin = rawBank.includes('VIETIN') || rawBank.includes('CTG') || rawBank.includes('ICB') || (settings?.bankAccount || '').trim() === '106873248315';
-                    const qrBank = rawBank.includes('VIETCOM') ? 'VCB' : rawBank.includes('MB') ? 'MB' : isVietin ? 'ICB' : rawBank;
-                    const bankAccount = (settings?.bankAccount || '').trim();
-                    const bankOwner = (settings?.bankOwner || '').trim();
-                    const transferContent = isVietin ? `SEVQR DH ${createdOrder.code}` : `DH ${createdOrder.code}`;
-
-                    if (!bankAccount || !qrBank) {
-                      return (
-                        <div className="py-8 px-4 text-center space-y-2">
-                          <div className="w-7 h-7 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
-                          <p className="text-xs text-stone-500 font-medium">Đang tải mã thanh toán VietQR từ hệ thống...</p>
-                        </div>
-                      );
-                    }
-
-                    const qrUrl = `https://img.vietqr.io/image/${qrBank}-${bankAccount}-compact2.png?amount=${
-                      createdOrder.finalTotalAmount || createdOrder.totalAmount
-                    }&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(
-                      bankOwner
-                    )}`;
-                    return (
-                      <>
-                        <img
-                          src={qrUrl}
-                          alt="VietQR Chuyển khoản"
-                          className="w-52 h-auto object-contain rounded-md"
-                        />
-                        <div className="mt-2 w-full">
-                          <button
-                            type="button"
-                            disabled={isDownloadingQr}
-                            onClick={() => downloadQrImage(qrUrl, `vietqr-omachi-${createdOrder.code}.png`)}
-                            className="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer disabled:opacity-50"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                            <span>{isDownloadingQr ? 'Đang tải ảnh...' : '📥 Tải ảnh mã QR về máy (Để quét từ ảnh)'}</span>
-                          </button>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-                <p className="text-[11px] text-stone-500 font-medium">
-                  Mở App <strong>Ngân hàng bất kỳ</strong> &gt; Chọn <strong>Quét mã QR</strong> để chuyển tiền nhanh tự động
+              <div className="bg-stone-50 p-3 rounded-xl border border-stone-200 text-xs text-stone-800 space-y-1 text-left">
+                <p className="font-bold flex items-center gap-1 text-stone-900">
+                  <span>📦</span>
+                  <span>Shop đã nhận được đơn hàng của bạn!</span>
                 </p>
-
-                {/* Hướng dẫn quét từ ảnh trên cùng 1 điện thoại */}
-                <div className="p-2.5 bg-blue-50/70 rounded-xl border border-blue-100 text-[11px] text-blue-900 text-left space-y-1 w-full">
-                  <p className="font-bold flex items-center gap-1 text-[11px] text-blue-800">
-                    <span>💡</span>
-                    <span>Thanh toán dễ dàng trên 1 chiếc điện thoại:</span>
-                  </p>
-                  <ol className="list-decimal list-inside space-y-0.5 text-[10.5px] text-blue-700 leading-relaxed">
-                    <li>Bấm nút <strong>&quot;Tải ảnh mã QR về máy&quot;</strong> ở trên (hoặc chụp màn hình).</li>
-                    <li>Mở App Ngân hàng &gt; Bấm <strong>Quét QR</strong>.</li>
-                    <li>Chọn biểu tượng <strong>&quot;Ảnh / Thư viện&quot;</strong> để chọn mã vừa tải về là xong!</li>
-                  </ol>
-                </div>
+                <p className="text-[11px] text-stone-600 leading-relaxed">
+                  Xưởng Omachi sẽ soạn hàng, đóng gói cẩn thận và gọi xác nhận trước khi giao. Bạn thanh toán tiền mặt khi nhận hàng nhé! 💕
+                </p>
               </div>
             </div>
           )}

@@ -1865,6 +1865,10 @@ function mapOrderFromSupabase(row: any): Order {
 }
 
 function mapCustomerFromSupabase(row: any): Customer {
+  const savedAddrs: SavedAddress[] = Array.isArray(row.saved_addresses) ? row.saved_addresses : [];
+  const defaultAddr = savedAddrs.find((a) => a.isDefault) || savedAddrs[0];
+  const ward = defaultAddr?.ward || (row.district && !row.district.includes('Huyện') && !row.district.includes('Quận') ? row.district : '');
+
   return {
     id: row.id,
     fullName: row.full_name,
@@ -1872,10 +1876,11 @@ function mapCustomerFromSupabase(row: any): Customer {
     email: row.email || undefined,
     password: row.password || undefined,
     hasAccount: Boolean(row.has_account),
-    address: row.address || '',
-    city: row.city || '',
-    district: row.district || undefined,
-    savedAddresses: Array.isArray(row.saved_addresses) ? row.saved_addresses : [],
+    address: row.address || defaultAddr?.address || '',
+    city: row.city || defaultAddr?.city || '',
+    district: row.district || defaultAddr?.district || undefined,
+    ward: ward || undefined,
+    savedAddresses: savedAddrs,
     customerType: row.customer_type || 'NEW',
     totalOrdersCount: Number(row.total_orders_count || 0),
     totalSpent: Number(row.total_spent || 0),
@@ -2456,9 +2461,48 @@ export const db = {
 
     async update(id: string, updateData: Partial<Customer>): Promise<Customer | null> {
       const dbData = readDb();
-      if (!dbData.customers) return null;
-      const index = dbData.customers.findIndex((c) => c.id === id);
-      if (index === -1) return null;
+      if (!dbData.customers) dbData.customers = [];
+      let index = dbData.customers.findIndex((c) => c.id === id);
+
+      if (index === -1) {
+        // Kiểm tra xem khách hàng có trên Supabase hoặc tìm theo số điện thoại không
+        let custFromSb: Customer | undefined;
+        try {
+          const { data } = await supabase.from('customers').select('*').eq('id', id).maybeSingle();
+          if (data) {
+            custFromSb = mapCustomerFromSupabase(data);
+          } else if (updateData.phone) {
+            const clean = updateData.phone.replace(/[^0-9]/g, '');
+            const { data: byPhone } = await supabase.from('customers').select('*').eq('phone', clean).maybeSingle();
+            if (byPhone) custFromSb = mapCustomerFromSupabase(byPhone);
+          }
+        } catch (e) {}
+
+        if (custFromSb) {
+          dbData.customers.unshift(custFromSb);
+          index = 0;
+        } else {
+          // Tự động tạo hồ sơ khách hàng mới thay vì trả về null
+          const newCust: Customer = {
+            id,
+            fullName: updateData.fullName || 'Khách hàng',
+            phone: updateData.phone || '',
+            hasAccount: updateData.hasAccount ?? true,
+            address: updateData.address || '',
+            city: updateData.city || '',
+            district: updateData.district || '',
+            ward: updateData.ward || '',
+            savedAddresses: updateData.savedAddresses || [],
+            customerType: 'NEW',
+            totalOrdersCount: 0,
+            totalSpent: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          dbData.customers.unshift(newCust);
+          index = 0;
+        }
+      }
 
       dbData.customers[index] = {
         ...dbData.customers[index],
@@ -2475,7 +2519,7 @@ export const db = {
           phone: c.phone,
           email: c.email || '',
           password: c.password || '',
-          has_account: c.hasAccount,
+          has_account: c.hasAccount ?? true,
           address: c.address || '',
           district: c.district || '',
           city: c.city || '',
@@ -2789,41 +2833,51 @@ export const db = {
         updatedAt: new Date().toISOString(),
       };
 
-      const existingCust = linkedCustomerId
-        ? (dbData.customers || []).find((c) => c.id === linkedCustomerId)
-        : cleanPhone
-        ? (dbData.customers || []).find((c) => (c.phone || '').replace(/[^0-9]/g, '') === cleanPhone)
-        : undefined;
-
       const specificAddr = (orderInput.customer as any)?.specificAddress || orderInput.customer?.address || '';
       const orderCity = orderInput.customer?.city || '';
       const orderDistrict = (orderInput.customer as any)?.district || '';
+      const orderWard = (orderInput.customer as any)?.ward || '';
       const setAsDefault = (orderInput as any)?.setAsDefaultAddress !== false;
 
-      if (existingCust) {
-        if (!existingCust.savedAddresses) existingCust.savedAddresses = [];
-        const isFirstOrder = !existingCust.address || existingCust.savedAddresses.length === 0;
+      // Tìm khách hàng từ Supabase hoặc local DB
+      let targetCust: Customer | undefined;
+      if (linkedCustomerId) {
+        targetCust = await db.customers.getById(linkedCustomerId);
+      }
+      if (!targetCust && cleanPhone) {
+        targetCust = await db.customers.findByPhone(cleanPhone);
+      }
+
+      if (targetCust) {
+        if (!targetCust.savedAddresses) targetCust.savedAddresses = [];
+        const isFirstOrder = !targetCust.address || targetCust.savedAddresses.length === 0;
         const makeDefault = setAsDefault || isFirstOrder;
 
         if (makeDefault && specificAddr) {
-          existingCust.savedAddresses.forEach((a) => { a.isDefault = false; });
-          existingCust.address = specificAddr;
-          existingCust.district = orderDistrict;
-          existingCust.city = orderCity;
+          targetCust.savedAddresses.forEach((a) => { a.isDefault = false; });
+          targetCust.address = specificAddr;
+          targetCust.district = orderDistrict;
+          targetCust.ward = orderWard;
+          targetCust.city = orderCity;
+          if (orderInput.customer.fullName) targetCust.fullName = orderInput.customer.fullName;
         }
 
-        const matchIdx = existingCust.savedAddresses.findIndex(
+        const matchIdx = targetCust.savedAddresses.findIndex(
           (a) => a.address.trim().toLowerCase() === specificAddr.trim().toLowerCase() &&
-                 a.district.trim().toLowerCase() === orderDistrict.trim().toLowerCase() &&
-                 a.city.trim().toLowerCase() === orderCity.trim().toLowerCase()
+                 (a.city || '').trim().toLowerCase() === orderCity.trim().toLowerCase()
         );
 
         if (matchIdx !== -1) {
-          if (makeDefault) existingCust.savedAddresses[matchIdx].isDefault = true;
+          if (makeDefault) targetCust.savedAddresses[matchIdx].isDefault = true;
+          if (orderWard) targetCust.savedAddresses[matchIdx].ward = orderWard;
+          if (orderDistrict) targetCust.savedAddresses[matchIdx].district = orderDistrict;
         } else if (specificAddr) {
-          existingCust.savedAddresses.push({
+          targetCust.savedAddresses.push({
             id: `addr-${Date.now()}`,
+            fullName: orderInput.customer.fullName,
+            phone: orderInput.customer.phone,
             address: specificAddr,
+            ward: orderWard,
             district: orderDistrict,
             city: orderCity,
             isDefault: makeDefault,
@@ -2831,10 +2885,92 @@ export const db = {
           });
         }
 
-        existingCust.totalOrdersCount = (existingCust.totalOrdersCount || 0) + 1;
-        existingCust.totalSpent = (existingCust.totalSpent || 0) + finalTotal;
-        existingCust.lastOrderAt = new Date().toISOString();
-        existingCust.updatedAt = new Date().toISOString();
+        targetCust.totalOrdersCount = (targetCust.totalOrdersCount || 0) + 1;
+        targetCust.totalSpent = (targetCust.totalSpent || 0) + finalTotal;
+        targetCust.lastOrderAt = new Date().toISOString();
+        targetCust.updatedAt = new Date().toISOString();
+
+        const lIdx = (dbData.customers || []).findIndex((c) => c.id === targetCust!.id);
+        if (lIdx !== -1) dbData.customers[lIdx] = targetCust;
+        else {
+          if (!dbData.customers) dbData.customers = [];
+          dbData.customers.unshift(targetCust);
+        }
+
+        try {
+          await supabase.from('customers').upsert({
+            id: targetCust.id,
+            full_name: targetCust.fullName,
+            phone: targetCust.phone,
+            email: targetCust.email || '',
+            password: targetCust.password || '',
+            has_account: targetCust.hasAccount ?? Boolean(linkedCustomerId),
+            address: targetCust.address || '',
+            district: targetCust.district || '',
+            city: targetCust.city || '',
+            saved_addresses: targetCust.savedAddresses || [],
+            customer_type: targetCust.customerType || 'NEW',
+            total_orders_count: targetCust.totalOrdersCount || 1,
+            total_spent: targetCust.totalSpent || finalTotal,
+            last_order_at: targetCust.lastOrderAt,
+            updated_at: targetCust.updatedAt,
+          });
+        } catch (e) {}
+      } else if (cleanPhone || linkedCustomerId) {
+        const newCustId = linkedCustomerId || `cust-${Date.now()}`;
+        const newCustRecord: Customer = {
+          id: newCustId,
+          fullName: orderInput.customer.fullName,
+          phone: orderInput.customer.phone,
+          hasAccount: Boolean(linkedCustomerId),
+          address: specificAddr,
+          ward: orderWard,
+          district: orderDistrict,
+          city: orderCity,
+          savedAddresses: specificAddr ? [
+            {
+              id: `addr-${Date.now()}`,
+              fullName: orderInput.customer.fullName,
+              phone: orderInput.customer.phone,
+              address: specificAddr,
+              ward: orderWard,
+              district: orderDistrict,
+              city: orderCity,
+              isDefault: true,
+              createdAt: new Date().toISOString(),
+            }
+          ] : [],
+          customerType: 'NEW',
+          totalOrdersCount: 1,
+          totalSpent: finalTotal,
+          lastOrderAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+
+        if (!dbData.customers) dbData.customers = [];
+        dbData.customers.unshift(newCustRecord);
+
+        try {
+          await supabase.from('customers').upsert({
+            id: newCustRecord.id,
+            full_name: newCustRecord.fullName,
+            phone: newCustRecord.phone,
+            email: '',
+            password: '',
+            has_account: Boolean(linkedCustomerId),
+            address: newCustRecord.address || '',
+            district: newCustRecord.district || '',
+            city: newCustRecord.city || '',
+            saved_addresses: newCustRecord.savedAddresses || [],
+            customer_type: 'NEW',
+            total_orders_count: 1,
+            total_spent: finalTotal,
+            last_order_at: newCustRecord.lastOrderAt,
+            created_at: newCustRecord.createdAt,
+            updated_at: newCustRecord.updatedAt,
+          });
+        } catch (e) {}
       }
 
       dbData.orders.unshift(newOrder);

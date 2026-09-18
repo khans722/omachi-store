@@ -30,7 +30,21 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        setCustomer(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        setCustomer(parsed);
+        // Tự động làm mới thông tin từ database để đồng bộ địa chỉ mới nhất
+        if (parsed.id || parsed.phone) {
+          const query = parsed.id ? `id=${encodeURIComponent(parsed.id)}` : `phone=${encodeURIComponent(parsed.phone)}`;
+          fetch(`/api/customer/profile?${query}`)
+            .then((r) => r.json())
+            .then((res) => {
+              if (res.success && res.data) {
+                setCustomer(res.data);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(res.data));
+              }
+            })
+            .catch(() => {});
+        }
       }
     } catch (e) {
       console.error('Error loading customer session:', e);
@@ -99,12 +113,12 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateProfile = async (updateData: Partial<Customer>) => {
-    if (!customer?.id) return { success: false, error: 'Chưa đăng nhập' };
+    if (!customer?.id && !customer?.phone) return { success: false, error: 'Chưa đăng nhập' };
     try {
       const res = await fetch('/api/customer/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: customer.id, ...updateData }),
+        body: JSON.stringify({ id: customer?.id, phone: customer?.phone, ...updateData }),
       });
       const data = await res.json();
       if (data.success && data.data) {
