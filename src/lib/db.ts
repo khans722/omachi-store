@@ -1712,16 +1712,16 @@ function readDb(): DetailedDatabaseSchema {
     const raw = fs.readFileSync(targetFile, 'utf-8');
     const parsed: DetailedDatabaseSchema = JSON.parse(raw);
     let needResave = false;
-    if (!parsed.products || parsed.products.length === 0) {
-      parsed.products = INITIAL_DATABASE.products;
+    if (!parsed.products || !Array.isArray(parsed.products)) {
+      parsed.products = [];
       needResave = true;
     }
     if (!parsed.feedbacks || !Array.isArray(parsed.feedbacks)) {
       parsed.feedbacks = [];
       needResave = true;
     }
-    if (!parsed.categories || parsed.categories.length === 0) {
-      parsed.categories = INITIAL_DATABASE.categories;
+    if (!parsed.categories || !Array.isArray(parsed.categories)) {
+      parsed.categories = [];
       needResave = true;
     }
     if (!parsed.orders || !Array.isArray(parsed.orders)) {
@@ -2013,7 +2013,7 @@ export const db = {
       if (local.length > 0) {
         freshList = await Promise.race([
           fetchSupabase(),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 300))
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500))
         ]);
       } else {
         freshList = await fetchSupabase();
@@ -2082,7 +2082,7 @@ export const db = {
           is_active: newCategory.isActive,
           created_at: newCategory.createdAt,
         });
-        await Promise.race([upsertP, new Promise((res) => setTimeout(res, 200))]);
+        Promise.resolve(upsertP).then(({error}: any) => { if(error) console.warn('[Supabase write failed]', error.message); });
       } catch (err) {
         console.warn('[Supabase categories.create error]:', err);
       }
@@ -2121,7 +2121,7 @@ export const db = {
           display_order: item.displayOrder,
           is_active: item.isActive,
         });
-        await Promise.race([upsertP, new Promise((res) => setTimeout(res, 200))]);
+        Promise.resolve(upsertP).then(({error}: any) => { if(error) console.warn('[Supabase write failed]', error.message); });
       } catch (err) {
         console.warn('[Supabase categories.update error]:', err);
       }
@@ -2139,7 +2139,7 @@ export const db = {
 
       try {
         const delP = supabase.from('categories').update({ is_active: false }).eq('id', id);
-        await Promise.race([delP, new Promise((res) => setTimeout(res, 200))]);
+        Promise.resolve(delP).then(({error}: any) => { if(error) console.warn('[Supabase delete failed]', error.message); });
       } catch (err) {
         console.warn('[Supabase categories.delete error]:', err);
       }
@@ -2175,7 +2175,7 @@ export const db = {
       if (local.length > 0) {
         freshList = await Promise.race([
           fetchSupabase(),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 300))
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500))
         ]);
       } else {
         freshList = await fetchSupabase();
@@ -2272,7 +2272,7 @@ export const db = {
           }
         })();
 
-        await Promise.race([upsertP, new Promise((res) => setTimeout(res, 200))]);
+        Promise.resolve(upsertP).then(({error}: any) => { if(error) console.warn('[Supabase write failed]', error.message); });
       } catch (err) {
         console.warn('[Supabase products.create exception]:', err);
       }
@@ -2334,7 +2334,7 @@ export const db = {
           }
         })();
 
-        await Promise.race([upsertP, new Promise((res) => setTimeout(res, 200))]);
+        Promise.resolve(upsertP).then(({error}: any) => { if(error) console.warn('[Supabase write failed]', error.message); });
       } catch (err) {
         console.warn('[Supabase products.update exception]:', err);
       }
@@ -2351,7 +2351,7 @@ export const db = {
 
       try {
         const delP = supabase.from('products').update({ is_active: false }).eq('id', id);
-        await Promise.race([delP, new Promise((res) => setTimeout(res, 200))]);
+        Promise.resolve(delP).then(({error}: any) => { if(error) console.warn('[Supabase delete failed]', error.message); });
       } catch (err) {
         console.warn('[Supabase products.delete error]:', err);
       }
@@ -3205,10 +3205,7 @@ export const db = {
         });
 
         // Giới hạn thời gian chờ Supabase tối đa 200ms để người mua nhận phản hồi tức thì
-        await Promise.race([
-          upsertPromise,
-          new Promise((resolve) => setTimeout(resolve, 200))
-        ]);
+        Promise.resolve(upsertPromise).then(({error}: any) => { if(error) console.warn('[Supabase order upsert failed]', error.message); });
       } catch (err) {
         console.warn('[Supabase orders.create upsert error]:', err);
       }
@@ -3271,10 +3268,7 @@ export const db = {
           created_at: order.createdAt,
           updated_at: order.updatedAt,
         });
-        await Promise.race([
-          upsertPromise,
-          new Promise((resolve) => setTimeout(resolve, 250))
-        ]);
+        Promise.resolve(upsertPromise).then(({error}: any) => { if(error) console.warn('[Supabase order upsert failed]', error.message); });
       } catch (e) {}
       return order;
     },
@@ -3487,10 +3481,7 @@ export const db = {
           completed_at: o.completedAt || null,
           updated_at: o.updatedAt,
         });
-        await Promise.race([
-          upsertPromise,
-          new Promise((resolve) => setTimeout(resolve, 250))
-        ]);
+        Promise.resolve(upsertPromise).then(({error}: any) => { if(error) console.warn('[Supabase order upsert failed]', error.message); });
       } catch (e) {}
 
       return dbData.orders[index];
@@ -3526,7 +3517,7 @@ export const db = {
       if (local) {
         fresh = await Promise.race([
           fetchSupabase(),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 300))
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500))
         ]);
       } else {
         fresh = await fetchSupabase();
@@ -3581,7 +3572,7 @@ export const db = {
           raw_data: s,
           updated_at: new Date().toISOString(),
         });
-        await Promise.race([upsertP, new Promise((res) => setTimeout(res, 200))]);
+        Promise.resolve(upsertP).then(({error}: any) => { if(error) console.warn('[Supabase write failed]', error.message); });
       } catch (err) {
         console.warn('[Supabase settings.update error]:', err);
       }
@@ -3618,7 +3609,7 @@ export const db = {
       if (local.length > 0) {
         fresh = await Promise.race([
           fetchSupabase(),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 300))
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500))
         ]);
       } else {
         fresh = await fetchSupabase();
@@ -3661,7 +3652,7 @@ export const db = {
           is_active: newFb.isActive,
           created_at: newFb.createdAt,
         });
-        await Promise.race([p, new Promise((res) => setTimeout(res, 200))]);
+        Promise.resolve(p).then(({error}: any) => { if(error) console.warn('[Supabase op failed]', error.message); });
       } catch (e) {}
 
       return newFb;
@@ -3691,7 +3682,7 @@ export const db = {
           avatar_text: fb.avatarText,
           is_active: fb.isActive,
         });
-        await Promise.race([p, new Promise((res) => setTimeout(res, 200))]);
+        Promise.resolve(p).then(({error}: any) => { if(error) console.warn('[Supabase op failed]', error.message); });
       } catch (e) {}
 
       return dbData.feedbacks[index];
@@ -3708,7 +3699,7 @@ export const db = {
 
       try {
         const p = supabase.from('feedbacks').delete().eq('id', id);
-        await Promise.race([p, new Promise((res) => setTimeout(res, 200))]);
+        Promise.resolve(p).then(({error}: any) => { if(error) console.warn('[Supabase op failed]', error.message); });
       } catch (e) {}
 
       return true;
