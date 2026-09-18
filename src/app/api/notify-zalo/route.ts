@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       ...(body.enableTelegramNotify !== undefined ? { enableTelegramNotify: body.enableTelegramNotify } : {}),
     };
 
-    const result = await sendOrderNotification(latest as any, settings, 'NEW_ORDER');
+    const result = await sendOrderNotification(latest as any, settings, 'NEW_ORDER', undefined, { forceSend: true });
     
     if (result.telegram && result.telegram.success === false) {
       return NextResponse.json({ 

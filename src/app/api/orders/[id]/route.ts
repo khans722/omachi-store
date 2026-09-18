@@ -47,7 +47,12 @@ export async function PATCH(
     }
 
     // Send notification update in background
-    const trigger = body.paymentStatus === 'PAID' ? 'PAYMENT_SUCCESS' : 'CONFIRMED';
+    let trigger: 'NEW_ORDER' | 'PAYMENT_SUCCESS' | 'CONFIRMED' | 'SHIPPING' | 'CANCELLED' = 'CONFIRMED';
+    if (body.orderStatus === 'CANCELLED' || updated.orderStatus === 'CANCELLED') {
+      trigger = 'CANCELLED';
+    } else if (body.paymentStatus === 'PAID') {
+      trigger = 'PAYMENT_SUCCESS';
+    }
     const settings = await db.settings.get();
     sendOrderNotification(updated, settings, trigger).catch((err) => {
       console.error('[ASYNC ORDER UPDATE NOTIFICATION ERROR]:', err);
