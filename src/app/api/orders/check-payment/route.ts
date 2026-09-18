@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       else if (requestOrigin && !requestOrigin.includes('localhost')) baseUrl = requestOrigin;
       else if (envUrl && !envUrl.includes('localhost')) baseUrl = envUrl;
 
-      const confirmPayUrl = `${baseUrl}/api/orders/confirm-payment?code=${order.code}&token=${confirmToken}`;
+      const adminUrl = `${baseUrl}/admin`;
       const amount = Number(order.finalTotalAmount || order.totalAmount || 0);
 
       const alertHtml = `
@@ -66,9 +66,9 @@ export async function POST(req: NextRequest) {
 💳 <b>Phương thức:</b> Chuyển khoản VietQR (${settings.bankId || 'VietinBank'} - ${settings.bankAccount || ''})
 📝 <b>Nội dung chuyển khoản:</b> <code>SEVQR DH ${order.code}</code>
 
-💡 <i>Khách hàng vừa bấm nút "Tôi đã chuyển khoản xong" trên website. Vui lòng kiểm tra app ngân hàng và bấm nút duyệt dưới đây:</i>
+💡 <i>Hệ thống SePay đang tự động đối soát số dư. Để xác nhận thủ công, vui lòng đăng nhập Trang Quản Trị:</i>
 ----------------------------------------
-👉 <a href="${confirmPayUrl}"><b>BẤM VÀO ĐÂY ĐỂ XÁC NHẬN ĐÃ NHẬN TIỀN</b></a>
+👉 <a href="${adminUrl}"><b>MỞ TRANG QUẢN TRỊ SHOP (ADMIN)</b></a>
 `;
 
       try {
@@ -83,8 +83,8 @@ export async function POST(req: NextRequest) {
               inline_keyboard: [
                 [
                   {
-                    text: `✅ DUYỆT ĐÃ NHẬN TIỀN NGAY (+${formatVND(amount)})`,
-                    url: confirmPayUrl,
+                    text: `🔐 Mở Trang Quản Trị Shop`,
+                    url: adminUrl,
                   },
                 ],
                 [

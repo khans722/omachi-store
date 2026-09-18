@@ -141,21 +141,8 @@ ${shopNoteText}
       const cleanDigits = (order.customer?.phone || '').replace(/[^0-9]/g, '');
       const zaloChatUrl = `https://zalo.me/${cleanDigits}`;
 
-      const confirmToken = getPaymentConfirmToken(order.code, settings.telegramBotToken || '');
-      const confirmPayUrl = `${baseUrl}/api/orders/confirm-payment?code=${order.code}&token=${confirmToken}`;
-
-      // Nút bấm tương tác trực tiếp dưới tin nhắn Telegram
+      // Nút bấm tương tác trực tiếp dưới tin nhắn Telegram (Không gắn nút duyệt tiền trực tiếp để bảo mật)
       const inlineKeyboard: Array<Array<{ text: string; url: string }>> = [];
-
-      // Nút 1 chạm duyệt đã nhận tiền cho đơn Chuyển khoản VietQR chưa thanh toán
-      if (isPrepaid && !isPaid && !isCancelled) {
-        inlineKeyboard.push([
-          {
-            text: `✅ XÁC NHẬN ĐÃ NHẬN TIỀN (+${formatVND(order.finalTotalAmount || order.totalAmount)})`,
-            url: confirmPayUrl,
-          },
-        ]);
-      }
 
       // Nút xem chi tiết đơn hàng
       inlineKeyboard.push([
@@ -168,6 +155,11 @@ ${shopNoteText}
           { text: `💬 Mở Chat Zalo Với Khách (${cleanDigits})`, url: zaloChatUrl },
         ]);
       }
+
+      // Nút mở trang Admin (cần đăng nhập bảo mật)
+      inlineKeyboard.push([
+        { text: `🔐 Mở Trang Quản Trị Shop`, url: adminUrl },
+      ]);
 
       const res = await fetch(`https://api.telegram.org/bot${settings.telegramBotToken.trim()}/sendMessage`, {
         method: 'POST',
