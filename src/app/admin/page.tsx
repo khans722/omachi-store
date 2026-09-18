@@ -1950,7 +1950,7 @@ export default function AdminPage() {
                               className="w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition"
                             >
                               <MessageCircle className="w-4 h-4" />
-                              <span>Nhắn Zalo Khách (Báo cước/Tư vấn)</span>
+                              <span>Nhắn Zalo</span>
                             </a>
                           </div>
 
