@@ -2092,13 +2092,7 @@ export default function AdminPage() {
                     <div className="pt-3 border-t border-pink-50 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
                       {/* TRƯỜNG HỢP 1: ĐƠN CHUYỂN KHOẢN CHƯA THANH TOÁN (Chỉ có thể chờ tiền, tuyệt đối không được xác nhận đơn) */}
                       {(order.paymentMethod === 'BANK' || order.paymentMethod === 'MOMO') && order.paymentStatus !== 'PAID' && order.orderStatus !== 'CANCELLED' ? (
-                        <>
-                          <div className="text-xs text-amber-800 font-bold flex items-center gap-1.5 bg-amber-50 px-2.5 py-1 rounded-xl border border-amber-200">
-                            <span>⏳</span>
-                            <span>Đang chờ khách quét mã VietQR chuyển khoản (SePay tự động khớp khi tiền về)</span>
-                          </div>
-
-                          <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-2 w-full">
                             {/* Nút duyệt tiền tay: Bố trí nút nhỏ, hạn chế ấn nhầm, chỉ dùng trường hợp đặc biệt khách gửi bill Zalo */}
                             <button
                               type="button"
@@ -2126,8 +2120,7 @@ export default function AdminPage() {
                               Hủy đơn
                             </button>
                           </div>
-                        </>
-                      ) : (
+                        ) : (
                         /* TRƯỜNG HỢP 2: ĐƠN ĐÃ THANH TOÁN HOẶC ĐƠN COD (Đủ điều kiện xử lý) */
                         <>
                           <div className="text-xs">
