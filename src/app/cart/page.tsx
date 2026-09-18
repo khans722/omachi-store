@@ -203,11 +203,11 @@ export default function CartPage() {
       {items.length === 0 ? (
         /* Empty State */
         <div className="bg-white rounded-2xl border border-stone-200/80 p-8 sm:p-14 text-center space-y-4 shadow-xs">
-          <div className="w-20 h-20 mx-auto rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center p-2.5 shadow-2xs">
+          <div className="w-32 h-32 sm:w-44 sm:h-44 mx-auto flex items-center justify-center select-none">
             <img
-              src="/images/omachi_bear_hd.png"
+              src="/images/omachi_hamster_clean.png"
               alt="Giỏ hàng trống"
-              className="w-full h-full object-contain drop-shadow-xs"
+              className="w-full h-full object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300 pointer-events-none"
             />
           </div>
           <div className="space-y-1 max-w-sm mx-auto">

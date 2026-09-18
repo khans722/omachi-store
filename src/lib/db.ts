@@ -1680,6 +1680,10 @@ declare global {
 }
 
 function readDb(): DetailedDatabaseSchema {
+  // Ưu tiên trả về tức thì từ bộ nhớ RAM (0ms) thay vì đọc ổ đĩa liên tục
+  if (globalThis.__omachi_db) {
+    return globalThis.__omachi_db;
+  }
   try {
     const targetFile = WRITABLE_DB_FILE;
     if (!fs.existsSync(targetFile)) {
@@ -1956,9 +1960,22 @@ function mapSettingsFromSupabase(row: any, fallback: ShopSettings): ShopSettings
 }
 
 let serverOrdersCache: { data: Order[]; expiresAt: number } | null = null;
+let serverProductsCache: { data: Product[]; expiresAt: number } | null = null;
+let serverCategoriesCache: { data: Category[]; expiresAt: number } | null = null;
+let serverSettingsCache: { data: ShopSettings; expiresAt: number } | null = null;
+let serverFeedbacksCache: { data: CustomerFeedback[]; expiresAt: number } | null = null;
 
-export function invalidateOrdersCache() {
+export function invalidateOrdersCache() { serverOrdersCache = null; }
+export function invalidateProductsCache() { serverProductsCache = null; }
+export function invalidateCategoriesCache() { serverCategoriesCache = null; }
+export function invalidateSettingsCache() { serverSettingsCache = null; }
+export function invalidateFeedbacksCache() { serverFeedbacksCache = null; }
+export function invalidateAllCaches() {
   serverOrdersCache = null;
+  serverProductsCache = null;
+  serverCategoriesCache = null;
+  serverSettingsCache = null;
+  serverFeedbacksCache = null;
 }
 
 export const db = {
@@ -1971,26 +1988,53 @@ export const db = {
   // CATEGORIES TABLE
   categories: {
     async getAll(): Promise<Category[]> {
-      try {
-        const { data, error } = await supabase
-          .from('categories')
-          .select('*')
-          .eq('is_active', true)
-          .order('display_order', { ascending: true });
-        if (!error && Array.isArray(data) && data.length > 0) {
-          const list = data.map(mapCategoryFromSupabase);
-          const local = readDb();
-          local.categories = list;
-          return list;
-        }
-      } catch (err) {
-        console.warn('[Supabase categories.getAll fallback to local]:', err);
+      if (serverCategoriesCache && Date.now() < serverCategoriesCache.expiresAt) {
+        return serverCategoriesCache.data;
       }
-      const dbData = readDb();
-      return (dbData.categories || []).filter((c) => c.isActive !== false).sort((a, b) => (a.displayOrder || 99) - (b.displayOrder || 99));
+      const local = (readDb().categories || []).filter((c) => c.isActive !== false).sort((a, b) => (a.displayOrder || 99) - (b.displayOrder || 99));
+
+      const fetchSupabase = async (): Promise<Category[] | null> => {
+        try {
+          const { data, error } = await supabase
+            .from('categories')
+            .select('*')
+            .eq('is_active', true)
+            .order('display_order', { ascending: true });
+          if (!error && Array.isArray(data) && data.length > 0) {
+            return data.map(mapCategoryFromSupabase);
+          }
+        } catch (err) {
+          console.warn('[Supabase categories.getAll fallback to local]:', err);
+        }
+        return null;
+      };
+
+      let freshList: Category[] | null = null;
+      if (local.length > 0) {
+        freshList = await Promise.race([
+          fetchSupabase(),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 300))
+        ]);
+      } else {
+        freshList = await fetchSupabase();
+      }
+
+      if (freshList && freshList.length > 0) {
+        serverCategoriesCache = { data: freshList, expiresAt: Date.now() + 30000 };
+        const dbData = readDb();
+        dbData.categories = freshList;
+        return freshList;
+      }
+
+      serverCategoriesCache = { data: local, expiresAt: Date.now() + 10000 };
+      return local;
     },
 
     async getById(id: string): Promise<Category | undefined> {
+      // 1. Kiểm tra RAM cục bộ trước (0ms)
+      const local = (readDb().categories || []).find((c) => c.id === id || c.slug === id);
+      if (local) return local;
+
       try {
         const { data, error } = await supabase
           .from('categories')
@@ -2003,8 +2047,7 @@ export const db = {
       } catch (err) {
         console.warn('[Supabase categories.getById fallback]:', err);
       }
-      const dbData = readDb();
-      return (dbData.categories || []).find((c) => c.id === id || c.slug === id);
+      return undefined;
     },
 
     async create(data: Omit<Category, 'id' | 'createdAt' | 'isActive'> & { isActive?: boolean }): Promise<Category> {
@@ -2025,9 +2068,10 @@ export const db = {
       };
       dbData.categories.push(newCategory);
       writeDb(dbData);
+      invalidateCategoriesCache();
 
       try {
-        await supabase.from('categories').upsert({
+        const upsertP = supabase.from('categories').upsert({
           id: newCategory.id,
           code: newCategory.code,
           name: newCategory.name,
@@ -2038,6 +2082,7 @@ export const db = {
           is_active: newCategory.isActive,
           created_at: newCategory.createdAt,
         });
+        await Promise.race([upsertP, new Promise((res) => setTimeout(res, 200))]);
       } catch (err) {
         console.warn('[Supabase categories.create error]:', err);
       }
@@ -2061,10 +2106,12 @@ export const db = {
         });
       }
       writeDb(dbData);
+      invalidateCategoriesCache();
+      invalidateProductsCache();
 
       try {
         const item = dbData.categories[index];
-        await supabase.from('categories').upsert({
+        const upsertP = supabase.from('categories').upsert({
           id: item.id,
           code: item.code,
           name: item.name,
@@ -2073,8 +2120,8 @@ export const db = {
           description: item.description,
           display_order: item.displayOrder,
           is_active: item.isActive,
-          created_at: item.createdAt,
         });
+        await Promise.race([upsertP, new Promise((res) => setTimeout(res, 200))]);
       } catch (err) {
         console.warn('[Supabase categories.update error]:', err);
       }
@@ -2088,9 +2135,11 @@ export const db = {
       if (index === -1) return false;
       dbData.categories[index].isActive = false;
       writeDb(dbData);
+      invalidateCategoriesCache();
 
       try {
-        await supabase.from('categories').update({ is_active: false }).eq('id', id);
+        const delP = supabase.from('categories').update({ is_active: false }).eq('id', id);
+        await Promise.race([delP, new Promise((res) => setTimeout(res, 200))]);
       } catch (err) {
         console.warn('[Supabase categories.delete error]:', err);
       }
@@ -2101,25 +2150,54 @@ export const db = {
   // PRODUCTS TABLE
   products: {
     async getAll(): Promise<Product[]> {
-      try {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false });
-        if (!error && Array.isArray(data) && data.length > 0) {
-          const list = data.map(mapProductFromSupabase);
-          const local = readDb();
-          local.products = list;
-          return list;
-        }
-      } catch (err) {
-        console.warn('[Supabase products.getAll fallback]:', err);
+      if (serverProductsCache && Date.now() < serverProductsCache.expiresAt) {
+        return serverProductsCache.data;
       }
-      return readDb().products.filter((p) => p.isActive);
+      const local = (readDb().products || []).filter((p) => p.isActive);
+
+      const fetchSupabase = async (): Promise<Product[] | null> => {
+        try {
+          const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .eq('is_active', true)
+            .order('created_at', { ascending: false });
+          if (!error && Array.isArray(data) && data.length > 0) {
+            return data.map(mapProductFromSupabase);
+          }
+        } catch (err) {
+          console.warn('[Supabase products.getAll fallback]:', err);
+        }
+        return null;
+      };
+
+      let freshList: Product[] | null = null;
+      if (local.length > 0) {
+        freshList = await Promise.race([
+          fetchSupabase(),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 300))
+        ]);
+      } else {
+        freshList = await fetchSupabase();
+      }
+
+      if (freshList && freshList.length > 0) {
+        serverProductsCache = { data: freshList, expiresAt: Date.now() + 30000 };
+        const dbData = readDb();
+        dbData.products = freshList;
+        return freshList;
+      }
+
+      serverProductsCache = { data: local, expiresAt: Date.now() + 10000 };
+      return local;
     },
 
     async getById(idOrSlug: string): Promise<Product | undefined> {
+      // 1. Kiểm tra RAM cục bộ trước (0ms)
+      const local = (readDb().products || []).find((p) => (p.id === idOrSlug || p.slug === idOrSlug) && p.isActive);
+      if (local) return local;
+
+      // 2. Tra cứu Supabase nếu chưa có
       try {
         const { data, error } = await supabase
           .from('products')
@@ -2133,7 +2211,7 @@ export const db = {
       } catch (err) {
         console.warn('[Supabase products.getById fallback]:', err);
       }
-      return readDb().products.find((p) => (p.id === idOrSlug || p.slug === idOrSlug) && p.isActive);
+      return undefined;
     },
 
     async create(data: Omit<Product, 'id' | 'sku' | 'slug' | 'createdAt' | 'updatedAt' | 'isActive'>): Promise<Product> {
@@ -2150,6 +2228,7 @@ export const db = {
       };
       dbData.products.unshift(newProduct);
       writeDb(dbData);
+      invalidateProductsCache();
 
       try {
         const weightVal = Number(newProduct.weight) > 0 ? Number(newProduct.weight) : 50;
@@ -2186,11 +2265,14 @@ export const db = {
           updated_at: newProduct.updatedAt,
         };
 
-        const { error: err1 } = await supabase.from('products').upsert({ ...baseRow, weight: weightVal });
-        if (err1) {
-          const { error: err2 } = await supabase.from('products').upsert(baseRow);
-          if (err2) console.warn('[Supabase products.create error]:', err2.message);
-        }
+        const upsertP = (async () => {
+          const { error: err1 } = await supabase.from('products').upsert({ ...baseRow, weight: weightVal });
+          if (err1) {
+            await supabase.from('products').upsert(baseRow);
+          }
+        })();
+
+        await Promise.race([upsertP, new Promise((res) => setTimeout(res, 200))]);
       } catch (err) {
         console.warn('[Supabase products.create exception]:', err);
       }
@@ -2207,6 +2289,7 @@ export const db = {
         updatedAt: new Date().toISOString(),
       };
       writeDb(dbData);
+      invalidateProductsCache();
 
       try {
         const p = dbData.products[index];
@@ -2244,11 +2327,14 @@ export const db = {
           updated_at: p.updatedAt,
         };
 
-        const { error: err1 } = await supabase.from('products').upsert({ ...baseRow, weight: weightVal });
-        if (err1) {
-          const { error: err2 } = await supabase.from('products').upsert(baseRow);
-          if (err2) console.warn('[Supabase products.update error]:', err2.message);
-        }
+        const upsertP = (async () => {
+          const { error: err1 } = await supabase.from('products').upsert({ ...baseRow, weight: weightVal });
+          if (err1) {
+            await supabase.from('products').upsert(baseRow);
+          }
+        })();
+
+        await Promise.race([upsertP, new Promise((res) => setTimeout(res, 200))]);
       } catch (err) {
         console.warn('[Supabase products.update exception]:', err);
       }
@@ -2261,9 +2347,11 @@ export const db = {
       if (index === -1) return false;
       dbData.products.splice(index, 1);
       writeDb(dbData);
+      invalidateProductsCache();
 
       try {
-        await supabase.from('products').update({ is_active: false }).eq('id', id);
+        const delP = supabase.from('products').update({ is_active: false }).eq('id', id);
+        await Promise.race([delP, new Promise((res) => setTimeout(res, 200))]);
       } catch (err) {
         console.warn('[Supabase products.delete error]:', err);
       }
@@ -2392,14 +2480,22 @@ export const db = {
       const cleanPhone = phone.replace(/[^0-9]/g, '');
       let customer: Customer | undefined;
 
-      try {
-        const { data, error } = await supabase.from('customers').select('*').eq('phone', cleanPhone).maybeSingle();
-        if (!error && data) customer = mapCustomerFromSupabase(data);
-      } catch (e) {}
+      // 1. Kiểm tra RAM cục bộ trước (0ms)
+      const dbData = readDb();
+      customer = (dbData.customers || []).find((c) => (c.phone || '').replace(/[^0-9]/g, '') === cleanPhone);
 
+      // 2. Nếu chưa có mới tra cứu Supabase
       if (!customer) {
-        const dbData = readDb();
-        customer = (dbData.customers || []).find((c) => c.phone.replace(/[^0-9]/g, '') === cleanPhone);
+        try {
+          const { data, error } = await supabase.from('customers').select('*').eq('phone', cleanPhone).maybeSingle();
+          if (!error && data) {
+            customer = mapCustomerFromSupabase(data);
+            if (customer) {
+              if (!dbData.customers) dbData.customers = [];
+              dbData.customers.unshift(customer);
+            }
+          }
+        } catch (e) {}
       }
 
       if (!customer) {
@@ -3404,23 +3500,47 @@ export const db = {
   // SETTINGS TABLE
   settings: {
     async get(): Promise<ShopSettings> {
-      try {
-        const { data, error } = await supabase
-          .from('settings')
-          .select('*')
-          .eq('id', 'default')
-          .maybeSingle();
-        if (!error && data) {
-          const fallback = readDb().settings;
-          const merged = mapSettingsFromSupabase(data, fallback);
-          const local = readDb();
-          local.settings = merged;
-          return merged;
-        }
-      } catch (err) {
-        console.warn('[Supabase settings.get fallback]:', err);
+      if (serverSettingsCache && Date.now() < serverSettingsCache.expiresAt) {
+        return serverSettingsCache.data;
       }
-      return readDb().settings;
+      const local = readDb().settings;
+
+      const fetchSupabase = async (): Promise<ShopSettings | null> => {
+        try {
+          const { data, error } = await supabase
+            .from('settings')
+            .select('*')
+            .eq('id', 'default')
+            .maybeSingle();
+          if (!error && data) {
+            const fallback = readDb().settings;
+            return mapSettingsFromSupabase(data, fallback);
+          }
+        } catch (err) {
+          console.warn('[Supabase settings.get fallback]:', err);
+        }
+        return null;
+      };
+
+      let fresh: ShopSettings | null = null;
+      if (local) {
+        fresh = await Promise.race([
+          fetchSupabase(),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 300))
+        ]);
+      } else {
+        fresh = await fetchSupabase();
+      }
+
+      if (fresh) {
+        serverSettingsCache = { data: fresh, expiresAt: Date.now() + 60000 };
+        const dbData = readDb();
+        dbData.settings = fresh;
+        return fresh;
+      }
+
+      serverSettingsCache = { data: local, expiresAt: Date.now() + 15000 };
+      return local;
     },
 
     async update(newSettings: Partial<ShopSettings>): Promise<ShopSettings> {
@@ -3430,10 +3550,11 @@ export const db = {
         ...newSettings,
       };
       writeDb(dbData);
+      invalidateSettingsCache();
 
       try {
         const s = dbData.settings;
-        await supabase.from('settings').upsert({
+        const upsertP = supabase.from('settings').upsert({
           id: 'default',
           shop_name: s.shopName,
           brand_title: s.brandTitle,
@@ -3460,6 +3581,7 @@ export const db = {
           raw_data: s,
           updated_at: new Date().toISOString(),
         });
+        await Promise.race([upsertP, new Promise((res) => setTimeout(res, 200))]);
       } catch (err) {
         console.warn('[Supabase settings.update error]:', err);
       }
@@ -3471,20 +3593,46 @@ export const db = {
   // FEEDBACKS TABLE
   feedbacks: {
     async getAll(): Promise<CustomerFeedback[]> {
-      try {
-        const { data, error } = await supabase
-          .from('feedbacks')
-          .select('*')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false });
-        if (!error && Array.isArray(data)) {
-          return data.map(mapFeedbackFromSupabase);
-        }
-      } catch (err) {
-        console.warn('[Supabase feedbacks.getAll fallback]:', err);
+      if (serverFeedbacksCache && Date.now() < serverFeedbacksCache.expiresAt) {
+        return serverFeedbacksCache.data;
       }
-      const dbData = readDb();
-      return (dbData.feedbacks || []).filter((f) => f.isActive);
+      const local = (readDb().feedbacks || []).filter((f) => f.isActive);
+
+      const fetchSupabase = async (): Promise<CustomerFeedback[] | null> => {
+        try {
+          const { data, error } = await supabase
+            .from('feedbacks')
+            .select('*')
+            .eq('is_active', true)
+            .order('created_at', { ascending: false });
+          if (!error && Array.isArray(data)) {
+            return data.map(mapFeedbackFromSupabase);
+          }
+        } catch (err) {
+          console.warn('[Supabase feedbacks.getAll fallback]:', err);
+        }
+        return null;
+      };
+
+      let fresh: CustomerFeedback[] | null = null;
+      if (local.length > 0) {
+        fresh = await Promise.race([
+          fetchSupabase(),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 300))
+        ]);
+      } else {
+        fresh = await fetchSupabase();
+      }
+
+      if (fresh && fresh.length > 0) {
+        serverFeedbacksCache = { data: fresh, expiresAt: Date.now() + 60000 };
+        const dbData = readDb();
+        dbData.feedbacks = fresh;
+        return fresh;
+      }
+
+      serverFeedbacksCache = { data: local, expiresAt: Date.now() + 15000 };
+      return local;
     },
 
     async create(data: Omit<CustomerFeedback, 'id' | 'createdAt' | 'isActive'>): Promise<CustomerFeedback> {
@@ -3499,9 +3647,10 @@ export const db = {
       };
       dbData.feedbacks.unshift(newFb);
       writeDb(dbData);
+      invalidateFeedbacksCache();
 
       try {
-        await supabase.from('feedbacks').upsert({
+        const p = supabase.from('feedbacks').upsert({
           id: newFb.id,
           customer_name: newFb.customerName,
           customer_location: newFb.customerLocation || '',
@@ -3512,6 +3661,7 @@ export const db = {
           is_active: newFb.isActive,
           created_at: newFb.createdAt,
         });
+        await Promise.race([p, new Promise((res) => setTimeout(res, 200))]);
       } catch (e) {}
 
       return newFb;
@@ -3527,10 +3677,11 @@ export const db = {
         ...data,
       };
       writeDb(dbData);
+      invalidateFeedbacksCache();
 
       try {
         const fb = dbData.feedbacks[index];
-        await supabase.from('feedbacks').upsert({
+        const p = supabase.from('feedbacks').upsert({
           id: fb.id,
           customer_name: fb.customerName,
           customer_location: fb.customerLocation || '',
@@ -3540,6 +3691,7 @@ export const db = {
           avatar_text: fb.avatarText,
           is_active: fb.isActive,
         });
+        await Promise.race([p, new Promise((res) => setTimeout(res, 200))]);
       } catch (e) {}
 
       return dbData.feedbacks[index];
@@ -3552,12 +3704,15 @@ export const db = {
       if (index === -1) return false;
       dbData.feedbacks.splice(index, 1);
       writeDb(dbData);
+      invalidateFeedbacksCache();
 
       try {
-        await supabase.from('feedbacks').delete().eq('id', id);
+        const p = supabase.from('feedbacks').delete().eq('id', id);
+        await Promise.race([p, new Promise((res) => setTimeout(res, 200))]);
       } catch (e) {}
 
       return true;
     }
   }
 };
+

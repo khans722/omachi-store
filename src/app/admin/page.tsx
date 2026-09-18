@@ -124,10 +124,42 @@ export default function AdminPage() {
     }
     return [];
   });
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [feedbacks, setFeedbacks] = useState<CustomerFeedback[]>([]);
-  const [settings, setSettings] = useState<ShopSettings>(DEFAULT_SETTINGS);
+  const [products, setProducts] = useState<Product[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('omachi_admin_products');
+        if (cached) return JSON.parse(cached);
+      } catch (e) {}
+    }
+    return [];
+  });
+  const [categories, setCategories] = useState<Category[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('omachi_admin_categories');
+        if (cached) return JSON.parse(cached);
+      } catch (e) {}
+    }
+    return [];
+  });
+  const [feedbacks, setFeedbacks] = useState<CustomerFeedback[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('omachi_admin_feedbacks');
+        if (cached) return JSON.parse(cached);
+      } catch (e) {}
+    }
+    return [];
+  });
+  const [settings, setSettings] = useState<ShopSettings>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('omachi_shop_settings');
+        if (cached) return { ...DEFAULT_SETTINGS, ...JSON.parse(cached) };
+      } catch (e) {}
+    }
+    return DEFAULT_SETTINGS;
+  });
   const [loading, setLoading] = useState(true);
   const [isFetchingOrders, setIsFetchingOrders] = useState(false);
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('ALL');
@@ -915,10 +947,18 @@ export default function AdminPage() {
 
   const fetchProducts = async () => {
     try {
+      const cached = localStorage.getItem('omachi_admin_products');
+      if (cached) setProducts(JSON.parse(cached));
+    } catch (e) {}
+
+    try {
       const res = await fetch('/api/products');
       const data = await res.json();
-      if (data.success) {
+      if (data.success && Array.isArray(data.data)) {
         setProducts(data.data);
+        try {
+          localStorage.setItem('omachi_admin_products', JSON.stringify(data.data));
+        } catch (e) {}
       }
     } catch (err) {
       console.error(err);
@@ -927,10 +967,18 @@ export default function AdminPage() {
 
   const fetchFeedbacks = async () => {
     try {
+      const cached = localStorage.getItem('omachi_admin_feedbacks');
+      if (cached) setFeedbacks(JSON.parse(cached));
+    } catch (e) {}
+
+    try {
       const res = await fetch('/api/feedbacks');
       const data = await res.json();
-      if (data.success) {
+      if (data.success && Array.isArray(data.data)) {
         setFeedbacks(data.data);
+        try {
+          localStorage.setItem('omachi_admin_feedbacks', JSON.stringify(data.data));
+        } catch (e) {}
       }
     } catch (err) {
       console.error(err);
@@ -939,10 +987,18 @@ export default function AdminPage() {
 
   const fetchCategories = async () => {
     try {
+      const cached = localStorage.getItem('omachi_admin_categories');
+      if (cached) setCategories(JSON.parse(cached));
+    } catch (e) {}
+
+    try {
       const res = await fetch('/api/categories');
       const data = await res.json();
-      if (data.success && data.data) {
+      if (data.success && Array.isArray(data.data)) {
         setCategories(data.data);
+        try {
+          localStorage.setItem('omachi_admin_categories', JSON.stringify(data.data));
+        } catch (e) {}
       }
     } catch (err) {
       console.error(err);
@@ -1001,10 +1057,19 @@ export default function AdminPage() {
 
       if (data.success) {
         showAdminToast(isEdit ? 'Cập nhật danh mục thành công!' : 'Tạo danh mục mới thành công! ✨');
-        await fetchCategories();
         initialCategorySnapshotRef.current = '';
         setIsCategoryModalOpen(false);
         setEditingCategory(null);
+
+        if (data.data) {
+          setCategories((prev) => {
+            const idx = prev.findIndex((c) => c.id === data.data.id);
+            const next = idx !== -1 ? prev.map((c, i) => i === idx ? data.data : c) : [...prev, data.data];
+            try { localStorage.setItem('omachi_admin_categories', JSON.stringify(next)); } catch (e) {}
+            return next;
+          });
+        }
+        fetchCategories().catch(() => {});
 
         // If user is currently editing a product, auto-select this category!
         if (editingProduct && data.data) {
@@ -1031,7 +1096,11 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.success) {
         showAdminToast(`Đã xóa danh mục "${name}" thành công!`);
-        await fetchCategories();
+        setCategories((prev) => {
+          const next = prev.filter((c) => c.id !== id);
+          try { localStorage.setItem('omachi_admin_categories', JSON.stringify(next)); } catch (e) {}
+          return next;
+        });
       } else {
         showAdminToast(data.error || 'Lỗi khi xóa danh mục', true);
       }
@@ -1127,7 +1196,16 @@ export default function AdminPage() {
         initialProductSnapshotRef.current = '';
         setIsProductModalOpen(false);
         setEditingProduct(null);
-        fetchProducts();
+
+        if (data.data) {
+          setProducts((prev) => {
+            const idx = prev.findIndex((p) => p.id === data.data.id);
+            const next = idx !== -1 ? prev.map((p, i) => i === idx ? data.data : p) : [data.data, ...prev];
+            try { localStorage.setItem('omachi_admin_products', JSON.stringify(next)); } catch (e) {}
+            return next;
+          });
+        }
+        fetchProducts().catch(() => {});
       } else {
         showAdminToast('❌ Không thể lưu sản phẩm: ' + (data.message || 'Lỗi không xác định từ máy chủ'), true);
       }
@@ -1145,7 +1223,11 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.success) {
         showAdminToast(`Đã xóa mẫu charm "${name}"!`);
-        fetchProducts();
+        setProducts((prev) => {
+          const next = prev.filter((p) => p.id !== id);
+          try { localStorage.setItem('omachi_admin_products', JSON.stringify(next)); } catch (e) {}
+          return next;
+        });
       } else {
         showAdminToast(data.message || 'Không thể xóa sản phẩm', true);
       }
@@ -1195,7 +1277,16 @@ export default function AdminPage() {
         initialFeedbackSnapshotRef.current = '';
         setIsFeedbackModalOpen(false);
         setEditingFeedback(null);
-        fetchFeedbacks();
+
+        if (data.data) {
+          setFeedbacks((prev) => {
+            const idx = prev.findIndex((f) => f.id === data.data.id);
+            const next = idx !== -1 ? prev.map((f, i) => i === idx ? data.data : f) : [data.data, ...prev];
+            try { localStorage.setItem('omachi_admin_feedbacks', JSON.stringify(next)); } catch (e) {}
+            return next;
+          });
+        }
+        fetchFeedbacks().catch(() => {});
       }
     } catch (err) {
       console.error(err);
@@ -1208,7 +1299,11 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.success) {
         showAdminToast(`Đã xóa feedback của "${name}"!`);
-        fetchFeedbacks();
+        setFeedbacks((prev) => {
+          const next = prev.filter((f) => f.id !== id);
+          try { localStorage.setItem('omachi_admin_feedbacks', JSON.stringify(next)); } catch (e) {}
+          return next;
+        });
       } else {
         showAdminToast(data.message || 'Không thể xóa đánh giá', true);
       }

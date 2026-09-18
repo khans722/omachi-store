@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   const products = await db.products.getAll();
-  return NextResponse.json({ success: true, data: products });
+  return NextResponse.json(
+    { success: true, data: products },
+    {
+      headers: {
+        'Cache-Control': 'public, s-maxage=5, stale-while-revalidate=30',
+      },
+    }
+  );
 }
 
 export async function POST(req: NextRequest) {

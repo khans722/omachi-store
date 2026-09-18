@@ -188,8 +188,12 @@ export default function CartDrawer() {
           <div className="flex-1 overflow-y-auto p-3.5 sm:p-4 space-y-3.5">
             {items.length === 0 ? (
               <div className="py-16 text-center space-y-4">
-                <div className={`w-20 h-20 mx-auto rounded-full ${curr.emptyIconBg} flex items-center justify-center text-3xl shadow-2xs`}>
-                  🎀
+                <div className="w-28 h-28 mx-auto flex items-center justify-center select-none">
+                  <img
+                    src="/images/omachi_hamster_clean.png"
+                    alt="Giỏ hàng trống"
+                    className="w-full h-full object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300 pointer-events-none"
+                  />
                 </div>
                 <h4 className="text-base font-bold text-stone-700">Giỏ hàng của bạn đang trống</h4>
                 <p className="text-xs text-stone-400 max-w-xs mx-auto">

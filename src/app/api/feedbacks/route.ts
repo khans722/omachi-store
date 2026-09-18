@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   const feedbacks = await db.feedbacks.getAll();
-  return NextResponse.json({ success: true, data: feedbacks });
+  return NextResponse.json(
+    { success: true, data: feedbacks },
+    {
+      headers: {
+        'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=60',
+      },
+    }
+  );
 }
 
 export async function POST(req: NextRequest) {

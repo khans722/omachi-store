@@ -21,6 +21,15 @@ export default function HomePage() {
   const [feedbacks, setFeedbacks] = useState<CustomerFeedback[]>([]);
 
   useEffect(() => {
+    try {
+      const p = localStorage.getItem('omachi_products_cache');
+      if (p) setProducts(JSON.parse(p));
+      const s = localStorage.getItem('omachi_shop_settings');
+      if (s) setSettings(JSON.parse(s));
+      const c = localStorage.getItem('omachi_categories_cache');
+      if (c) setCategories(JSON.parse(c));
+    } catch (e) {}
+
     const loadData = async () => {
       try {
         const [prodRes, setRes, catRes, fbRes] = await Promise.all([
@@ -32,12 +41,15 @@ export default function HomePage() {
 
         if (prodRes && prodRes.success && prodRes.data && prodRes.data.length > 0) {
           setProducts(prodRes.data);
+          try { localStorage.setItem('omachi_products_cache', JSON.stringify(prodRes.data)); } catch (e) {}
         }
         if (setRes && setRes.success && setRes.data) {
           setSettings(setRes.data);
+          try { localStorage.setItem('omachi_shop_settings', JSON.stringify(setRes.data)); } catch (e) {}
         }
         if (catRes && catRes.success && catRes.data) {
           setCategories(catRes.data);
+          try { localStorage.setItem('omachi_categories_cache', JSON.stringify(catRes.data)); } catch (e) {}
         }
         if (fbRes && fbRes.success && Array.isArray(fbRes.data)) {
           setFeedbacks(fbRes.data);
