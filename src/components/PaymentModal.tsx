@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Order, ShopSettings } from '@/types';
 import { formatVND } from '@/lib/utils';
-import { X, MessageCircle, Download, Loader2, Copy, Check } from 'lucide-react';
+import { X, MessageCircle, Download, Loader2, Copy, Check, Zap } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface PaymentModalProps {
@@ -235,6 +235,32 @@ export default function PaymentModal({
                     <Download className="w-3.5 h-3.5" />
                     <span>{isDownloading ? 'Đang tải...' : 'Tải mã QR'}</span>
                   </button>
+
+                  {/* Nút kiểm tra thanh toán ngay */}
+                  <button
+                    type="button"
+                    onClick={handleCheckPaymentNow}
+                    disabled={isCheckingPayment}
+                    className="w-full sm:max-w-xs py-2 px-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs rounded-xl shadow-sm hover:shadow-md flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer disabled:opacity-60"
+                  >
+                    {isCheckingPayment ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-white shrink-0" />
+                        <span>Đang kiểm tra giao dịch...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />
+                        <span>Tôi đã chuyển khoản xong • Kiểm tra ngay</span>
+                      </>
+                    )}
+                  </button>
+
+                  {checkPaymentNotice && (
+                    <div className="w-full sm:max-w-xs p-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs text-center font-medium animate-fade-in shadow-2xs">
+                      {checkPaymentNotice}
+                    </div>
+                  )}
 
                   {/* Bảng thông tin chuyển khoản: Gọn gàng 1 khung duy nhất, nút sao chép dạng pill tinh gọn */}
                   <div className="w-full bg-stone-50/90 border border-stone-200 rounded-2xl p-3 sm:p-3.5 space-y-2.5 text-xs text-left">

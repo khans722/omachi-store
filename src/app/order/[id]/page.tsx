@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Order, OrderStatus, ShopSettings } from '@/types';
 import { formatVND } from '@/lib/utils';
-import { CheckCircle2, Clock, PackageCheck, Truck, Sparkles, ArrowLeft, Phone, MessageCircle, Download, Copy, Check, Loader2 } from 'lucide-react';
+import { CheckCircle2, Clock, PackageCheck, Truck, Sparkles, ArrowLeft, Phone, MessageCircle, Download, Copy, Check, Loader2, Zap } from 'lucide-react';
 import Link from 'next/link';
 import confetti from 'canvas-confetti';
 
@@ -111,14 +111,21 @@ export default function OrderTrackingPage() {
 
   const handleConfirmCancel = async () => {
     if (!order) return;
+    const targetOrder = order;
     const finalReason = customReason.trim() ? customReason.trim() : cancelReason;
-    setIsSubmittingCancel(true);
+
+    // 1. CẬP NHẬT TỨC THÌ (OPTIMISTIC UPDATE) - 0.01s
+    setOrder((prev) => prev ? { ...prev, orderStatus: 'CANCELLED', cancelReason: finalReason, cancelledBy: 'CUSTOMER' } : prev);
+    setIsCancelModalOpen(false);
+    showToast('Đã hủy đơn hàng thành công! Cảm ơn bạn đã thông báo.');
+
+    // 2. Gửi request đồng bộ ngầm tới máy chủ
     try {
       const res = await fetch('/api/orders', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: order.id,
+          id: targetOrder.id,
           orderStatus: 'CANCELLED',
           cancelReason: finalReason,
           cancelledBy: 'CUSTOMER',
@@ -126,17 +133,11 @@ export default function OrderTrackingPage() {
         }),
       });
       const data = await res.json();
-      if (data.success) {
-        setOrder((prev) => prev ? { ...prev, orderStatus: 'CANCELLED', cancelReason: finalReason, cancelledBy: 'CUSTOMER' } : prev);
-        setIsCancelModalOpen(false);
-        showToast('Đã hủy đơn hàng thành công! Cảm ơn bạn đã thông báo.');
-      } else {
-        showToast('Không thể hủy đơn: ' + (data.message || 'Lỗi'), true);
+      if (data.success && data.data) {
+        setOrder(data.data);
       }
     } catch (e: any) {
-      showToast('Lỗi kết nối khi hủy đơn: ' + (e.message || e), true);
-    } finally {
-      setIsSubmittingCancel(false);
+      console.error('[ASYNC CANCEL ERROR]:', e);
     }
   };
 
@@ -596,6 +597,32 @@ export default function OrderTrackingPage() {
                         <Download className="w-3.5 h-3.5" />
                         <span>{isDownloadingQr ? 'Đang tải...' : 'Tải mã QR'}</span>
                       </button>
+
+                      {/* Nút kiểm tra thanh toán ngay */}
+                      <button
+                        type="button"
+                        onClick={handleCheckPaymentNow}
+                        disabled={isCheckingPayment}
+                        className="w-full py-2 px-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs rounded-xl shadow-sm hover:shadow-md flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer disabled:opacity-60"
+                      >
+                        {isCheckingPayment ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-white shrink-0" />
+                            <span>Đang kiểm tra giao dịch...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />
+                            <span>Tôi đã chuyển khoản xong • Kiểm tra ngay</span>
+                          </>
+                        )}
+                      </button>
+
+                      {checkPaymentNotice && (
+                        <div className="w-full p-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs text-center font-medium animate-fade-in shadow-2xs">
+                          {checkPaymentNotice}
+                        </div>
+                      )}
 
                       {/* Bảng thông tin chuyển khoản: 1 khung duy nhất, nút sao chép dạng pill tinh gọn */}
                       <div className="w-full bg-stone-50/90 border border-stone-200 rounded-2xl p-2.5 space-y-2 text-xs text-left">

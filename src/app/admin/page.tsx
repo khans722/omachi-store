@@ -1307,16 +1307,26 @@ export default function AdminPage() {
 
   const handleConfirmCancelOrder = async () => {
     if (!cancellingOrder) return;
+    const targetOrder = cancellingOrder;
     const finalReason = customCancelReason.trim() ? customCancelReason.trim() : cancelReasonPreset;
-    setIsSubmittingCancel(true);
+
+    // 1. CẬP NHẬT TỨC THÌ (OPTIMISTIC UPDATE) - Không cần chờ mạng, phản hồi trong 0.01s!
+    setOrders(prev => prev.map(o => (o.id === targetOrder.id || o.code === targetOrder.code) 
+      ? { ...o, orderStatus: 'CANCELLED', cancelReason: finalReason, cancelledBy: 'SHOP', updatedAt: new Date().toISOString() } 
+      : o
+    ));
+    setCancellingOrder(null);
+    showAdminToast(`Đã hủy đơn #${targetOrder.code} thành công! (${finalReason}) ✨`);
+
+    // 2. Gửi request đồng bộ ngầm tới máy chủ
     try {
       const payload = {
-        id: cancellingOrder.id,
+        id: targetOrder.id,
         orderStatus: 'CANCELLED',
         cancelReason: finalReason,
         cancelledBy: 'SHOP',
         restock: true, // Luôn luôn hoàn lại số lượng tồn kho khi hủy đơn
-        order: cancellingOrder,
+        order: targetOrder,
       };
       const res = await fetch('/api/orders', {
         method: 'PATCH',
@@ -1325,17 +1335,13 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (data.success && data.data) {
-        showAdminToast(`Đã hủy đơn #${cancellingOrder.code} thành công! (${finalReason}) ✨`);
-        setOrders(prev => prev.map(o => (o.id === cancellingOrder.id || o.code === cancellingOrder.code) ? { ...o, ...data.data, orderStatus: 'CANCELLED', cancelReason: finalReason, cancelledBy: 'SHOP' } : o));
-        setCancellingOrder(null);
+        setOrders(prev => prev.map(o => (o.id === targetOrder.id || o.code === targetOrder.code) ? { ...o, ...data.data } : o));
         fetchProducts();
       } else {
-        showAdminToast('Không thể hủy đơn: ' + (data.message || 'Lỗi máy chủ'), true);
+        showAdminToast('Không thể lưu trạng thái hủy: ' + (data.message || 'Lỗi máy chủ'), true);
       }
     } catch (e: any) {
-      showAdminToast('Lỗi kết nối khi hủy đơn: ' + (e.message || e), true);
-    } finally {
-      setIsSubmittingCancel(false);
+      console.error('[ASYNC CANCEL ERROR]:', e);
     }
   };
 
@@ -4116,6 +4122,85 @@ export default function AdminPage() {
                           className="w-full px-3 py-2 bg-white border border-sky-200 rounded-xl font-bold text-gray-800 focus:ring-2 focus:ring-sky-400 focus:outline-none uppercase"
                         />
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Tự động xác nhận qua SePay */}
+                  <div className="p-3.5 bg-white rounded-xl border border-emerald-300 shadow-2xs space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">⚡</span>
+                        <div>
+                          <span className="font-bold text-gray-900 text-xs sm:text-sm">
+                            Tự Động Khớp Tiền VietQR Qua SePay (my.sepay.vn)
+                          </span>
+                          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                            Tự Động 100%
+                          </span>
+                        </div>
+                      </div>
+                      <a
+                        href="https://my.sepay.vn"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[11px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-1"
+                      >
+                        <span>Mở my.sepay.vn</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+
+                    <p className="text-[11px] text-gray-600 leading-relaxed">
+                      Để hệ thống tự động nhảy <strong>&quot;🎉 Đã Thanh Toán&quot;</strong> ngay khi khách chuyển khoản xong, bạn chỉ cần sao chép Webhook URL bên dưới và dán vào <strong>my.sepay.vn &rarr; Tích hợp Webhook</strong>:
+                    </p>
+
+                    {/* Webhook URL */}
+                    <div className="space-y-1">
+                      <label className="font-bold text-gray-700 text-[11px] flex items-center justify-between">
+                        <span>Đường dẫn Webhook URL nhận thông báo biến động số dư:</span>
+                        <span className="text-emerald-600 text-[10px]">Method: POST</span>
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          readOnly
+                          value="https://omachi-store-theta.vercel.app/api/webhook/sepay"
+                          className="flex-1 px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-mono text-xs text-stone-800 font-bold select-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                              navigator.clipboard.writeText('https://omachi-store-theta.vercel.app/api/webhook/sepay');
+                              showAdminToast('✅ Đã sao chép link Webhook SePay!');
+                            }
+                          }}
+                          className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition active:scale-95 cursor-pointer shrink-0 flex items-center gap-1.5"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Sao chép</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* SePay API Key (Chủ động quét) */}
+                    <div className="space-y-1 pt-1 border-t border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <label className="font-bold text-gray-700 text-[11px]">
+                          SePay API Token (Lấy từ my.sepay.vn &rarr; Tích hợp &rarr; API Tokens):
+                        </label>
+                        <span className="text-[10px] text-emerald-700 font-bold">Chủ động quét giao dịch realtime</span>
+                      </div>
+                      <input
+                        type="password"
+                        placeholder="Dán mã API Token SePay vào đây (Không bắt buộc nhưng khuyên dùng)..."
+                        value={settings.sepayApiKey || ''}
+                        onChange={(e) => setSettings({ ...settings, sepayApiKey: e.target.value })}
+                        className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-xl font-mono text-xs text-gray-800 font-medium focus:ring-2 focus:ring-emerald-400 focus:outline-none"
+                      />
+                      <p className="text-[10px] text-gray-500">
+                        💡 Khi có API Token này, nếu Webhook bị mạng trễ, khách bấm &quot;⚡ Tôi đã chuyển khoản xong&quot; thì hệ thống sẽ tự động gọi SePay kiểm tra và duyệt ngay!
+                      </p>
                     </div>
                   </div>
 

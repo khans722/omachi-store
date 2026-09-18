@@ -24,20 +24,8 @@ export async function sendOrderNotification(
   const isPaid = (order.paymentStatus === 'PAID' || trigger === 'PAYMENT_SUCCESS') && !isCancelled;
   const isPrepaid = (order.paymentMethod === 'BANK' || order.paymentMethod === 'MOMO') && !isCancelled;
 
-  // PHƯƠNG ÁN 1:
-  // 1. Khách vừa tạo đơn Chuyển khoản (BANK / MOMO) nhưng CHƯA thanh toán:
-  //    -> Bỏ qua không gửi Telegram (tránh tin rác/đặt thử). Chỉ gửi khi SePay báo tiền về tài khoản.
-  if (trigger === 'NEW_ORDER' && isPrepaid && !isPaid && !options?.forceSend) {
-    console.log(`[TELEGRAM]: Bỏ qua thông báo đơn #${order.code} (đơn Chuyển khoản đang chờ khách thanh toán).`);
-    return { success: true, skipped: true, reason: 'Chờ khách chuyển khoản' };
-  }
-
-  // 2. Đơn Chuyển khoản chưa từng thanh toán mà bị hủy:
-  //    -> Bỏ qua không gửi Telegram (vì shop chưa từng nhận tin đơn này, tránh làm phiền).
-  if (isCancelled && (order.paymentMethod === 'BANK' || order.paymentMethod === 'MOMO') && order.paymentStatus !== 'PAID' && !options?.forceSend) {
-    console.log(`[TELEGRAM]: Bỏ qua thông báo hủy đơn #${order.code} (đơn Chuyển khoản chưa từng thanh toán).`);
-    return { success: true, skipped: true, reason: 'Đơn chuyển khoản chưa thanh toán bị hủy' };
-  }
+  // Luôn luôn gửi thông báo Telegram cho mọi đơn mới và mọi cập nhật (kể cả Chuyển khoản và Hủy đơn)
+  // Không bỏ qua để chủ shop luôn nhận được tin tức thì 100%!
 
   const cleanFullName = escapeHtml(order.customer?.fullName || 'Khách hàng');
   const cleanPhone = escapeHtml(order.customer?.phone || '');
@@ -161,9 +149,13 @@ ${shopNoteText}
         { text: `🔐 Mở Trang Quản Trị Shop`, url: adminUrl },
       ]);
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+
       const res = await fetch(`https://api.telegram.org/bot${settings.telegramBotToken.trim()}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           chat_id: settings.telegramChatId.trim(),
           text: messageHtml,
@@ -173,15 +165,19 @@ ${shopNoteText}
           },
         }),
       });
+      clearTimeout(timeoutId);
 
       const resJson = await res.json();
       if (!resJson.ok) {
         console.error('[TELEGRAM BOT HTML ERROR, retrying plain text]:', resJson);
         // Fallback plain text if HTML tags ever fail
         const plainFallback = messageHtml.replace(/<[^>]*>?/gm, '');
+        const retryController = new AbortController();
+        const retryTimeoutId = setTimeout(() => retryController.abort(), 3000);
         const retryRes = await fetch(`https://api.telegram.org/bot${settings.telegramBotToken.trim()}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: retryController.signal,
           body: JSON.stringify({
             chat_id: settings.telegramChatId.trim(),
             text: plainFallback,
@@ -190,6 +186,7 @@ ${shopNoteText}
             },
           }),
         });
+        clearTimeout(retryTimeoutId);
         const retryJson = await retryRes.json();
         telegramResult = { success: retryJson.ok, error: retryJson.description };
       } else {

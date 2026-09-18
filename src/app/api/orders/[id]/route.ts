@@ -49,17 +49,19 @@ export async function PATCH(
       }, { status: 400 });
     }
 
-    // Send notification update in background
+    // Send notification update non-blocking in background
     let trigger: 'NEW_ORDER' | 'PAYMENT_SUCCESS' | 'CONFIRMED' | 'SHIPPING' | 'CANCELLED' = 'CONFIRMED';
     if (body.orderStatus === 'CANCELLED' || updated.orderStatus === 'CANCELLED') {
       trigger = 'CANCELLED';
     } else if (body.paymentStatus === 'PAID') {
       trigger = 'PAYMENT_SUCCESS';
     }
-    const settings = await db.settings.get();
-    sendOrderNotification(updated, settings, trigger).catch((err) => {
-      console.error('[ASYNC ORDER UPDATE NOTIFICATION ERROR]:', err);
-    });
+
+    db.settings.get().then((settings) => {
+      sendOrderNotification(updated, settings, trigger).catch((err) => {
+        console.error('[ASYNC ORDER UPDATE NOTIFICATION ERROR]:', err);
+      });
+    }).catch(() => {});
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error: any) {

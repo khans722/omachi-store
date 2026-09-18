@@ -247,6 +247,7 @@ export interface ShopSettings {
   bankId?: string;                  // Tên / Mã ngân hàng (MB, VCB, TCB...)
   bankAccount?: string;             // Số tài khoản ngân hàng
   bankOwner?: string;               // Tên chủ tài khoản ngân hàng
+  sepayApiKey?: string;             // API Token từ my.sepay.vn để chủ động đối soát giao dịch
 }
 
 export interface DetailedDatabaseSchema {
@@ -1947,6 +1948,7 @@ function mapSettingsFromSupabase(row: any, fallback: ShopSettings): ShopSettings
     bankId: row.bank_id ?? raw.bankId ?? fallback.bankId,
     bankAccount: row.bank_account ?? raw.bankAccount ?? fallback.bankAccount,
     bankOwner: row.bank_owner ?? raw.bankOwner ?? fallback.bankOwner,
+    sepayApiKey: (row as any).sepay_api_key ?? raw.sepayApiKey ?? fallback.sepayApiKey,
   };
 }
 

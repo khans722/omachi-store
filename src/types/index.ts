@@ -257,6 +257,7 @@ export interface ShopSettings {
   bankId?: string;                  // Tên / Mã ngân hàng (MB, VCB, TCB...)
   bankAccount?: string;             // Số tài khoản ngân hàng
   bankOwner?: string;               // Tên chủ tài khoản ngân hàng
+  sepayApiKey?: string;             // API Token từ my.sepay.vn để chủ động đối soát giao dịch
 }
 
 

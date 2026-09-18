@@ -525,55 +525,59 @@ function OrderLookupContent() {
 
   const handleCustomerConfirmCancel = async () => {
     if (!cancellingOrder) return;
+    const targetOrder = cancellingOrder;
     const finalReason = customCustomerReason.trim() ? customCustomerReason.trim() : customerCancelReason;
-    setIsSubmittingCancel(true);
+
+    // 1. CẬP NHẬT TỨC THÌ (OPTIMISTIC UPDATE) - 0.01s
+    const updateList = (prev: Order[]) =>
+      prev.map((o) =>
+        o.id === targetOrder.id || o.code === targetOrder.code
+          ? { ...o, orderStatus: 'CANCELLED' as OrderStatus, cancelReason: finalReason, cancelledBy: 'CUSTOMER' as const }
+          : o
+      );
+    setMyOrders(updateList);
+    setManualOrders(updateList);
+
+    // Update local storage ngay
+    try {
+      const custCached = localStorage.getItem('omachi_customer_orders');
+      if (custCached) {
+        const parsed = JSON.parse(custCached);
+        const updated = parsed.map((o: any) =>
+          o.id === targetOrder.id || o.code === targetOrder.code
+            ? { ...o, orderStatus: 'CANCELLED', cancelReason: finalReason, cancelledBy: 'CUSTOMER' }
+            : o
+        );
+        localStorage.setItem('omachi_customer_orders', JSON.stringify(updated));
+      }
+    } catch (e) {}
+
+    setCancellingOrder(null);
+    showToast('Đã hủy đơn hàng thành công! Cảm ơn bạn đã thông báo.');
+
+    // 2. Gửi request đồng bộ ngầm tới máy chủ
     try {
       const res = await fetch('/api/orders', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: cancellingOrder.id,
+          id: targetOrder.id,
           orderStatus: 'CANCELLED',
           cancelReason: finalReason,
           cancelledBy: 'CUSTOMER',
           restock: true,
-          order: cancellingOrder,
+          order: targetOrder,
         }),
       });
       const data = await res.json();
-      if (data.success) {
-        const updateList = (prev: Order[]) =>
-          prev.map((o) =>
-            o.id === cancellingOrder.id || o.code === cancellingOrder.code
-              ? { ...o, orderStatus: 'CANCELLED' as OrderStatus, cancelReason: finalReason, cancelledBy: 'CUSTOMER' as const }
-              : o
-          );
-        setMyOrders(updateList);
-        setManualOrders(updateList);
-
-        // Update local storage
-        try {
-          const custCached = localStorage.getItem('omachi_customer_orders');
-          if (custCached) {
-            const parsed = JSON.parse(custCached);
-            const updated = parsed.map((o: any) =>
-              o.id === cancellingOrder.id || o.code === cancellingOrder.code
-                ? { ...o, orderStatus: 'CANCELLED', cancelReason: finalReason, cancelledBy: 'CUSTOMER' }
-                : o
-            );
-            localStorage.setItem('omachi_customer_orders', JSON.stringify(updated));
-          }
-        } catch (e) {}
-
-        setCancellingOrder(null);
-        showToast('Đã hủy đơn hàng thành công! Cảm ơn bạn đã thông báo.');
-      } else {
-        showToast('Không thể hủy đơn: ' + (data.message || 'Lỗi hệ thống'), true);
+      if (data.success && data.data) {
+        const syncServer = (prev: Order[]) =>
+          prev.map((o) => (o.id === targetOrder.id || o.code === targetOrder.code ? { ...o, ...data.data } : o));
+        setMyOrders(syncServer);
+        setManualOrders(syncServer);
       }
     } catch (e: any) {
-      showToast('Lỗi kết nối khi hủy đơn: ' + (e.message || e), true);
-    } finally {
-      setIsSubmittingCancel(false);
+      console.error('[ASYNC CANCEL ERROR]:', e);
     }
   };
 

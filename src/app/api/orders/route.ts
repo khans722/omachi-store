@@ -6,7 +6,7 @@ export async function GET() {
   const orders = await db.orders.getAll();
   const now = Date.now();
   const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-  let hasChanges = false;
+  const backgroundTasks: Promise<any>[] = [];
 
   for (const o of orders as any[]) {
     if (
@@ -16,29 +16,37 @@ export async function GET() {
     ) {
       const createdTime = new Date(o.createdAt).getTime();
       if (!isNaN(createdTime) && now - createdTime > TWENTY_FOUR_HOURS) {
-        await db.orders.updateStatus(o.id, 'CANCELLED', 'UNPAID', undefined, undefined, undefined, {
-          ...o,
-          cancelReason: 'Hệ thống tự động hủy do quá hạn 24h chưa chuyển khoản thanh toán'
-        });
-        hasChanges = true;
+        o.orderStatus = 'CANCELLED';
+        o.cancelReason = 'Hệ thống tự động hủy do quá hạn 24h chưa chuyển khoản thanh toán';
+        backgroundTasks.push(
+          db.orders.updateStatus(o.id, 'CANCELLED', 'UNPAID', undefined, undefined, undefined, {
+            ...o,
+            cancelReason: 'Hệ thống tự động hủy do quá hạn 24h chưa chuyển khoản thanh toán'
+          }).catch(() => {})
+        );
       }
     }
 
-    // 2. Tự động khắc phục đơn Chuyển khoản chưa thanh toán nhưng bị nhảy sai trạng thái (như OM-2021, OM-1084)
+    // 2. Tự động khắc phục đơn Chuyển khoản chưa thanh toán nhưng bị nhảy sai trạng thái
     if (
       (o.paymentMethod === 'BANK' || o.paymentMethod === 'MOMO') &&
       o.paymentStatus !== 'PAID' &&
       o.orderStatus !== 'CANCELLED' &&
       o.orderStatus !== 'PENDING_CONFIRM'
     ) {
-      console.log(`[AUTO-HEAL]: Đưa đơn #${o.code} từ ${o.orderStatus} về PENDING_CONFIRM do khách chưa thanh toán.`);
-      await db.orders.updateStatus(o.id, 'PENDING_CONFIRM', 'UNPAID');
-      hasChanges = true;
+      o.orderStatus = 'PENDING_CONFIRM';
+      backgroundTasks.push(
+        db.orders.updateStatus(o.id, 'PENDING_CONFIRM', 'UNPAID').catch(() => {})
+      );
     }
   }
 
-  const finalOrders = hasChanges ? await db.orders.getAll() : orders;
-  return NextResponse.json({ success: true, data: finalOrders });
+  // Chạy các task ngầm bất đồng bộ không làm chậm response của người dùng
+  if (backgroundTasks.length > 0) {
+    Promise.all(backgroundTasks).catch(() => {});
+  }
+
+  return NextResponse.json({ success: true, data: orders });
 }
 
 export async function POST(req: NextRequest) {
@@ -109,7 +117,7 @@ export async function PATCH(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Send notification update in background
+    // Send notification update non-blocking in background
     const protocol = req.headers.get('x-forwarded-proto') || (req.url.startsWith('https') ? 'https' : 'http');
     const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || req.nextUrl.host;
     const requestOrigin = host ? `${protocol}://${host}` : req.nextUrl.origin;
@@ -120,10 +128,12 @@ export async function PATCH(req: NextRequest) {
     } else if (body.paymentStatus === 'PAID') {
       trigger = 'PAYMENT_SUCCESS';
     }
-    const settings = await db.settings.get();
-    sendOrderNotification(updated, settings, trigger as any, requestOrigin).catch((err) => {
-      console.error('[ASYNC ORDER UPDATE NOTIFICATION ERROR]:', err);
-    });
+
+    db.settings.get().then((settings) => {
+      sendOrderNotification(updated, settings, trigger as any, requestOrigin).catch((err) => {
+        console.error('[ASYNC ORDER UPDATE NOTIFICATION ERROR]:', err);
+      });
+    }).catch(() => {});
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error: any) {

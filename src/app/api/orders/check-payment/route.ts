@@ -6,12 +6,15 @@ import { formatVND } from '@/lib/utils';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+import { checkAndSyncSepayForOrder } from '@/lib/sepay';
+
 /**
  * API kiểm tra trạng thái thanh toán đơn hàng VietQR
  * Khi khách bấm "Tôi đã chuyển khoản xong • Kiểm tra ngay" trên giao diện web:
  * 1. Tra cứu trực tiếp từ Supabase để lấy trạng thái mới nhất
- * 2. Nếu đã PAID: trả về isPaid: true ngay lập tức để màn hình nhảy sang Thành Công 🎉
- * 3. Nếu chưa PAID: gửi thông báo hỏa tốc về Telegram của chủ shop kèm nút 1 chạm để chủ shop duyệt ngay
+ * 2. Nếu chưa PAID, chủ động gọi SePay User API để quét xem ngân hàng đã nhận tiền chưa
+ * 3. Nếu đã PAID: trả về isPaid: true ngay lập tức để màn hình nhảy sang Thành Công 🎉
+ * 4. Nếu vẫn chưa có tiền: gửi thông báo hỏa tốc về Telegram của chủ shop để shop duyệt
  */
 export async function POST(req: NextRequest) {
   try {
@@ -23,13 +26,13 @@ export async function POST(req: NextRequest) {
     }
 
     const clean = orderIdOrCode.replace(/^#/, '').trim();
-    const order = await db.orders.getById(clean);
+    let order = await db.orders.getById(clean);
 
     if (!order) {
       return NextResponse.json({ success: false, message: `Không tìm thấy đơn hàng #${clean}` }, { status: 404 });
     }
 
-    // Nếu đơn hàng đã được cập nhật sang PAID (qua SePay hoặc qua Shop duyệt)
+    // 1. Nếu đơn hàng đã được cập nhật sang PAID (qua SePay Webhook hoặc Shop duyệt)
     if (order.paymentStatus === 'PAID') {
       return NextResponse.json({
         success: true,
@@ -39,7 +42,18 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Nếu chưa PAID: Gửi thông báo hỏa tốc qua Telegram cho shop để shop check và bấm 1 chạm duyệt ngay
+    // 2. Chủ động quét SePay Transactions API nếu đơn chưa PAID
+    const sepaySync = await checkAndSyncSepayForOrder(order);
+    if (sepaySync.isPaid && sepaySync.order) {
+      return NextResponse.json({
+        success: true,
+        isPaid: true,
+        order: sepaySync.order,
+        message: 'SePay đã tự động khớp thanh toán thành công!',
+      });
+    }
+
+    // 3. Nếu chưa khớp tiền từ SePay: Gửi thông báo hỏa tốc qua Telegram cho shop
     const settings = await db.settings.get();
     if (settings.telegramBotToken && settings.telegramChatId && settings.enableTelegramNotify !== false) {
       const confirmToken = getPaymentConfirmToken(order.code, settings.telegramBotToken);
