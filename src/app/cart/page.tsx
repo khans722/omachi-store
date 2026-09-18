@@ -239,7 +239,7 @@ export default function CartPage() {
                 type="checkbox"
                 checked={isAllSelected}
                 onChange={(e) => toggleSelectAll(e.target.checked)}
-                className="w-4 h-4 rounded text-rose-600 focus:ring-rose-400 cursor-pointer ${curr.accentCheckbox}"
+                className={`w-4 h-4 rounded text-rose-600 focus:ring-rose-400 cursor-pointer ${curr.accentCheckbox}`}
                 title="Chọn tất cả sản phẩm"
               />
               <span className={`${curr.badgeBg} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-xs`}>
@@ -273,7 +273,7 @@ export default function CartPage() {
                       type="checkbox"
                       checked={isChecked}
                       onChange={() => toggleSelectItem(item.id)}
-                      className="w-4 h-4 rounded text-rose-600 focus:ring-rose-400 cursor-pointer ${curr.accentCheckbox}"
+                      className={`w-4 h-4 rounded text-rose-600 focus:ring-rose-400 cursor-pointer ${curr.accentCheckbox}`}
                     />
                   </div>
 
@@ -297,7 +297,7 @@ export default function CartPage() {
                         href={`/product/${item.product?.id || ''}`}
                         className="block group"
                       >
-                        <h3 className="text-xs sm:text-sm font-normal text-stone-900 ${curr.hoverText} transition line-clamp-1 sm:line-clamp-2 leading-snug">
+                        <h3 className={`text-xs sm:text-sm font-medium text-stone-900 ${curr.hoverText} transition line-clamp-2 leading-snug min-h-[2.5rem]`}>
                           {item.product?.name}
                         </h3>
                       </Link>
@@ -321,44 +321,44 @@ export default function CartPage() {
                     </div>
 
                     {/* Bottom Row: Price on left, Stepper & Delete on right */}
-                    <div className="mt-2 flex items-center justify-between gap-2">
+                    <div className="mt-2 flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
                       {/* Unit Price & % Discount */}
-                    <div className="flex items-baseline gap-1.5 min-w-0 flex-wrap">
-                      <span className={`text-sm sm:text-base font-black ${curr.priceText}`}>
-                        {formatVND(item.unitPrice)}
-                      </span>
-                      <span className="text-[10px] text-stone-400 font-normal">/cái</span>
+                      <div className="flex items-baseline gap-1.5 min-w-0 flex-wrap">
+                        <span className={`text-sm sm:text-base font-black ${curr.priceText}`}>
+                          {formatVND(item.unitPrice)}
+                        </span>
+                        <span className="text-[10px] text-stone-400 font-normal">/cái</span>
 
-                      {(() => {
-                        const base = item.product?.basePrice || item.unitPrice;
-                        const discountPercent = base > item.unitPrice
-                          ? Math.round(((base - item.unitPrice) / base) * 100)
-                          : 0;
-                        if (discountPercent > 0) {
-                          return (
-                            <>
-                              <span className="text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.2 rounded">
-                                -{discountPercent}%
+                        {(() => {
+                          const base = item.product?.basePrice || item.unitPrice;
+                          const discountPercent = base > item.unitPrice
+                            ? Math.round(((base - item.unitPrice) / base) * 100)
+                            : 0;
+                          if (discountPercent > 0) {
+                            return (
+                              <div className="flex items-center gap-1">
+                                <span className="text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-1 py-0.2 rounded">
+                                  -{discountPercent}%
+                                </span>
+                                <span className="text-[10px] text-stone-400 line-through truncate">
+                                  {formatVND(base)}
+                                </span>
+                              </div>
+                            );
+                          }
+                          if (item.product?.originalPrice && item.product.originalPrice > item.unitPrice) {
+                            return (
+                              <span className="text-[10px] text-stone-400 line-through truncate hidden sm:inline">
+                                {formatVND(item.product.originalPrice)}
                               </span>
-                              <span className="text-[10px] text-stone-400 line-through truncate">
-                                {formatVND(base)}
-                              </span>
-                            </>
-                          );
-                        }
-                        if (item.product?.originalPrice && item.product.originalPrice > item.unitPrice) {
-                          return (
-                            <span className="text-[10px] text-stone-400 line-through truncate hidden sm:inline">
-                              {formatVND(item.product.originalPrice)}
-                            </span>
-                          );
-                        }
-                        return null;
-                      })()}
-                    </div>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
 
                       {/* Stepper & Trash Button */}
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0 ml-auto">
                         <div className="flex items-center border border-stone-200 rounded-sm bg-white overflow-hidden h-6 sm:h-7 shadow-2xs">
                           <button
                             type="button"
@@ -407,10 +407,10 @@ export default function CartPage() {
 
 
           {/* SPX Delivery Row */}
-          <div className="p-2.5 bg-amber-50/50 border-t border-amber-100/60 flex items-center justify-between gap-2 text-xs text-amber-900">
-            <div className="flex items-center gap-2">
+          <div className="p-2.5 bg-amber-50/50 border-t border-amber-100/60 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs text-amber-900">
+            <div className="flex items-center gap-2 min-w-0">
               <Truck className="w-4 h-4 text-amber-600 shrink-0" />
-              <span className="text-[11px] text-amber-800">
+              <span className="text-[11px] text-amber-800 leading-snug">
                 {isPrepaidFreeshipEnabled ? (
                   <>Giao hàng SPX Express • Đơn từ {formatVND(FREESHIP_THRESHOLD)} <strong className="text-emerald-700 font-bold">MIỄN PHÍ SHIP (0đ)</strong> khi Chuyển Khoản</>
                 ) : (
@@ -419,7 +419,7 @@ export default function CartPage() {
               </span>
             </div>
             {isFreeshipEligible && (
-              <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded shrink-0">
+              <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded shrink-0 self-start sm:self-auto">
                 Đủ điều kiện 0đ ship
               </span>
             )}
@@ -439,7 +439,7 @@ export default function CartPage() {
                 type="checkbox"
                 checked={isAllSelected}
                 onChange={(e) => toggleSelectAll(e.target.checked)}
-                className="w-4 h-4 rounded text-rose-600 focus:ring-rose-400 cursor-pointer ${curr.accentCheckbox}"
+                className={`w-4 h-4 rounded text-rose-600 focus:ring-rose-400 cursor-pointer ${curr.accentCheckbox}`}
               />
               <span>Tất cả</span>
               <span className="text-stone-400 text-xs font-normal">({totalItems})</span>

@@ -1761,11 +1761,11 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Navigation Tabs - Smart Grouped Professional Bar */}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 border-b border-pink-100/80 pb-3">
+      {/* Navigation Tabs - Smart Grouped Professional Bar with Horizontal Scroll on Mobile */}
+      <div className="overflow-x-auto no-scrollbar py-1 flex items-center gap-2 sm:gap-3 border-b border-pink-100/80 pb-3 flex-nowrap sm:flex-wrap">
         
         {/* NHÓM 1: KINH DOANH & ĐƠN HÀNG */}
-        <div className="flex items-center p-1 bg-stone-100/90 rounded-2xl border border-stone-200/70 shadow-2xs">
+        <div className="flex items-center p-1 bg-stone-100/90 rounded-2xl border border-stone-200/70 shadow-2xs shrink-0">
           <button
             type="button"
             onClick={() => handleSwitchTab('orders')}
@@ -1799,7 +1799,7 @@ export default function AdminPage() {
         </div>
 
         {/* NHÓM 2: SẢN PHẨM & KHO HÀNG */}
-        <div className="flex items-center p-1 bg-stone-100/90 rounded-2xl border border-stone-200/70 shadow-2xs">
+        <div className="flex items-center p-1 bg-stone-100/90 rounded-2xl border border-stone-200/70 shadow-2xs shrink-0">
           <button
             type="button"
             onClick={() => handleSwitchTab('categories')}
@@ -1858,7 +1858,24 @@ export default function AdminPage() {
         </div>
 
         {/* NHÓM 3: KHÁCH HÀNG & CỬA HÀNG */}
-        <div className="flex items-center p-1 bg-stone-100/90 rounded-2xl border border-stone-200/70 shadow-2xs">
+        <div className="flex items-center p-1 bg-stone-100/90 rounded-2xl border border-stone-200/70 shadow-2xs shrink-0">
+          <button
+            type="button"
+            onClick={() => handleSwitchTab('feedbacks')}
+            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+              activeTab === 'feedbacks'
+                ? 'bg-rose-500 text-white shadow-xs'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-white/70'
+            }`}
+          >
+            <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" />
+            <span>Đánh Giá</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+              activeTab === 'feedbacks' ? 'bg-white/20 text-white' : 'bg-stone-200 text-stone-700'
+            }`}>
+              {feedbacks.length}
+            </span>
+          </button>
 
           <button
             type="button"
@@ -2045,10 +2062,10 @@ export default function AdminPage() {
                     className="bg-white rounded-2xl sm:rounded-3xl border border-pink-100 shadow-xs p-3.5 sm:p-6 space-y-3 sm:space-y-4 transition hover:shadow-md"
                   >
                     {/* Order Card Header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-pink-50">
-                      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                        <span className="text-base font-black text-gray-800">#{order.code}</span>
-                        <span className="text-xs text-gray-400">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-pink-50">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                        <span className="text-sm sm:text-base font-black text-gray-800">#{order.code}</span>
+                        <span className="text-[11px] sm:text-xs text-gray-400">
                           {new Date(order.createdAt).toLocaleString('vi-VN')}
                         </span>
 
@@ -2105,13 +2122,11 @@ export default function AdminPage() {
                       </div>
 
                       {/* Right: Tổng tiền thanh toán chuẩn */}
-                      <div className="text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <span className="text-xs text-gray-500">Tổng tiền:</span>
-                          <span className="text-base font-black text-rose-600">
-                            {formatVND(calculatedFinalTotal)}
-                          </span>
-                        </div>
+                      <div className="flex items-center justify-between sm:justify-end gap-1.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-stone-100 shrink-0">
+                        <span className="text-xs text-gray-500">Tổng tiền:</span>
+                        <span className="text-base font-black text-rose-600">
+                          {formatVND(calculatedFinalTotal)}
+                        </span>
                       </div>
                     </div>
 
@@ -2242,7 +2257,7 @@ export default function AdminPage() {
                                       return (
                                         <div
                                           key={subIdx}
-                                          className="p-2.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-50/80 transition flex items-center justify-between gap-2 text-xs"
+                                          className="p-2.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-50/80 transition flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2 text-xs"
                                         >
                                           <div className="flex items-center gap-2.5 min-w-0">
                                             {/* Chấm tròn hiển thị màu thực tế */}
@@ -2285,10 +2300,8 @@ export default function AdminPage() {
                                             </div>
                                           </div>
 
-                                          <div className="text-right shrink-0">
-                                            <span className="font-black text-xs text-gray-800">
-                                              {formatVND(actualLine)}
-                                            </span>
+                                          <div className="text-right sm:text-right shrink-0 self-end sm:self-auto font-black text-xs text-gray-800">
+                                            {formatVND(actualLine)}
                                           </div>
                                         </div>
                                       );
@@ -2313,15 +2326,36 @@ export default function AdminPage() {
                                 </div>
                               </div>
 
-                              {/* 2. Cước vận chuyển */}
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-gray-700 font-medium">
-                                <span className="text-xs flex items-center gap-1">
+                              {/* 2. Cước vận chuyển & Chỉnh sửa nhanh */}
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-gray-700 font-medium py-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
                                   <Truck className="w-3.5 h-3.5 text-orange-600 shrink-0" />
-                                  <span>Cước vận chuyển ({order.carrierName || 'SPX Express'}):</span>
-                                </span>
-                                <strong className={calculatedShippingFee === 0 ? 'text-emerald-700 font-bold text-xs sm:text-sm' : 'text-gray-800 font-black text-xs sm:text-sm'}>
-                                  {calculatedShippingFee === 0 ? '0đ (Miễn phí / Freeship)' : `+${formatVND(calculatedShippingFee)}`}
-                                </strong>
+                                  <span className="text-xs">Cước vận chuyển ({order.carrierName || 'SPX Express'}):</span>
+                                  <strong className={calculatedShippingFee === 0 ? 'text-emerald-700 font-bold text-xs sm:text-sm' : 'text-gray-800 font-black text-xs sm:text-sm'}>
+                                    {calculatedShippingFee === 0 ? '0đ (Miễn phí)' : `+${formatVND(calculatedShippingFee)}`}
+                                  </strong>
+                                </div>
+
+                                {/* Form chỉnh cước ship nhanh cho admin */}
+                                <div className="flex items-center gap-1.5 flex-wrap sm:justify-end">
+                                  <div className="flex items-center gap-1">
+                                    {[0, 15000, 20000, 25000, 30000].map((fee) => (
+                                      <button
+                                        key={fee}
+                                        type="button"
+                                        onClick={() => handleUpdateShippingFee(order.id, fee)}
+                                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition cursor-pointer ${
+                                          calculatedShippingFee === fee
+                                            ? 'bg-orange-500 text-white border-orange-500 shadow-2xs'
+                                            : 'bg-white text-stone-600 border-stone-200 hover:bg-orange-50 hover:text-orange-600'
+                                        }`}
+                                        title={`Đặt cước ship ${fee === 0 ? '0đ (Freeship)' : formatVND(fee)}`}
+                                      >
+                                        {fee === 0 ? '0đ' : `${fee / 1000}k`}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
                               </div>
 
                               {/* 3. TỔNG THANH TOÁN */}

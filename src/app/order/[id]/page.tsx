@@ -297,23 +297,23 @@ export default function OrderTrackingPage() {
       {/* Header */}
       <div className="bg-gradient-to-r from-pink-100 via-purple-100 to-yellow-50 rounded-3xl p-6 border border-pink-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🎀</span>
-            <h1 className="text-xl sm:text-2xl font-black text-gray-800">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-2xl shrink-0">🎀</span>
+            <h1 className="text-lg sm:text-2xl font-black text-gray-800 break-all">
               Đơn Hàng #{order.code}
             </h1>
             {order.paymentMethod === 'COD' ? (
               order.paymentStatus === 'PAID' ? (
-                <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 shrink-0">
                   ✓ ĐÃ THANH TOÁN (COD)
                 </span>
               ) : (
-                <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700">
+                <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700 shrink-0">
                   💵 TIỀN MẶT KHI NHẬN (COD)
                 </span>
               )
             ) : (
-              <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
+              <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shrink-0 ${
                 order.paymentStatus === 'PAID' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'
               }`}>
                 {order.paymentStatus === 'PAID' ? '✓ ĐÃ THANH TOÁN' : '⏳ CHỜ THANH TOÁN'}
@@ -325,7 +325,7 @@ export default function OrderTrackingPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {(order.orderStatus === 'PENDING_CONFIRM' || (order.paymentStatus !== 'PAID' && order.orderStatus !== 'CANCELLED' && order.orderStatus !== 'SHIPPING' && order.orderStatus !== 'COMPLETED')) && (
             <button
               type="button"

@@ -105,9 +105,9 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
               </div>
             </div>
 
-            {/* Product Name - Guaranteed 2-line uniform height */}
+            {/* Product Name - Uniform height without text clipping */}
             <Link href={`/product/${product.id}`} className="block">
-              <h3 className="text-xs sm:text-sm font-semibold text-stone-900 group-hover:text-stone-600 transition-colors duration-200 line-clamp-2 leading-snug h-9 sm:h-10">
+              <h3 className="text-xs sm:text-sm font-semibold text-stone-900 group-hover:text-stone-600 transition-colors duration-200 line-clamp-2 leading-snug min-h-[2.5rem] sm:min-h-[2.75rem]">
                 {product.name}
               </h3>
             </Link>
@@ -131,20 +131,20 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
             </div>
           </div>
 
-          {/* Price & Quick Add Action - Anchored and Aligned */}
-          <div className="pt-2.5 border-t border-stone-100 flex items-center justify-between gap-1 mt-auto">
-            <div className="flex flex-col justify-center min-h-[36px]">
-              <div className="text-sm sm:text-base font-extrabold text-stone-900 leading-tight">
+          {/* Price & Quick Add Action - Anchored and Responsive */}
+          <div className="pt-2.5 border-t border-stone-100 flex items-center justify-between gap-1.5 mt-auto">
+            <div className="flex flex-col justify-center min-w-0 flex-1">
+              <div className="text-xs sm:text-base font-extrabold text-stone-900 leading-tight truncate">
                 {formatVND(product.basePrice)}
                 <span className="text-[10px] text-stone-400 font-normal ml-0.5">/cái</span>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 min-w-0">
                 {product.comboTiers && product.comboTiers.length > 0 ? (
-                  <span className="text-[10px] text-emerald-700 font-bold">
+                  <span className="text-[9px] sm:text-[10px] text-emerald-700 font-bold truncate">
                     ⚡ Sỉ từ {formatVND(Math.min(...product.comboTiers.map((t) => t.unitPrice)))}
                   </span>
                 ) : product.originalPrice && product.originalPrice > product.basePrice ? (
-                  <span className="text-[10px] text-stone-400 line-through leading-tight">
+                  <span className="text-[9px] sm:text-[10px] text-stone-400 line-through leading-tight truncate">
                     {formatVND(product.originalPrice)}
                   </span>
                 ) : null}
@@ -153,11 +153,11 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
 
             <button
               onClick={handleOpenQuickSelect}
-              className={`h-8 sm:h-9 px-3 rounded-full border ${style.btnAction || 'bg-rose-50 text-rose-600 border-rose-200'} font-bold text-xs flex items-center gap-1.5 transition-all duration-200 active:scale-95 shadow-2xs shrink-0 cursor-pointer`}
+              className={`w-8 h-8 sm:w-auto sm:h-9 px-0 sm:px-3 rounded-full border ${style.btnAction || 'bg-rose-50 text-rose-600 border-rose-200'} font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 shadow-2xs shrink-0 cursor-pointer`}
               title="Chọn phân loại & Mua hàng"
             >
-              <ShoppingBag className="w-3.5 h-3.5" />
-              <span className="text-[11px] sm:text-xs">Chọn mua</span>
+              <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline text-xs">Chọn mua</span>
             </button>
           </div>
         </div>

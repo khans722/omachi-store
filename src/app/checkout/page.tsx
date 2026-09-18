@@ -2061,15 +2061,15 @@ export default function CheckoutPage() {
       {/* 7. SHOPEE STICKY BOTTOM CHECKOUT BAR */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/98 backdrop-blur-md border-t border-gray-200 shadow-2xl safe-area-bottom">
         <div className="max-w-2xl mx-auto px-3 py-2 flex items-center justify-between gap-3">
-          <div className="flex flex-col items-end sm:items-start flex-1">
-            <div className="flex items-baseline gap-1">
+          <div className="flex flex-col items-start flex-1 min-w-0">
+            <div className="flex items-baseline gap-1 flex-wrap">
               <span className="text-xs text-gray-600">Tổng thanh toán:</span>
               <span className={`text-base sm:text-lg font-black ${curr.priceText}`}>
                 {formatVND(checkoutFinalTotal)}
               </span>
             </div>
             {checkoutTotalSavings > 0 && (
-              <span className={`text-[10px] ${curr.priceText} font-semibold`}>
+              <span className={`text-[10px] ${curr.priceText} font-semibold truncate`}>
                 Tiết kiệm {formatVND(checkoutTotalSavings)}
               </span>
             )}

@@ -96,7 +96,7 @@ export default function HeroBanner({ settings }: HeroBannerProps) {
           </div>
 
           {/* Chubby Bubble Pastel Main Heading */}
-          <h1 className="font-bubble text-3xl sm:text-5xl lg:text-[48px] font-extrabold leading-[1.2] tracking-normal select-none">
+          <h1 className="font-bubble text-2xl sm:text-4xl lg:text-[44px] font-extrabold leading-tight tracking-normal select-none break-words">
             {title.includes('&') ? (
               <>
                 <span className={`block ${curr.titleLine1} drop-shadow-[0_2px_8px_rgba(255,255,255,0.8)]`}>
