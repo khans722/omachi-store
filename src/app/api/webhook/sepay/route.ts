@@ -16,27 +16,35 @@ export async function POST(req: NextRequest) {
     console.log('[SEPAY WEBHOOK RECEIVED]:', JSON.stringify(body));
 
     // Kiểm tra loại giao dịch: Chỉ xử lý giao dịch tiền vào (transferType = "in")
-    if (body.transferType && body.transferType !== 'in') {
+    const transferType = (body.transferType || body.transfer_type || 'in').toLowerCase();
+    if (transferType !== 'in') {
       return NextResponse.json({ success: true, message: 'Bỏ qua giao dịch tiền ra' });
     }
 
-    const content = (body.content || body.description || '').toUpperCase();
-    const transferAmount = Number(body.transferAmount || body.amount || 0);
+    const content = (body.content || body.description || body.code || body.order_code || '').toUpperCase();
+    const transferAmount = Number(body.transferAmount || body.transfer_amount || body.amount || 0);
 
     if (!content) {
       return NextResponse.json({ success: false, message: 'Nội dung giao dịch trống' }, { status: 400 });
     }
 
-    // Tìm mã đơn hàng từ nội dung: Hỗ trợ "OM-1234", "DH OM-1234", "DH 1234", "OM1234"
-    const omMatch = content.match(/OM[-\s]?([0-9A-Z]+)/i);
-    const dhMatch = content.match(/DH[-\s]?([0-9A-Z]+)/i);
+    // Tìm mã đơn hàng từ nội dung: Hỗ trợ "OM-1234", "DH OM-1234", "DH 1234", "OM1234", "SEVQR DH OM-1234", "SEVQR 1234"
+    const omMatch = content.match(/OM[-\s]?([0-9A-Z]{4,})/i) || content.match(/OM[-\s]?([0-9A-Z]+)/i);
+    const dhMatch = content.match(/DH[-\s]?OM?[-\s]?([0-9A-Z]+)/i);
+    const sevqrMatch = content.match(/SEVQR.*?(\d{4,})/i);
+    const raw4DigitMatch = content.match(/(\d{4,})/);
 
     let extractedCode = '';
     if (omMatch && omMatch[1]) {
-      extractedCode = `OM-${omMatch[1]}`.toUpperCase();
+      const p = omMatch[1].toUpperCase();
+      extractedCode = p.startsWith('OM') ? p : `OM-${p}`;
     } else if (dhMatch && dhMatch[1]) {
-      const part = dhMatch[1].toUpperCase();
-      extractedCode = part.startsWith('OM') ? part : `OM-${part}`;
+      const p = dhMatch[1].toUpperCase();
+      extractedCode = p.startsWith('OM') ? p : `OM-${p}`;
+    } else if (sevqrMatch && sevqrMatch[1]) {
+      extractedCode = `OM-${sevqrMatch[1]}`;
+    } else if (raw4DigitMatch && raw4DigitMatch[1]) {
+      extractedCode = `OM-${raw4DigitMatch[1]}`;
     }
 
     if (!extractedCode) {
@@ -48,13 +56,24 @@ export async function POST(req: NextRequest) {
     }
 
     // Tra cứu đơn hàng trong database
-    const allOrders = await db.orders.getAll();
     const cleanExtracted = extractedCode.replace(/^#/, '').trim();
-    const order = allOrders.find(
-      (o) =>
-        (o.code && o.code.toUpperCase().replace(/^#/, '').trim() === cleanExtracted) ||
-        (o.id && o.id.toUpperCase().replace(/^#/, '').trim() === cleanExtracted)
-    );
+    const targetDigits = cleanExtracted.replace(/[^0-9]/g, '');
+
+    let order = await db.orders.getById(cleanExtracted);
+
+    if (!order) {
+      const allOrders = await db.orders.getAll();
+      order = allOrders.find((o) => {
+        const oClean = (o.code || '').replace(/^#/, '').trim().toUpperCase();
+        const oIdClean = (o.id || '').replace(/^#/, '').trim().toUpperCase();
+        const oDigits = (o.code || '').replace(/[^0-9]/g, '');
+        return (
+          oClean === cleanExtracted ||
+          oIdClean === cleanExtracted ||
+          (targetDigits.length >= 4 && oDigits === targetDigits)
+        );
+      });
+    }
 
     if (!order) {
       console.warn('[SEPAY WEBHOOK]: Không tìm thấy đơn trong DB với mã:', extractedCode);

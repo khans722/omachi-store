@@ -2064,16 +2064,16 @@ export default function AdminPage() {
                       {/* TRƯỜNG HỢP 1: ĐƠN CHUYỂN KHOẢN CHƯA THANH TOÁN (Chỉ có thể chờ tiền, tuyệt đối không được xác nhận đơn) */}
                       {(order.paymentMethod === 'BANK' || order.paymentMethod === 'MOMO') && order.paymentStatus !== 'PAID' && order.orderStatus !== 'CANCELLED' ? (
                         <div className="flex items-center justify-end gap-2 w-full">
-                            {/* Nút duyệt tiền tay: Bố trí nút nhỏ, hạn chế ấn nhầm, chỉ dùng trường hợp đặc biệt khách gửi bill Zalo */}
+                            {/* Nút duyệt đã nhận tiền: Chuyển thẳng sang PAID và PREPARING */}
                             <button
                               type="button"
                               onClick={() => {
-                                handleUpdateStatus(order.id, 'PENDING_CONFIRM', 'PAID');
+                                handleUpdateStatus(order.id, 'PREPARING', 'PAID');
                               }}
-                              className="px-2.5 py-1 rounded-lg border border-gray-200 hover:border-emerald-400 bg-gray-50 hover:bg-emerald-50 text-gray-500 hover:text-emerald-700 text-[11px] font-medium transition cursor-pointer"
-                              title="Chỉ dùng khi có trường hợp đặc biệt khách gửi bill chuyển khoản riêng qua Zalo"
+                              className="px-3 py-1.5 rounded-lg border border-emerald-300 hover:border-emerald-500 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                              title="Bấm để xác nhận khách đã chuyển khoản thành công và chuyển đơn sang chuẩn bị hàng"
                             >
-                              💳 Duyệt tiền tay
+                              💳 Xác nhận đã nhận tiền
                             </button>
 
                             {/* Nút Hủy đơn */}

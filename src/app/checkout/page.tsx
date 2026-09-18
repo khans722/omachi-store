@@ -858,6 +858,50 @@ export default function CheckoutPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
+  const [isCheckingPayment, setIsCheckingPayment] = useState(false);
+  const [checkPaymentNotice, setCheckPaymentNotice] = useState('');
+
+  const handleCheckPaymentNow = async () => {
+    if (!createdOrder) return;
+    setIsCheckingPayment(true);
+    setCheckPaymentNotice('');
+    try {
+      const res = await fetch('/api/orders/check-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: createdOrder.id, code: createdOrder.code }),
+      });
+      const data = await res.json();
+      if (data.success && data.isPaid && data.order) {
+        setCreatedOrder(data.order);
+        try {
+          const custOrders = JSON.parse(localStorage.getItem('omachi_customer_orders') || '[]');
+          localStorage.setItem(
+            'omachi_customer_orders',
+            JSON.stringify([data.order, ...custOrders.filter((o: any) => o.id !== data.order.id)])
+          );
+          const adminOrders = JSON.parse(localStorage.getItem('omachi_admin_orders_v2') || '[]');
+          localStorage.setItem(
+            'omachi_admin_orders_v2',
+            JSON.stringify([data.order, ...adminOrders.filter((o: any) => o.id !== data.order.id)])
+          );
+        } catch (e) {}
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.5 },
+        });
+      } else {
+        setCheckPaymentNotice(data.message || 'Hệ thống đã gửi thông báo đến shop! Shop sẽ duyệt đơn cho bạn ngay nhé 💕');
+        setTimeout(() => setCheckPaymentNotice(''), 7000);
+      }
+    } catch (e) {
+      setCheckPaymentNotice('Đã gửi thông báo xác nhận đến shop! Shop sẽ duyệt đơn cho bạn ngay nhé 💕');
+      setTimeout(() => setCheckPaymentNotice(''), 7000);
+    } finally {
+      setIsCheckingPayment(false);
+    }
+  };
 
   // Polling tự động kiểm tra trạng thái thanh toán VietQR từ SePay
   useEffect(() => {
@@ -1118,23 +1162,23 @@ export default function CheckoutPage() {
       : (zaloShopPhone ? `https://zalo.me/${zaloShopPhone}?text=${prefilledMsg}` : 'https://zalo.me');
 
     return (
-      <div className="py-5 max-w-md mx-auto space-y-3 font-sans px-3">
+      <div className="py-6 sm:py-8 w-full max-w-xl mx-auto space-y-4 font-sans px-3.5 sm:px-6">
         {isAwaitingPayment ? (
           /* ========================================================
-             MÀN HÌNH CHUYỂN KHOẢN VIETQR: ĐỒNG BỘ 1 KIỂU DUY NHẤT VỚI PAYMENTMODAL
+             MÀN HÌNH CHUYỂN KHOẢN VIETQR: CÂN ĐỐI RỘNG RÃI TRÊN DESKTOP & CHUẨN ĐIỆN THOẠI
              ======================================================== */
           <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden flex flex-col animate-fade-in">
             {/* Header đồng bộ chuẩn PaymentModal */}
-            <div className="p-4 sm:p-5 text-white flex items-center justify-between bg-gradient-to-r from-blue-600 to-indigo-700">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-lg shrink-0">
+            <div className="p-4 sm:p-5 text-white flex items-center justify-between bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shrink-0 shadow-inner">
                   💳
                 </div>
                 <div className="text-left">
-                  <h3 className="text-sm sm:text-base font-black uppercase tracking-wide">
+                  <h3 className="text-base sm:text-lg font-black uppercase tracking-wide">
                     Chuyển Khoản VietQR
                   </h3>
-                  <p className="text-[11px] text-white/80 font-medium">
+                  <p className="text-xs text-white/90 font-medium">
                     Đơn hàng: <strong className="font-mono text-white">#{createdOrder.code}</strong> • {formatVND(createdOrder.finalTotalAmount || createdOrder.totalAmount)}
                   </p>
                 </div>
@@ -1142,11 +1186,12 @@ export default function CheckoutPage() {
             </div>
 
             {/* Content đồng bộ chuẩn PaymentModal */}
-            <div className="p-4 sm:p-5 space-y-3.5">
+            <div className="p-4 sm:p-6 space-y-4">
               {(() => {
                 const rawBank = (settings?.bankId || '').toUpperCase().trim();
                 const isVietin = rawBank.includes('VIETIN') || rawBank.includes('CTG') || rawBank.includes('ICB') || (settings?.bankAccount || '').trim() === '106873248315';
                 const qrBank = rawBank.includes('VIETCOM') ? 'VCB' : rawBank.includes('MB') ? 'MB' : isVietin ? 'ICB' : rawBank;
+                const displayBankName = isVietin ? 'VietinBank' : rawBank.includes('VIETCOM') ? 'Vietcombank' : rawBank.includes('MB') ? 'MB Bank' : (rawBank || 'VietinBank');
                 const bankAccount = (settings?.bankAccount || '').trim();
                 const bankOwner = (settings?.bankOwner ? settings.bankOwner.trim().toUpperCase() : 'DUONG QUOC KHANH');
                 const transferContent = isVietin ? `SEVQR DH ${createdOrder.code}` : `DH ${createdOrder.code}`;
@@ -1167,12 +1212,12 @@ export default function CheckoutPage() {
                 )}`;
 
                 return (
-                  <div className="flex flex-col items-center text-center p-3 sm:p-4 bg-blue-50/40 rounded-2xl border border-blue-100 space-y-2.5">
-                    <div className="p-2 bg-white rounded-2xl border border-blue-200 shadow-sm">
+                  <div className="flex flex-col items-center text-center p-4 sm:p-5 bg-blue-50/40 rounded-2xl border border-blue-100 space-y-3">
+                    <div className="p-2.5 sm:p-3 bg-white rounded-2xl border border-blue-200/80 shadow-sm">
                       <img
                         src={qrUrl}
                         alt="Mã VietQR"
-                        className="w-48 h-auto sm:w-56 object-contain rounded-xl"
+                        className="w-52 h-52 sm:w-60 sm:h-60 aspect-square object-contain rounded-xl"
                       />
                     </div>
 
@@ -1181,33 +1226,33 @@ export default function CheckoutPage() {
                       type="button"
                       disabled={isDownloadingQr}
                       onClick={() => downloadQrImage(qrUrl, `vietqr-omachi-${createdOrder.code}.png`)}
-                      className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer disabled:opacity-50"
+                      className="w-full sm:max-w-xs py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer disabled:opacity-50"
                     >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>{isDownloadingQr ? 'Đang tải...' : 'Tải mã QR'}</span>
+                      <Download className="w-4 h-4" />
+                      <span>{isDownloadingQr ? 'Đang tải ảnh...' : 'Tải mã QR'}</span>
                     </button>
 
                     {/* Bảng thông tin chuyển khoản: Gọn gàng 1 khung duy nhất, nút sao chép dạng pill tinh gọn */}
-                    <div className="w-full bg-stone-50/90 border border-stone-200 rounded-2xl p-2.5 space-y-2 text-xs text-left">
+                    <div className="w-full bg-stone-50/90 border border-stone-200 rounded-2xl p-3 sm:p-3.5 space-y-2.5 text-xs text-left">
                       {/* Hàng 1: Ngân hàng & Chủ tài khoản */}
-                      <div className="flex items-center justify-between gap-2 px-1 text-[11px]">
+                      <div className="flex items-center justify-between gap-2 px-1 text-xs">
                         <div>
-                          <span className="text-stone-400">Ngân hàng: </span>
-                          <strong className="text-stone-800 font-bold">{rawBank || 'VietinBank'}</strong>
+                          <span className="text-stone-400 font-medium">Ngân hàng: </span>
+                          <strong className="text-stone-900 font-extrabold">{displayBankName}</strong>
                         </div>
                         <div className="text-right truncate">
-                          <span className="text-stone-400">Chủ TK: </span>
-                          <strong className="text-stone-800 font-bold uppercase">{bankOwner}</strong>
+                          <span className="text-stone-400 font-medium">Chủ TK: </span>
+                          <strong className="text-stone-900 font-extrabold uppercase">{bankOwner}</strong>
                         </div>
                       </div>
 
                       {/* Hàng 2: Số tài khoản dạng pill */}
-                      <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-stone-200/60 px-1">
-                        <span className="text-stone-500 text-[11px] font-medium">Số tài khoản:</span>
+                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-stone-200/70 px-1">
+                        <span className="text-stone-600 text-xs font-semibold">Số tài khoản:</span>
                         <button
                           type="button"
                           onClick={() => copyToClipboard(bankAccount, 'stk')}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white border border-stone-300 hover:border-blue-400 hover:bg-blue-50/40 text-blue-700 font-mono text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
+                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-stone-300 hover:border-blue-400 hover:bg-blue-50/40 text-blue-700 font-mono text-xs sm:text-sm font-bold transition shadow-2xs cursor-pointer active:scale-95"
                           title="Bấm để sao chép số tài khoản"
                         >
                           <span>{bankAccount}</span>
@@ -1220,12 +1265,12 @@ export default function CheckoutPage() {
                       </div>
 
                       {/* Hàng 3: Nội dung CK dạng pill */}
-                      <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-stone-200/60 px-1">
-                        <span className="text-stone-500 text-[11px] font-medium">Nội dung CK:</span>
+                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-stone-200/70 px-1">
+                        <span className="text-stone-600 text-xs font-semibold">Nội dung CK:</span>
                         <button
                           type="button"
                           onClick={() => copyToClipboard(transferContent, 'nd')}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50/90 border border-amber-300 hover:bg-amber-100/80 text-rose-600 font-mono text-xs font-black transition shadow-2xs cursor-pointer active:scale-95"
+                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-50/90 border border-amber-300 hover:bg-amber-100/80 text-rose-600 font-mono text-xs sm:text-sm font-black transition shadow-2xs cursor-pointer active:scale-95"
                           title="Bấm để sao chép nội dung chuyển khoản"
                         >
                           <span>{transferContent}</span>
@@ -1241,36 +1286,36 @@ export default function CheckoutPage() {
                 );
               })()}
 
-              {/* Trạng thái thanh toán + Bộ đếm thời gian: Gộp chung 1 dòng siêu gọn, không tốn diện tích */}
-              <div className="py-2 px-3 bg-blue-50 border border-blue-200/80 rounded-xl flex items-center justify-between gap-2 text-xs font-bold text-blue-800">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600 shrink-0" />
-                  <span>Đang chờ thanh toán</span>
+              {/* Thanh đếm ngược thời gian giữ đơn */}
+              <div className="py-2.5 px-3.5 bg-blue-50/90 border border-blue-200/80 rounded-xl flex items-center justify-between gap-2 text-xs font-bold text-blue-800">
+                <div className="flex items-center gap-2 text-blue-700">
+                  <Clock className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span>Mã QR & ưu đãi giữ trong:</span>
                 </div>
                 <OrderCountdownTimer createdAt={createdOrder.createdAt} compact />
               </div>
 
               {/* Thông tin nhận hàng & Tiền hàng */}
-              <div className="p-3 rounded-2xl bg-gray-50/90 border border-gray-200 text-xs text-left space-y-1.5">
-                <div className="flex items-center justify-between pb-1.5 border-b border-gray-200/80">
-                  <span className="text-gray-500 font-medium text-[11px]">Thông tin nhận hàng:</span>
-                  <span className="text-[11px] font-bold text-gray-800">
+              <div className="p-3.5 rounded-2xl bg-gray-50/90 border border-gray-200 text-xs text-left space-y-2">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-200/80">
+                  <span className="text-gray-500 font-medium text-xs">Thông tin nhận hàng:</span>
+                  <span className="text-xs font-bold text-gray-800">
                     {createdOrder.customer.fullName} • {createdOrder.customer.phone}
                   </span>
                 </div>
-                <div className="text-[11px] text-gray-600 flex justify-between gap-2">
+                <div className="text-xs text-gray-600 flex justify-between gap-2">
                   <span className="shrink-0 text-gray-500 font-medium">Địa chỉ:</span>
-                  <span className="text-right font-medium text-gray-800 truncate">
+                  <span className="text-right font-medium text-gray-800">
                     {createdOrder.customer.address}
                   </span>
                 </div>
-                <div className="flex justify-between text-[11px] pt-1 border-t border-gray-100">
+                <div className="flex justify-between text-xs pt-1.5 border-t border-gray-100">
                   <span className="text-gray-500 font-medium">Tiền hàng tạm tính:</span>
                   <strong className="text-gray-800">
                     {formatVND(createdOrder.subtotal || createdOrder.totalAmount || 0)}
                   </strong>
                 </div>
-                <div className="flex justify-between text-[11px]">
+                <div className="flex justify-between text-xs">
                   <span className="text-gray-500 font-medium">Phí vận chuyển:</span>
                   {(createdOrder.shippingFee || 0) > 0 ? (
                     <strong className="text-rose-600 font-bold">+{formatVND(createdOrder.shippingFee)}</strong>
@@ -1279,31 +1324,59 @@ export default function CheckoutPage() {
                   )}
                 </div>
               </div>
+
+              {/* Nút Khách Xác Nhận Đã Chuyển Khoản Ngay */}
+              <div className="space-y-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleCheckPaymentNow}
+                  disabled={isCheckingPayment}
+                  className="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-md hover:shadow-lg flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer disabled:opacity-60"
+                >
+                  {isCheckingPayment ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                      <span>Đang kiểm tra giao dịch với ngân hàng...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>⚡</span>
+                      <span>Tôi đã chuyển khoản xong • Kiểm tra ngay</span>
+                    </>
+                  )}
+                </button>
+
+                {checkPaymentNotice && (
+                  <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium text-center animate-fade-in">
+                    {checkPaymentNotice}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Footer đồng bộ: Dãy nút điều hướng gọn gàng */}
-            <div className="p-3.5 sm:p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-2">
+            {/* Footer đồng bộ: Dãy nút điều hướng cân đối trên cả Desktop & Điện thoại */}
+            <div className="p-3.5 sm:p-4 bg-gray-50 border-t border-gray-100 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2">
               <a
                 href={zaloShopUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="px-3 py-2 bg-white hover:bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
+                className="flex-1 sm:flex-initial px-3.5 py-2.5 bg-white hover:bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs"
               >
                 <MessageCircle className="w-3.5 h-3.5" />
                 <span>Nhắn Zalo shop</span>
               </a>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Link
                   href={loggedInCustomer ? '/tra-cuu-don-hang' : `/tra-cuu-don-hang?code=${encodeURIComponent(createdOrder.code)}`}
-                  className="px-3 py-2 bg-white hover:bg-gray-100 border border-gray-200 text-gray-700 font-bold text-xs rounded-xl transition"
+                  className="flex-1 sm:flex-initial px-3.5 py-2.5 bg-white hover:bg-gray-100 border border-gray-200 text-gray-700 font-bold text-xs rounded-xl transition text-center"
                 >
                   📦 Đơn của tôi
                 </Link>
 
                 <Link
                   href="/"
-                  className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-2xs"
+                  className="flex-1 sm:flex-initial px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-2xs text-center"
                 >
                   🏠 Mua tiếp
                 </Link>

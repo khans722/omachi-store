@@ -24,6 +24,39 @@ export default function PaymentModal({
   const [isDownloading, setIsDownloading] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isPaidSuccess, setIsPaidSuccess] = useState(false);
+  const [isCheckingPayment, setIsCheckingPayment] = useState(false);
+  const [checkPaymentNotice, setCheckPaymentNotice] = useState('');
+
+  const handleCheckPaymentNow = async () => {
+    if (!order) return;
+    setIsCheckingPayment(true);
+    setCheckPaymentNotice('');
+    try {
+      const res = await fetch('/api/orders/check-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id, code: order.code }),
+      });
+      const data = await res.json();
+      if (data.success && data.isPaid) {
+        setIsPaidSuccess(true);
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.5 },
+        });
+        if (onPaymentConfirmed) onPaymentConfirmed();
+      } else {
+        setCheckPaymentNotice(data.message || 'Đã gửi thông báo xác nhận đến shop! Shop sẽ duyệt đơn cho bạn trong giây lát nhé 💕');
+        setTimeout(() => setCheckPaymentNotice(''), 7000);
+      }
+    } catch (e) {
+      setCheckPaymentNotice('Đã gửi thông báo xác nhận đến shop! Shop sẽ duyệt đơn cho bạn trong giây lát nhé 💕');
+      setTimeout(() => setCheckPaymentNotice(''), 7000);
+    } finally {
+      setIsCheckingPayment(false);
+    }
+  };
 
   // Auto-polling SePay
   useEffect(() => {
@@ -110,6 +143,7 @@ export default function PaymentModal({
   const rawBank = (settings?.bankId || '').toUpperCase().trim();
   const isVietin = rawBank.includes('VIETIN') || rawBank.includes('CTG') || rawBank.includes('ICB') || (settings?.bankAccount || '').trim() === '106873248315';
   const bankId = rawBank.includes('VIETCOM') ? 'VCB' : rawBank.includes('MB') ? 'MB' : isVietin ? 'ICB' : rawBank;
+  const displayBankName = isVietin ? 'VietinBank' : rawBank.includes('VIETCOM') ? 'Vietcombank' : rawBank.includes('MB') ? 'MB Bank' : (rawBank || 'VietinBank');
   const transferContent = isVietin ? `SEVQR DH ${orderCode}` : `DH ${orderCode}`;
   const bankAccount = (settings?.bankAccount || '').trim();
   const bankOwner = (settings?.bankOwner || 'DUONG QUOC KHANH').trim().toUpperCase();
@@ -125,11 +159,11 @@ export default function PaymentModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
       <div
-        className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden max-h-[92vh] flex flex-col"
+        className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 sm:p-5 text-white flex items-center justify-between bg-gradient-to-r from-blue-600 to-indigo-700">
+        <div className="p-4 sm:p-5 text-white flex items-center justify-between bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-lg shrink-0">
               {isPaidSuccess ? '🎉' : '💳'}
@@ -154,7 +188,7 @@ export default function PaymentModal({
         </div>
 
         {/* Content */}
-        <div className="p-4 sm:p-5 overflow-y-auto space-y-3.5">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
           {isPaidSuccess ? (
             /* Khi SePay đã khớp thanh toán thành công */
             <div className="py-6 px-4 text-center space-y-3">
@@ -182,12 +216,12 @@ export default function PaymentModal({
                   <p className="text-xs text-gray-600 font-medium">Đang tải thông tin thanh toán từ hệ thống...</p>
                 </div>
               ) : (
-                <div className="flex flex-col items-center text-center p-3 sm:p-4 bg-blue-50/40 rounded-2xl border border-blue-100 space-y-2.5">
-                  <div className="p-2 bg-white rounded-2xl border border-blue-200 shadow-sm">
+                <div className="flex flex-col items-center text-center p-4 sm:p-5 bg-blue-50/40 rounded-2xl border border-blue-100 space-y-3">
+                  <div className="p-2.5 sm:p-3 bg-white rounded-2xl border border-blue-200 shadow-sm">
                     <img
                       src={vietQrUrl}
                       alt="Mã VietQR"
-                      className="w-48 h-auto sm:w-56 object-contain rounded-xl"
+                      className="w-52 h-52 sm:w-60 sm:h-60 aspect-square object-contain rounded-xl"
                     />
                   </div>
 
@@ -196,29 +230,29 @@ export default function PaymentModal({
                     type="button"
                     disabled={isDownloading}
                     onClick={() => downloadQrImage(vietQrUrl, `vietqr-omachi-${orderCode}.png`)}
-                    className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer disabled:opacity-50"
+                    className="w-full sm:max-w-xs py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer disabled:opacity-50"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>{isDownloading ? 'Đang tải...' : 'Tải mã QR'}</span>
                   </button>
 
                   {/* Bảng thông tin chuyển khoản: Gọn gàng 1 khung duy nhất, nút sao chép dạng pill tinh gọn */}
-                  <div className="w-full bg-stone-50/90 border border-stone-200 rounded-2xl p-2.5 space-y-2 text-xs text-left">
+                  <div className="w-full bg-stone-50/90 border border-stone-200 rounded-2xl p-3 sm:p-3.5 space-y-2.5 text-xs text-left">
                     {/* Hàng 1: Ngân hàng & Chủ tài khoản */}
-                    <div className="flex items-center justify-between gap-2 px-1 text-[11px]">
+                    <div className="flex items-center justify-between gap-2 px-1 text-xs">
                       <div>
-                        <span className="text-stone-400">Ngân hàng: </span>
-                        <strong className="text-stone-800 font-bold">{rawBank || 'VietinBank'}</strong>
+                        <span className="text-stone-400 font-medium">Ngân hàng: </span>
+                        <strong className="text-stone-900 font-extrabold">{displayBankName}</strong>
                       </div>
                       <div className="text-right truncate">
-                        <span className="text-stone-400">Chủ TK: </span>
-                        <strong className="text-stone-800 font-bold uppercase">{bankOwner}</strong>
+                        <span className="text-stone-400 font-medium">Chủ TK: </span>
+                        <strong className="text-stone-900 font-extrabold uppercase">{bankOwner}</strong>
                       </div>
                     </div>
 
                     {/* Hàng 2: Số tài khoản dạng pill */}
-                    <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-stone-200/60 px-1">
-                      <span className="text-stone-500 text-[11px] font-medium">Số tài khoản:</span>
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-stone-200/70 px-1">
+                      <span className="text-stone-600 text-xs font-semibold">Số tài khoản:</span>
                       <button
                         type="button"
                         onClick={() => copyToClipboard(bankAccount, 'stk')}
@@ -235,8 +269,8 @@ export default function PaymentModal({
                     </div>
 
                     {/* Hàng 3: Nội dung CK dạng pill */}
-                    <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-stone-200/60 px-1">
-                      <span className="text-stone-500 text-[11px] font-medium">Nội dung CK:</span>
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-stone-200/70 px-1">
+                      <span className="text-stone-600 text-xs font-semibold">Nội dung CK:</span>
                       <button
                         type="button"
                         onClick={() => copyToClipboard(transferContent, 'nd')}
@@ -255,10 +289,32 @@ export default function PaymentModal({
                 </div>
               )}
 
-              {/* Trạng thái thanh toán: Gọn gàng, không rườm rà */}
-              <div className="py-2 px-3 bg-blue-50 border border-blue-200/80 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-blue-800">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600 shrink-0" />
-                <span>Đang chờ thanh toán</span>
+              {/* Nút Khách Xác Nhận Đã Chuyển Khoản Ngay */}
+              <div className="space-y-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleCheckPaymentNow}
+                  disabled={isCheckingPayment}
+                  className="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer disabled:opacity-60"
+                >
+                  {isCheckingPayment ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                      <span>Đang kiểm tra giao dịch...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>⚡</span>
+                      <span>Tôi đã chuyển khoản xong • Kiểm tra ngay</span>
+                    </>
+                  )}
+                </button>
+
+                {checkPaymentNotice && (
+                  <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium text-center animate-fade-in">
+                    {checkPaymentNotice}
+                  </div>
+                )}
               </div>
             </>
           )}

@@ -147,6 +147,16 @@ ${shopNoteText}
       // Nút bấm tương tác trực tiếp dưới tin nhắn Telegram
       const inlineKeyboard: Array<Array<{ text: string; url: string }>> = [];
 
+      // Nút 1 chạm duyệt đã nhận tiền cho đơn Chuyển khoản VietQR chưa thanh toán
+      if (isPrepaid && !isPaid && !isCancelled) {
+        inlineKeyboard.push([
+          {
+            text: `✅ XÁC NHẬN ĐÃ NHẬN TIỀN (+${formatVND(order.finalTotalAmount || order.totalAmount)})`,
+            url: confirmPayUrl,
+          },
+        ]);
+      }
+
       // Nút xem chi tiết đơn hàng
       inlineKeyboard.push([
         { text: `📦 Xem & Theo Dõi Đơn #${order.code}`, url: orderViewUrl },

@@ -70,10 +70,43 @@ export default function OrderTrackingPage() {
   const [customReason, setCustomReason] = useState('');
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ text: string; isError?: boolean } | null>(null);
+  const [isCheckingPayment, setIsCheckingPayment] = useState(false);
+  const [checkPaymentNotice, setCheckPaymentNotice] = useState('');
 
   const showToast = (text: string, isError = false) => {
     setToastMessage({ text, isError });
     setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  const handleCheckPaymentNow = async () => {
+    if (!order) return;
+    setIsCheckingPayment(true);
+    setCheckPaymentNotice('');
+    try {
+      const res = await fetch('/api/orders/check-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id, code: order.code }),
+      });
+      const data = await res.json();
+      if (data.success && data.isPaid && data.order) {
+        setOrder(data.order);
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.5 },
+        });
+        showToast('🎉 Thanh toán thành công! Shop đã nhận được tiền.');
+      } else {
+        setCheckPaymentNotice(data.message || 'Đã gửi thông báo đến shop! Shop sẽ duyệt đơn cho bạn ngay nhé 💕');
+        setTimeout(() => setCheckPaymentNotice(''), 7000);
+      }
+    } catch (e) {
+      setCheckPaymentNotice('Đã gửi thông báo đến shop! Shop sẽ duyệt đơn cho bạn ngay nhé 💕');
+      setTimeout(() => setCheckPaymentNotice(''), 7000);
+    } finally {
+      setIsCheckingPayment(false);
+    }
   };
 
   const handleConfirmCancel = async () => {
@@ -528,6 +561,7 @@ export default function OrderTrackingPage() {
                   const rawBank = (settings?.bankId || '').toUpperCase().trim();
                   const isVietin = rawBank.includes('VIETIN') || rawBank.includes('CTG') || rawBank.includes('ICB') || (settings?.bankAccount || '').trim() === '106873248315';
                   const qrBank = rawBank.includes('VIETCOM') ? 'VCB' : rawBank.includes('MB') ? 'MB' : isVietin ? 'ICB' : rawBank;
+                  const displayBankName = isVietin ? 'VietinBank' : rawBank.includes('VIETCOM') ? 'Vietcombank' : rawBank.includes('MB') ? 'MB Bank' : (rawBank || 'VietinBank');
                   const bankAccount = (settings?.bankAccount || '').trim();
                   const bankOwner = (settings?.bankOwner ? settings.bankOwner.trim().toUpperCase() : 'DUONG QUOC KHANH');
                   const transferContent = isVietin ? `SEVQR DH ${order.code}` : `DH ${order.code}`;
@@ -569,7 +603,7 @@ export default function OrderTrackingPage() {
                         <div className="flex items-center justify-between gap-2 px-1 text-[11px]">
                           <div>
                             <span className="text-stone-400">Ngân hàng: </span>
-                            <strong className="text-stone-800 font-bold">{rawBank || 'VietinBank'}</strong>
+                            <strong className="text-stone-800 font-bold">{displayBankName}</strong>
                           </div>
                           <div className="text-right truncate">
                             <span className="text-stone-400">Chủ TK: </span>
@@ -616,6 +650,34 @@ export default function OrderTrackingPage() {
                     </div>
                   );
                 })()}
+
+                {/* Nút Khách Xác Nhận Đã Chuyển Khoản Ngay */}
+                <div className="space-y-1.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleCheckPaymentNow}
+                    disabled={isCheckingPayment}
+                    className="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs rounded-xl shadow-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer disabled:opacity-60"
+                  >
+                    {isCheckingPayment ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                        <span>Đang kiểm tra giao dịch...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>⚡</span>
+                        <span>Tôi đã chuyển khoản xong • Kiểm tra ngay</span>
+                      </>
+                    )}
+                  </button>
+
+                  {checkPaymentNotice && (
+                    <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium text-center animate-fade-in">
+                      {checkPaymentNotice}
+                    </div>
+                  )}
+                </div>
 
                 {/* Trạng thái thanh toán: Gọn gàng 1 dòng */}
                 <div className="py-2 px-3 bg-blue-50 border border-blue-200/80 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-blue-800">

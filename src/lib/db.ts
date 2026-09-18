@@ -3006,8 +3006,44 @@ export const db = {
         } catch (e) {}
       }
 
+      // Khấu trừ tồn kho sản phẩm khi khách đặt đơn
+      if (dbData.products && Array.isArray(dbData.products)) {
+        for (const item of mappedItems) {
+          const prodId = item.productId;
+          const pIdx = dbData.products.findIndex((p: any) => p.id === prodId);
+          if (pIdx !== -1) {
+            const qty = Number(item.quantity || 1);
+            dbData.products[pIdx].stock = Math.max(0, (dbData.products[pIdx].stock || 0) - qty);
+            dbData.products[pIdx].soldCount = (dbData.products[pIdx].soldCount || 0) + qty;
+            if (item.variantName || item.variantId) {
+              const vIdx = (dbData.products[pIdx].variants || []).findIndex(
+                (v: any) => (item.variantId && v.id === item.variantId) || (item.variantName && v.name === item.variantName)
+              );
+              if (vIdx !== -1) {
+                dbData.products[pIdx].variants[vIdx].stock = Math.max(0, (dbData.products[pIdx].variants[vIdx].stock || 0) - qty);
+              }
+            }
+          }
+        }
+      }
+
       dbData.orders.unshift(newOrder);
       writeDb(dbData);
+
+      // Đồng bộ trừ tồn kho lên Supabase ngầm
+      try {
+        for (const item of mappedItems) {
+          const prodId = item.productId;
+          const prod = dbData.products?.find((p: any) => p.id === prodId);
+          if (prod) {
+            await supabase.from('products').update({
+              stock: prod.stock,
+              sold_count: prod.soldCount,
+              variants: prod.variants,
+            }).eq('id', prodId);
+          }
+        }
+      } catch (e) {}
 
       try {
         const itemsSummary = mappedItems.map(i => `${i.productName || 'Sản phẩm'} (x${i.quantity || 1})`).join(', ');
