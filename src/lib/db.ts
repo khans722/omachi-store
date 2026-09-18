@@ -2602,6 +2602,39 @@ export const db = {
       return readDb().orders || [];
     },
 
+    async clearAll(): Promise<boolean> {
+      const dbData = readDb();
+      dbData.orders = [];
+      dbData.customers = [];
+
+      if (dbData.products && Array.isArray(dbData.products)) {
+        dbData.products.forEach((p) => {
+          if (p.variants && p.variants.length > 0) {
+            p.variants.forEach((v) => { v.stock = 1000; });
+            p.stock = p.variants.reduce((sum, v) => sum + (v.stock || 0), 0);
+          } else {
+            p.stock = 5000;
+          }
+        });
+      }
+
+      writeDb(dbData);
+
+      try {
+        await supabase.from('orders').delete().neq('id', '___NEVER_MATCH___');
+      } catch (e) {
+        console.error('[Supabase clearAll orders error]:', e);
+      }
+
+      try {
+        await supabase.from('customers').delete().neq('id', '___NEVER_MATCH___');
+      } catch (e) {
+        console.error('[Supabase clearAll customers error]:', e);
+      }
+
+      return true;
+    },
+
     async getById(idOrCode: string): Promise<Order | undefined> {
       if (!idOrCode) return undefined;
       const clean = idOrCode.replace(/^#/, '').trim();

@@ -132,3 +132,19 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
+export async function DELETE() {
+  try {
+    await db.orders.clearAll();
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Đã xóa sạch toàn bộ đơn hàng và khôi phục tồn kho mặc định thành công! ✨' 
+    });
+  } catch (error: any) {
+    console.error('Error clearing orders:', error);
+    return NextResponse.json({ 
+      success: false, 
+      message: 'Lỗi khi xóa đơn hàng: ' + (error?.message || error) 
+    }, { status: 500 });
+  }
+}
+

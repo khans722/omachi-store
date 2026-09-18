@@ -99,7 +99,7 @@
           "sku": "OM-BEAD-01-PK",
           "name": "Mix Hồng Pastel 🌸",
           "colorHex": "#FFB6C1",
-          "stock": 1500,
+          "stock": 1000,
           "soldCount": 620,
           "isActive": true
         },
@@ -108,7 +108,7 @@
           "sku": "OM-BEAD-01-LV",
           "name": "Mix Tím Lavender 💜",
           "colorHex": "#D8B4FE",
-          "stock": 1200,
+          "stock": 1000,
           "soldCount": 410,
           "isActive": true
         },
@@ -117,7 +117,7 @@
           "sku": "OM-BEAD-01-MT",
           "name": "Mix Xanh Bơ Mint 🌿",
           "colorHex": "#A7F3D0",
-          "stock": 900,
+          "stock": 1000,
           "soldCount": 330,
           "isActive": true
         },
@@ -126,7 +126,7 @@
           "sku": "OM-BEAD-01-BT",
           "name": "Mix Vàng Kem Bơ 🧈",
           "colorHex": "#FDE68A",
-          "stock": 800,
+          "stock": 1000,
           "soldCount": 250,
           "isActive": true
         },
@@ -135,7 +135,7 @@
           "sku": "OM-BEAD-01-RB",
           "name": "Mix Cầu Vồng Pastel 🌈",
           "colorHex": "#FDA4AF",
-          "stock": 0,
+          "stock": 1000,
           "soldCount": 230,
           "isActive": true
         }
@@ -212,7 +212,7 @@
       "isHot": true,
       "isNewArrival": false,
       "isCustomizable": false,
-      "stock": 350,
+      "stock": 4000,
       "soldCount": 920,
       "ratingAvg": 5,
       "ratingCount": 148,
@@ -222,7 +222,7 @@
           "sku": "OM-CLIP-02-PK",
           "name": "Hoa Hồng Baby 🌸",
           "colorHex": "#FDA4AF",
-          "stock": 100,
+          "stock": 1000,
           "soldCount": 310,
           "isActive": true
         },
@@ -231,7 +231,7 @@
           "sku": "OM-CLIP-02-BL",
           "name": "Hoa Xanh Pastel 🩵",
           "colorHex": "#93C5FD",
-          "stock": 90,
+          "stock": 1000,
           "soldCount": 220,
           "isActive": true
         },
@@ -240,7 +240,7 @@
           "sku": "OM-CLIP-02-LV",
           "name": "Hoa Tím Lavender 💜",
           "colorHex": "#C084FC",
-          "stock": 80,
+          "stock": 1000,
           "soldCount": 210,
           "isActive": true
         },
@@ -249,7 +249,7 @@
           "sku": "OM-CLIP-02-BT",
           "name": "Hoa Vàng Bơ 🧈",
           "colorHex": "#FDE047",
-          "stock": 80,
+          "stock": 1000,
           "soldCount": 180,
           "isActive": true
         }
@@ -316,7 +316,7 @@
       "isHot": true,
       "isNewArrival": true,
       "isCustomizable": true,
-      "stock": 120,
+      "stock": 4000,
       "soldCount": 450,
       "ratingAvg": 4.9,
       "ratingCount": 89,
@@ -326,7 +326,7 @@
           "sku": "OM-BRAC-03-PK",
           "name": "Hồng Kẹo Ngọt 🌸",
           "colorHex": "#F472B6",
-          "stock": 40,
+          "stock": 1000,
           "soldCount": 150,
           "isActive": true
         },
@@ -335,7 +335,7 @@
           "sku": "OM-BRAC-03-BL",
           "name": "Xanh Biển Trong Veo 🩵",
           "colorHex": "#38BDF8",
-          "stock": 30,
+          "stock": 1000,
           "soldCount": 120,
           "isActive": true
         },
@@ -344,7 +344,7 @@
           "sku": "OM-BRAC-03-PL",
           "name": "Tím Khói Fairy 💜",
           "colorHex": "#A855F7",
-          "stock": 30,
+          "stock": 1000,
           "soldCount": 100,
           "isActive": true
         },
@@ -353,7 +353,7 @@
           "sku": "OM-BRAC-03-MT",
           "name": "Xanh Bơ Thanh Mát 🌿",
           "colorHex": "#34D399",
-          "stock": 20,
+          "stock": 1000,
           "soldCount": 80,
           "isActive": true
         }
@@ -419,7 +419,7 @@
       "isHot": false,
       "isNewArrival": true,
       "isCustomizable": false,
-      "stock": 200,
+      "stock": 2000,
       "soldCount": 310,
       "ratingAvg": 4.8,
       "ratingCount": 54,
@@ -429,7 +429,7 @@
           "sku": "OM-PHONE-04-NECK",
           "name": "Dây Thẻ Đeo Cổ (45cm) 🎀",
           "colorHex": "#E879F9",
-          "stock": 110,
+          "stock": 1000,
           "soldCount": 180,
           "isActive": true
         },
@@ -438,7 +438,7 @@
           "sku": "OM-PHONE-04-HAND",
           "name": "Móc Cầm Tay (15cm) ✨",
           "colorHex": "#FB7185",
-          "stock": 90,
+          "stock": 1000,
           "soldCount": 130,
           "isActive": true
         }
@@ -496,7 +496,7 @@
       "isHot": true,
       "isNewArrival": true,
       "isCustomizable": true,
-      "stock": 35,
+      "stock": 2000,
       "soldCount": 168,
       "ratingAvg": 5,
       "ratingCount": 62,
@@ -506,7 +506,7 @@
           "sku": "OM-WATCH-05-GD",
           "name": "Mặt Tròn Vàng Gold + Cườm Ngọc",
           "colorHex": "#F59E0B",
-          "stock": 20,
+          "stock": 1000,
           "soldCount": 98,
           "isActive": true
         },
@@ -515,7 +515,7 @@
           "sku": "OM-WATCH-05-SV",
           "name": "Mặt Vuông Bạc + Cườm Xanh Băng",
           "colorHex": "#06B6D4",
-          "stock": 15,
+          "stock": 1000,
           "soldCount": 70,
           "isActive": true
         }
@@ -568,7 +568,7 @@
       "isHot": true,
       "isNewArrival": true,
       "isCustomizable": false,
-      "stock": 800,
+      "stock": 2000,
       "soldCount": 1530,
       "ratingAvg": 4.9,
       "ratingCount": 310,
@@ -578,7 +578,7 @@
           "sku": "OM-BAG-06-FL",
           "name": "Túi Mù Charm Hoa & Quả 🍓",
           "colorHex": "#EF4444",
-          "stock": 450,
+          "stock": 1000,
           "soldCount": 820,
           "isActive": true
         },
@@ -587,7 +587,7 @@
           "sku": "OM-BAG-06-BW",
           "name": "Túi Mù Kẹp Tóc & Nơ 🎀",
           "colorHex": "#EC4899",
-          "stock": 350,
+          "stock": 1000,
           "soldCount": 710,
           "isActive": true
         }

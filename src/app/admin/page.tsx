@@ -688,38 +688,9 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         const serverOrders: Order[] = data.data;
-        const map = new Map<string, Order>();
 
-        // Put server orders in map
-        serverOrders.forEach((o) => {
-          const key = (o.id || o.code || '').toLowerCase().replace(/^#/, '').trim();
-          if (key) map.set(key, o);
-        });
-
-        // Merge local orders (recover orders created during cold-starts or with newer client edits)
-        const missingOnServer: Order[] = [];
-        localOrders.forEach((lo) => {
-          const key = (lo.id || lo.code || '').toLowerCase().replace(/^#/, '').trim();
-          if (!key) return;
-          if (!map.has(key)) {
-            map.set(key, lo);
-            missingOnServer.push(lo);
-          } else {
-            const serverO = map.get(key)!;
-            const sTime = new Date(serverO.updatedAt || serverO.createdAt || 0).getTime();
-            const lTime = new Date(lo.updatedAt || lo.createdAt || 0).getTime();
-            if (lTime > sTime) {
-              map.set(key, lo);
-            }
-          }
-        });
-
-        const mergedOrders = Array.from(map.values()).sort(
-          (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-        );
-
-        // Chuẩn hóa: Đơn chuyển khoản chưa thanh toán thì bắt buộc là PENDING_CONFIRM (Chờ khách chuyển khoản)
-        const sanitizedOrders = mergedOrders.map((o) => {
+        // Chuẩn hóa: Đơn chuyển khoản chưa thanh toán thì bắt buộc là PENDING_CONFIRM
+        const sanitizedOrders = serverOrders.map((o) => {
           const isPrepaidUnpaid = (o.paymentMethod === 'BANK' || o.paymentMethod === 'MOMO') && o.paymentStatus !== 'PAID' && o.orderStatus !== 'CANCELLED';
           if (isPrepaidUnpaid && o.orderStatus !== 'PENDING_CONFIRM') {
             return { ...o, orderStatus: 'PENDING_CONFIRM' as OrderStatus };
@@ -731,15 +702,6 @@ export default function AdminPage() {
         try {
           localStorage.setItem('omachi_admin_orders_v2', JSON.stringify(sanitizedOrders));
         } catch (e) {}
-
-        // Auto background sync any local orders back to the server container
-        if (missingOnServer.length > 0) {
-          fetch('/api/orders', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ syncOrders: missingOnServer }),
-          }).catch(() => {});
-        }
       } else if (localOrders.length > 0) {
         setOrders(localOrders);
       }
@@ -751,6 +713,26 @@ export default function AdminPage() {
       } catch (e) {}
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleClearAllOrders = async () => {
+    try {
+      const res = await fetch('/api/orders', { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setOrders([]);
+        try {
+          localStorage.removeItem('omachi_admin_orders_v2');
+          localStorage.removeItem('omachi_customer_orders');
+        } catch (e) {}
+        showAdminToast('Đã xóa sạch toàn bộ đơn hàng và khôi phục tồn kho thành công! ✨');
+        fetchProducts();
+      } else {
+        showAdminToast(data.message || 'Lỗi khi xóa đơn hàng', true);
+      }
+    } catch (err: any) {
+      showAdminToast('Lỗi kết nối khi xóa đơn: ' + (err.message || err), true);
     }
   };
 
@@ -1713,6 +1695,29 @@ export default function AdminPage() {
                   {filteredOrders.length} đơn
                 </span>
               </div>
+
+              <button
+                type="button"
+                onClick={() => fetchOrders()}
+                className="p-2 rounded-xl border border-gray-200 text-gray-600 bg-gray-50 hover:bg-gray-100 transition shrink-0 cursor-pointer"
+                title="Tải lại danh sách đơn hàng"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm('⚠️ BẠN CÓ CHẮC MUỐN XÓA TOÀN BỘ ĐƠN HÀNG?\\n\\nThao tác này sẽ xóa sạch tất cả đơn hàng trên Supabase/hệ thống và khôi phục tồn kho sản phẩm về mặc định để test từ đầu!')) {
+                    handleClearAllOrders();
+                  }
+                }}
+                className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition flex items-center gap-1 shrink-0 cursor-pointer"
+                title="Xóa sạch toàn bộ đơn hàng và đặt lại tồn kho để test"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Reset test</span>
+              </button>
             </div>
           </div>
 
