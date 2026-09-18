@@ -75,22 +75,26 @@ function formatVietnamDateTime(dateStr?: string | Date): string {
     })
     .join('\n');
 
-  const envUrl = (process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '')).replace(/\/$/, '');
-  const configUrl = ((settings as any).websiteUrl || '').replace(/\/$/, '');
-  const reqUrl = (requestOrigin || '').replace(/\/$/, '');
+  // Luôn luôn ưu tiên domain chính thức public, không bao giờ dùng domain preview nội bộ của Vercel (bị chặn xác thực Vercel Auth)
+  const canonicalDomain = 'https://omachi-store-theta.vercel.app';
+  const customDomain = ((settings as any).websiteUrl || '').trim().replace(/\/$/, '');
 
-  // Tự động nhận diện domain thật khi đã deploy lên mạng
-  let baseUrl = 'https://omachi-store-theta.vercel.app';
-  if (configUrl && !configUrl.includes('localhost')) {
-    baseUrl = configUrl;
-  } else if (reqUrl && !reqUrl.includes('localhost')) {
-    baseUrl = reqUrl;
-  } else if (envUrl && !envUrl.includes('localhost')) {
-    baseUrl = envUrl;
+  let baseUrl = canonicalDomain;
+  if (customDomain && !customDomain.includes('localhost') && !customDomain.includes('127.0.0.1')) {
+    baseUrl = customDomain;
+  } else if (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost')) {
+    baseUrl = process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
   }
 
-  const orderViewUrl = `${baseUrl}/order/${order.code || order.id}`;
+  const cleanOrderCode = (order.code || order.id || '').replace(/^#/, '').trim();
+  const orderViewUrl = `${baseUrl}/order/${encodeURIComponent(cleanOrderCode)}`;
   const adminUrl = `${baseUrl}/admin`;
+
+  const footerLinksHtml = `
+----------------------------------------
+👉 <a href="${orderViewUrl}"><b>Bấm để xem chi tiết đơn #${cleanOrderCode}</b></a>
+👉 <a href="${adminUrl}"><b>Bấm để mở Trang Quản Trị Shop</b></a>
+`.trim();
 
   let messageHtml = '';
 
@@ -108,6 +112,8 @@ function formatVietnamDateTime(dateStr?: string | Date): string {
 📍 <b>Địa chỉ:</b> ${cleanAddress}
 ${cleanNote ? `📝 <b>Ghi chú:</b> <i>"${cleanNote}"</i>\n` : ''}
 ♻️ <i>Số lượng tồn kho sản phẩm đã được tự động hoàn lại.</i>
+
+${footerLinksHtml}
 `.trim();
   } else if (isPaid) {
     messageHtml = `
@@ -126,6 +132,8 @@ ${itemsHtml}
 
 🚚 <b>Vận chuyển:</b> SPX Express (Freeship 0đ)
 ✨ <i>Tiền đã khớp SePay 100%. Shop an tâm đóng hàng gửi khách!</i>
+
+${footerLinksHtml}
 `.trim();
   } else if (isPrepaid) {
     messageHtml = `
@@ -143,6 +151,8 @@ ${cleanNote ? `📝 <b>Ghi chú:</b> <i>"${cleanNote}"</i>\n` : ''}
 ${itemsHtml}
 
 ⚠️ <i>Chờ khách quét QR. KHÔNG gửi hàng cho đến khi SePay báo đã nhận tiền!</i>
+
+${footerLinksHtml}
 `.trim();
   } else {
     // Đơn COD
@@ -164,6 +174,8 @@ ${itemsHtml}
 
 🚚 <b>Tiền hàng:</b> ${goodsSubtotal} • <b>Ship:</b> ${shippingFeeStr}
 💡 <i>Shop đóng hàng giao bưu tá SPX. Shipper sẽ thu ${totalAmountFormatted} khi giao.</i>
+
+${footerLinksHtml}
 `.trim();
   }
 
@@ -177,25 +189,21 @@ ${itemsHtml}
       const cleanDigits = (order.customer?.phone || '').replace(/[^0-9]/g, '');
       const zaloChatUrl = `https://zalo.me/${cleanDigits}`;
 
-      // Nút bấm tương tác trực tiếp dưới tin nhắn Telegram (Không gắn nút duyệt tiền trực tiếp để bảo mật)
+      // Nút bấm tương tác trực tiếp dưới tin nhắn Telegram
       const inlineKeyboard: Array<Array<{ text: string; url: string }>> = [];
 
-      // Nút xem chi tiết đơn hàng
+      // Hàng 1: Nút xem chi tiết đơn hàng
       inlineKeyboard.push([
-        { text: `📦 Xem & Theo Dõi Đơn #${order.code}`, url: orderViewUrl },
+        { text: `📦 Xem Đơn Hàng #${cleanOrderCode}`, url: orderViewUrl },
       ]);
 
-      // Nút chat Zalo với khách
+      // Hàng 2: Nút chat Zalo & Nút mở trang Admin
+      const row2: Array<{ text: string; url: string }> = [];
       if (cleanDigits) {
-        inlineKeyboard.push([
-          { text: `💬 Mở Chat Zalo Với Khách (${cleanDigits})`, url: zaloChatUrl },
-        ]);
+        row2.push({ text: `💬 Chat Zalo (${cleanDigits})`, url: zaloChatUrl });
       }
-
-      // Nút mở trang Admin (cần đăng nhập bảo mật)
-      inlineKeyboard.push([
-        { text: `🔐 Mở Trang Quản Trị Shop`, url: adminUrl },
-      ]);
+      row2.push({ text: `🔐 Quản Trị Shop`, url: adminUrl });
+      inlineKeyboard.push(row2);
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3500);
