@@ -166,6 +166,7 @@ export default function OrderTrackingPage() {
   ];
 
   const getStepIndex = (status: OrderStatus) => {
+    if (isPrepaidUnpaid) return 0;
     switch (status) {
       case 'PENDING_CONFIRM':
         return 0;

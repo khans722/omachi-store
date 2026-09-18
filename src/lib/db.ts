@@ -3014,6 +3014,16 @@ export const db = {
 
       if (index === -1) return null;
 
+      const targetOrder = dbData.orders[index];
+      const isPrepaid = targetOrder.paymentMethod === 'BANK' || targetOrder.paymentMethod === 'MOMO';
+      const willBePaid = paymentStatus === 'PAID' || targetOrder.paymentStatus === 'PAID';
+
+      // Chặn cứng: đơn chuyển khoản chưa thanh toán thì tuyệt đối không được chuyển sang PREPARING, SHIPPING, COMPLETED!
+      if (isPrepaid && !willBePaid && (status === 'PREPARING' || status === 'SHIPPING' || status === 'COMPLETED')) {
+        console.warn(`[SECURITY BLOCK]: Chặn đơn #${targetOrder.code} sang ${status} do chưa thanh toán tiền!`);
+        return null;
+      }
+
       const oldStatus = dbData.orders[index].orderStatus;
       if (status) {
         dbData.orders[index].orderStatus = status;

@@ -43,7 +43,10 @@ export async function PATCH(
     );
 
     if (!updated) {
-      return NextResponse.json({ success: false, message: 'Order not found' }, { status: 404 });
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Không thể cập nhật: Đơn hàng chuyển khoản VietQR chưa thanh toán tiền, không thể xác nhận đơn hoặc giao hàng!' 
+      }, { status: 400 });
     }
 
     // Send notification update in background

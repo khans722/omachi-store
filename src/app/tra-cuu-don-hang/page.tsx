@@ -40,9 +40,9 @@ function getStatusBadge(order: Order) {
     };
   }
 
-  // Đơn chuyển khoản (VietQR / MoMo) chưa thanh toán tiền
+  // Đơn chuyển khoản (VietQR / MoMo) chưa thanh toán tiền: Luôn luôn là Chờ thanh toán (Bước 1)
   const isPrepaidUnpaid = (order.paymentMethod === 'BANK' || order.paymentMethod === 'MOMO') && order.paymentStatus !== 'PAID';
-  if (isPrepaidUnpaid && order.orderStatus === 'PENDING_CONFIRM') {
+  if (isPrepaidUnpaid) {
     return {
       label: 'Chờ thanh toán',
       bg: 'bg-amber-50 text-amber-800 border-amber-300',

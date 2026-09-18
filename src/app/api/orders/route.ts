@@ -23,6 +23,18 @@ export async function GET() {
         hasChanges = true;
       }
     }
+
+    // 2. Tự động khắc phục đơn Chuyển khoản chưa thanh toán nhưng bị nhảy sai trạng thái (như OM-2021, OM-1084)
+    if (
+      (o.paymentMethod === 'BANK' || o.paymentMethod === 'MOMO') &&
+      o.paymentStatus !== 'PAID' &&
+      o.orderStatus !== 'CANCELLED' &&
+      o.orderStatus !== 'PENDING_CONFIRM'
+    ) {
+      console.log(`[AUTO-HEAL]: Đưa đơn #${o.code} từ ${o.orderStatus} về PENDING_CONFIRM do khách chưa thanh toán.`);
+      await db.orders.updateStatus(o.id, 'PENDING_CONFIRM', 'UNPAID');
+      hasChanges = true;
+    }
   }
 
   const finalOrders = hasChanges ? await db.orders.getAll() : orders;
@@ -91,7 +103,10 @@ export async function PATCH(req: NextRequest) {
     );
 
     if (!updated) {
-      return NextResponse.json({ success: false, message: 'Order not found' }, { status: 404 });
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Không thể cập nhật: Đơn hàng chuyển khoản VietQR chưa thanh toán tiền, không thể xác nhận đơn hoặc giao hàng!' 
+      }, { status: 400 });
     }
 
     // Send notification update in background
