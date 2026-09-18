@@ -535,6 +535,7 @@ function OrderLookupContent() {
           cancelReason: finalReason,
           cancelledBy: 'CUSTOMER',
           restock: true,
+          order: cancellingOrder,
         }),
       });
       const data = await res.json();

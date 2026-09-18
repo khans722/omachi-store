@@ -1157,6 +1157,7 @@ export default function AdminPage() {
         cancelReason: finalReason,
         cancelledBy: 'SHOP',
         restock: true, // Luôn luôn hoàn lại số lượng tồn kho khi hủy đơn
+        order: cancellingOrder,
       };
       const res = await fetch('/api/orders', {
         method: 'PATCH',

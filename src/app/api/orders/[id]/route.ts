@@ -45,7 +45,7 @@ export async function PATCH(
     if (!updated) {
       return NextResponse.json({ 
         success: false, 
-        message: 'Không thể cập nhật: Đơn hàng chuyển khoản VietQR chưa thanh toán tiền, không thể xác nhận đơn hoặc giao hàng!' 
+        message: 'Không tìm thấy đơn hàng hoặc cập nhật trạng thái không thành công' 
       }, { status: 400 });
     }
 
@@ -62,9 +62,11 @@ export async function PATCH(
     });
 
     return NextResponse.json({ success: true, data: updated });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating order:', error);
-    return NextResponse.json({ success: false, message: 'Failed to update order' }, { status: 500 });
+    const msg = error?.message || 'Lỗi khi cập nhật trạng thái đơn hàng';
+    const cleanMsg = msg.replace(/^[A-Z_]+:\s*/, '');
+    return NextResponse.json({ success: false, message: cleanMsg }, { status: 400 });
   }
 }
 

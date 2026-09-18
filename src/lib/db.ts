@@ -3176,21 +3176,42 @@ export const db = {
         (o.code && o.code.replace(/^#/, '').toLowerCase() === cleanId)
       );
 
+      // Nếu không có trong database.json cục bộ, tự động tra cứu từ Supabase
+      if (index === -1) {
+        try {
+          let { data } = await supabase.from('orders').select('*').eq('id', cleanId).maybeSingle();
+          if (!data) {
+            const res = await supabase.from('orders').select('*').ilike('code', cleanId).maybeSingle();
+            if (res.data) data = res.data;
+          }
+          if (data) {
+            const mapped = mapOrderFromSupabase(data);
+            dbData.orders.unshift(mapped);
+            index = 0;
+          }
+        } catch (e) {
+          console.warn('[Supabase updateStatus fetch fallback]:', e);
+        }
+      }
+
       if (index === -1 && fallbackOrder) {
         dbData.orders.unshift(fallbackOrder);
         index = 0;
       }
 
-      if (index === -1) return null;
+      if (index === -1) {
+        throw new Error('ORDER_NOT_FOUND: Không tìm thấy đơn hàng trên hệ thống');
+      }
 
       const targetOrder = dbData.orders[index];
       const isPrepaid = targetOrder.paymentMethod === 'BANK' || targetOrder.paymentMethod === 'MOMO';
       const willBePaid = paymentStatus === 'PAID' || targetOrder.paymentStatus === 'PAID';
 
       // Chặn cứng: đơn chuyển khoản chưa thanh toán thì tuyệt đối không được chuyển sang PREPARING, SHIPPING, COMPLETED!
-      if (isPrepaid && !willBePaid && (status === 'PREPARING' || status === 'SHIPPING' || status === 'COMPLETED')) {
+      // (Được phép HỦY ĐƠN CANCELLED bất cứ lúc nào nếu khách đổi ý hoặc shop hủy)
+      if (isPrepaid && !willBePaid && status !== 'CANCELLED' && (status === 'PREPARING' || status === 'SHIPPING' || status === 'COMPLETED')) {
         console.warn(`[SECURITY BLOCK]: Chặn đơn #${targetOrder.code} sang ${status} do chưa thanh toán tiền!`);
-        return null;
+        throw new Error('SECURITY_PREPAID_UNPAID: Đơn hàng chuyển khoản VietQR chưa thanh toán tiền, không thể xác nhận đơn hoặc giao hàng!');
       }
 
       const oldStatus = dbData.orders[index].orderStatus;
