@@ -856,7 +856,63 @@ export default function CheckoutPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
-  const [hasNotifiedPaid, setHasNotifiedPaid] = useState(false);
+
+  // Polling tự động kiểm tra trạng thái thanh toán VietQR từ SePay
+  useEffect(() => {
+    if (!createdOrder) return;
+    if (createdOrder.paymentMethod !== 'BANK') return;
+    if (createdOrder.paymentStatus === 'PAID') return;
+
+    let isMounted = true;
+    const checkOrderPayment = async () => {
+      try {
+        const orderIdOrCode = createdOrder.id || createdOrder.code;
+        const res = await fetch(`/api/orders/${encodeURIComponent(orderIdOrCode)}`, {
+          cache: 'no-store',
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.success && data.data) {
+          const freshOrder = data.data;
+          if (freshOrder.paymentStatus === 'PAID') {
+            if (isMounted) {
+              setCreatedOrder(freshOrder);
+              try {
+                const custOrders = JSON.parse(localStorage.getItem('omachi_customer_orders') || '[]');
+                localStorage.setItem(
+                  'omachi_customer_orders',
+                  JSON.stringify([freshOrder, ...custOrders.filter((o: any) => o.id !== freshOrder.id)])
+                );
+                const adminOrders = JSON.parse(localStorage.getItem('omachi_admin_orders_v2') || '[]');
+                localStorage.setItem(
+                  'omachi_admin_orders_v2',
+                  JSON.stringify([freshOrder, ...adminOrders.filter((o: any) => o.id !== freshOrder.id)])
+                );
+              } catch (e) {}
+
+              // Chỉ bung pháo hoa khi thanh toán thành công
+              confetti({
+                particleCount: 120,
+                spread: 80,
+                origin: { y: 0.5 },
+              });
+            }
+          }
+        }
+      } catch (err) {
+        // silent
+      }
+    };
+
+    const firstTimer = setTimeout(checkOrderPayment, 1200);
+    const intervalId = setInterval(checkOrderPayment, 2500);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(firstTimer);
+      clearInterval(intervalId);
+    };
+  }, [createdOrder?.id, createdOrder?.code, createdOrder?.paymentMethod, createdOrder?.paymentStatus]);
 
   const validateForm = (): boolean => {
     const errors: typeof fieldErrors = {};
@@ -1005,11 +1061,16 @@ export default function CheckoutPage() {
           const adminOrders = JSON.parse(localStorage.getItem('omachi_admin_orders_v2') || '[]');
           localStorage.setItem('omachi_admin_orders_v2', JSON.stringify([orderWithCustomer, ...adminOrders.filter((o: any) => o.id !== data.data.id)]));
         } catch (e) {}
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 },
-        });
+
+        // CHỈ BUNG PHÁO HOA KHI LÀ ĐƠN COD (ĐẶT XONG LÀ THÀNH CÔNG NGAY)
+        // NẾU LÀ ĐƠN CHUYỂN KHOẢN VIETQR: CHỈ BUNG HOA KHI TIỀN VÀO TÀI KHOẢN THÀNH CÔNG
+        if (paymentMethod === 'COD') {
+          confetti({
+            particleCount: 80,
+            spread: 70,
+            origin: { y: 0.6 },
+          });
+        }
 
         if (loggedInCustomer && updateProfile) {
           updateProfile({
@@ -1045,6 +1106,7 @@ export default function CheckoutPage() {
   // MÀN HÌNH ĐÃ TẠO ĐƠN THÀNH CÔNG / CHỜ THANH TOÁN
   if (createdOrder) {
     const isPrepaidOrder = createdOrder.paymentMethod === 'BANK';
+    const isAwaitingPayment = isPrepaidOrder && createdOrder.paymentStatus !== 'PAID';
     const zaloShopPhone = (settings?.zaloPhone || settings?.hotline || '').replace(/[^0-9]/g, '');
     const prefilledMsg = encodeURIComponent(
       `Chào shop Omachi! Mình vừa đặt đơn #${createdOrder.code} (${createdOrder.items.reduce((s: number, i: any) => s + i.quantity, 0)} món). Mình nhắn qua để shop tư vấn thêm nhé! 💕`
@@ -1056,7 +1118,7 @@ export default function CheckoutPage() {
     return (
       <div className="py-5 max-w-lg mx-auto space-y-3 font-sans px-3">
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 text-center space-y-3.5">
-          {isPrepaidOrder ? (
+          {isAwaitingPayment ? (
             /* ========================================================
                MÀN HÌNH CHUYỂN KHOẢN VIETQR: ĐƯA MÃ QR LÊN ĐẦU, TỐI ƯU KHÔNG GIAN
                ======================================================== */
@@ -1065,7 +1127,7 @@ export default function CheckoutPage() {
               <div className="flex items-center justify-between gap-2 p-3 bg-gradient-to-r from-blue-50/90 via-indigo-50/80 to-blue-50/90 border border-blue-200/80 rounded-2xl text-left shadow-2xs">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="px-2 py-0.5 bg-amber-500 text-white font-black text-[10px] rounded-full shadow-2xs">
+                    <span className="px-2 py-0.5 bg-amber-500 text-white font-black text-[10px] rounded-full shadow-2xs animate-pulse">
                       ⏳ Chờ chuyển khoản
                     </span>
                     <span className="text-xs font-black text-gray-900">
@@ -1096,7 +1158,7 @@ export default function CheckoutPage() {
                     </span>
                   </div>
                   <span className="text-[10px] text-blue-600 font-bold bg-blue-100/70 px-2 py-0.5 rounded-full">
-                    Khớp tự động
+                    Khớp tự động SePay
                   </span>
                 </div>
 
@@ -1210,39 +1272,28 @@ export default function CheckoutPage() {
                 })()}
               </div>
 
-              {/* 3. Nút Xác nhận đã chuyển khoản */}
-              {!hasNotifiedPaid ? (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      await fetch('/api/orders', {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          id: createdOrder.id,
-                          paymentStatus: 'PAID',
-                        }),
-                      });
-                      setHasNotifiedPaid(true);
-                      confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
-                    } catch {
-                      setHasNotifiedPaid(true);
-                    }
-                  }}
-                  className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Tôi Đã Chuyển Khoản Xong</span>
-                </button>
-              ) : (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-emerald-800 text-xs font-bold flex items-center justify-center gap-2 animate-fade-in">
-                  <span>🎉</span>
-                  <span>Đã ghi nhận! SePay/Shop sẽ đối soát và xuất kho gửi bạn sớm nhất.</span>
+              {/* 3. Khung Radar Tự Động Kiểm Tra Chuyển Khoản */}
+              <div className="p-3 bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 border border-blue-200 rounded-2xl flex items-center gap-3 text-left shadow-2xs">
+                <div className="relative flex items-center justify-center shrink-0 w-8 h-8 rounded-full bg-blue-600/10 text-blue-600">
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
                 </div>
-              )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                    <p className="text-xs font-black text-blue-900">
+                      Đang tự động kiểm tra chuyển khoản...
+                    </p>
+                  </div>
+                  <p className="text-[11px] text-blue-700 leading-tight mt-0.5">
+                    Hệ thống sẽ <strong>tự động chuyển sang Đặt Hàng Thành Công</strong> ngay khi ngân hàng báo có tiền. Quý khách không cần thao tác thêm!
+                  </p>
+                </div>
+              </div>
 
-              {/* 4. Thông tin người nhận & Hóa đơn (Được xếp gọn bên dưới) */}
+              {/* 4. Bộ đếm thời gian 24h */}
+              <OrderCountdownTimer createdAt={createdOrder.createdAt} />
+
+              {/* 5. Thông tin người nhận & Hóa đơn rút gọn */}
               <div className="p-3 rounded-xl bg-gray-50/90 border border-gray-200 text-xs text-left space-y-1.5">
                 <div className="flex items-center justify-between pb-1.5 border-b border-gray-200">
                   <span className="text-gray-500 font-semibold text-[11px]">Thông tin nhận hàng:</span>
@@ -1274,21 +1325,27 @@ export default function CheckoutPage() {
             </div>
           ) : (
             /* ========================================================
-               MÀN HÌNH ĐẶT HÀNG COD THÀNH CÔNG
+               MÀN HÌNH ĐẶT HÀNG / THANH TOÁN THÀNH CÔNG (COD HOẶC VIETQR ĐÃ PAID)
                ======================================================== */
             <div className="space-y-3">
               <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl shadow-xs">
-                ✨
+                {createdOrder.paymentStatus === 'PAID' ? '🎉' : '✨'}
               </div>
               <div className="space-y-1">
                 <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 inline-block">
-                  ĐẶT HÀNG THÀNH CÔNG
+                  {createdOrder.paymentStatus === 'PAID'
+                    ? '✅ ĐÃ THANH TOÁN THÀNH CÔNG (VIETQR)'
+                    : '✨ ĐẶT HÀNG THÀNH CÔNG (COD)'}
                 </span>
                 <h2 className="text-xl font-black text-gray-900 pt-1">
                   Mã Đơn: #{createdOrder.code}
                 </h2>
                 <p className="text-xs text-gray-500">
-                  Cảm ơn bạn <strong>{createdOrder.customer.fullName}</strong> đã đặt hàng tại Omachi!
+                  {createdOrder.paymentStatus === 'PAID' ? (
+                    <>Cảm ơn bạn <strong>{createdOrder.customer.fullName}</strong>! Omachi đã nhận đủ tiền thanh toán qua chuyển khoản ngân hàng.</>
+                  ) : (
+                    <>Cảm ơn bạn <strong>{createdOrder.customer.fullName}</strong> đã đặt hàng tại Omachi!</>
+                  )}
                 </p>
               </div>
 
@@ -1307,7 +1364,9 @@ export default function CheckoutPage() {
                   )}
                 </div>
                 <div className="flex justify-between items-baseline pt-2 border-t border-gray-200">
-                  <span className="font-bold text-gray-800">Tổng thanh toán (COD):</span>
+                  <span className="font-bold text-gray-800">
+                    {createdOrder.paymentStatus === 'PAID' ? 'Đã thanh toán (VietQR):' : 'Tổng thanh toán (COD):'}
+                  </span>
                   <strong className={`${curr.priceText} text-base font-black`}>
                     {formatVND(createdOrder.finalTotalAmount || createdOrder.totalAmount)}
                   </strong>
@@ -1322,61 +1381,32 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              <div className="bg-stone-50 p-3 rounded-xl border border-stone-200 text-xs text-stone-800 space-y-1 text-left">
-                <p className="font-bold flex items-center gap-1 text-stone-900">
-                  <span>📦</span>
-                  <span>Shop đã nhận được đơn hàng của bạn!</span>
-                </p>
-                <p className="text-[11px] text-stone-600 leading-relaxed">
-                  Xưởng Omachi sẽ soạn hàng, đóng gói cẩn thận và gọi xác nhận trước khi giao. Bạn thanh toán tiền mặt khi nhận hàng nhé! 💕
-                </p>
-              </div>
+              {createdOrder.paymentStatus === 'PAID' ? (
+                <div className="bg-emerald-50/80 p-3.5 rounded-xl border border-emerald-200 text-xs text-emerald-900 space-y-1 text-left">
+                  <p className="font-bold flex items-center gap-1.5 text-emerald-900">
+                    <span>📦</span>
+                    <span>Xưởng Omachi đã nhận đơn và tiền thanh toán!</span>
+                  </p>
+                  <p className="text-[11.5px] text-emerald-800 leading-relaxed">
+                    Đơn hàng <strong>#{createdOrder.code}</strong> đã được xác nhận thanh toán tự động qua VietQR. Xưởng Omachi đang chuẩn bị đóng gói và chuyển giao cho đơn vị vận chuyển sớm nhất nhé! 💕
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-stone-50 p-3.5 rounded-xl border border-stone-200 text-xs text-stone-800 space-y-1 text-left">
+                  <p className="font-bold flex items-center gap-1.5 text-stone-900">
+                    <span>📦</span>
+                    <span>Shop đã nhận được đơn hàng của bạn!</span>
+                  </p>
+                  <p className="text-[11.5px] text-stone-600 leading-relaxed">
+                    Xưởng Omachi sẽ soạn hàng, đóng gói cẩn thận và gọi xác nhận trước khi giao. Bạn thanh toán tiền mặt khi nhận hàng nhé! 💕
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
-          <div className="bg-stone-50 p-3 rounded-xl border border-stone-200 text-xs text-stone-800 space-y-1 text-left">
-            <p className="font-bold flex items-center gap-1 text-stone-900">
-              <span>📦</span>
-              <span>Shop đã nhận được đơn hàng tự động!</span>
-            </p>
-            <p className="text-[11px] text-stone-600 leading-relaxed">
-              Xưởng Omachi sẽ soạn hàng, đóng gói cẩn thận và liên hệ qua SĐT/Zalo của bạn để xác nhận đơn hàng sớm nhất nhé! 💕
-            </p>
-          </div>
-
+          {/* Các nút điều hướng */}
           <div className="space-y-2 pt-1">
-            {isPrepaidOrder && !hasNotifiedPaid && (
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    await fetch('/api/orders', {
-                      method: 'PATCH',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        id: createdOrder.id,
-                        paymentStatus: 'PAID'
-                      })
-                    });
-                    setHasNotifiedPaid(true);
-                    confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
-                  } catch {
-                    setHasNotifiedPaid(true);
-                  }
-                }}
-                className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer"
-              >
-                <span>✅ Tôi Đã Chuyển Khoản Xong</span>
-              </button>
-            )}
-
-            {hasNotifiedPaid && (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-emerald-800 text-xs font-bold flex items-center justify-center gap-2 animate-fade-in">
-                <span>🎉</span>
-                <span>Đã ghi nhận thanh toán! Shop sẽ đối soát và xuất kho gửi bạn sớm nhất.</span>
-              </div>
-            )}
-
             <Link
               href="/"
               className={`w-full py-3 rounded-xl ${curr.btnPrimary} font-bold text-xs sm:text-sm shadow-sm flex items-center justify-center gap-1.5 transition active:scale-98`}
