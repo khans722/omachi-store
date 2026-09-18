@@ -255,6 +255,13 @@ export default function AdminPage() {
   const [restockQuantities, setRestockQuantities] = useState<{ [key: number]: number }>({});
   const [isRestocking, setIsRestocking] = useState(false);
 
+  // Order Cancellation Modal State
+  const [cancellingOrder, setCancellingOrder] = useState<Order | null>(null);
+  const [cancelReasonPreset, setCancelReasonPreset] = useState<string>('Khách yêu cầu hủy qua Zalo / Gọi điện');
+  const [customCancelReason, setCustomCancelReason] = useState<string>('');
+  const [restockOnCancel, setRestockOnCancel] = useState<boolean>(true);
+  const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
+
   // Snapshot refs to detect unsaved changes
   const initialProductSnapshotRef = useRef<string>('');
   const initialCategorySnapshotRef = useRef<string>('');
@@ -1197,6 +1204,40 @@ export default function AdminPage() {
     }
   };
 
+  const handleConfirmCancelOrder = async () => {
+    if (!cancellingOrder) return;
+    const finalReason = customCancelReason.trim() ? customCancelReason.trim() : cancelReasonPreset;
+    setIsSubmittingCancel(true);
+    try {
+      const payload = {
+        id: cancellingOrder.id,
+        orderStatus: 'CANCELLED',
+        cancelReason: finalReason,
+        cancelledBy: 'SHOP',
+        restock: restockOnCancel,
+      };
+      const res = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setActionSuccessMsg(`Đã hủy đơn #${cancellingOrder.code} thành công! (${finalReason}) ✨`);
+        setTimeout(() => setActionSuccessMsg(''), 4000);
+        setOrders(prev => prev.map(o => (o.id === cancellingOrder.id || o.code === cancellingOrder.code) ? { ...o, ...data.data, orderStatus: 'CANCELLED', cancelReason: finalReason, cancelledBy: 'SHOP' } : o));
+        setCancellingOrder(null);
+        fetchProducts();
+      } else {
+        alert('Không thể hủy đơn: ' + (data.message || 'Lỗi máy chủ'));
+      }
+    } catch (e: any) {
+      alert('Lỗi kết nối khi hủy đơn: ' + (e.message || e));
+    } finally {
+      setIsSubmittingCancel(false);
+    }
+  };
+
   const handleUpdateShippingFee = async (orderId: string, explicitFee?: number) => {
     const rawVal = explicitFee !== undefined ? explicitFee : shippingFeeInputs[orderId];
     if (rawVal === undefined || rawVal === '') return;
@@ -1766,28 +1807,46 @@ export default function AdminPage() {
                         </div>
 
                         {/* 2. Trạng thái Thanh toán (Tự động thích ứng theo Bank hoặc COD) */}
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateStatus(order.id, undefined, order.paymentStatus === 'PAID' ? 'UNPAID' : 'PAID')}
-                          title={
-                            order.paymentStatus === 'PAID'
-                              ? 'Đã nhận tiền. Bấm để chuyển lại Chưa thanh toán'
-                              : order.paymentMethod === 'BANK'
-                              ? 'Bấm để xác nhận khách đã chuyển khoản thành công'
-                              : 'Bấm để xác nhận đã thu tiền COD'
-                          }
-                          className={`text-xs font-bold px-2.5 py-1 rounded-xl border transition cursor-pointer active:scale-95 ${
-                            order.paymentStatus === 'PAID'
-                              ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
-                              : order.paymentMethod === 'BANK'
-                              ? 'bg-blue-50 hover:bg-blue-100 text-blue-800 border-blue-300'
-                              : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300'
-                          }`}
-                        >
-                          {order.paymentStatus === 'PAID'
-                            ? (order.paymentMethod === 'BANK' ? '✓ Đã chuyển khoản' : '✓ Đã nhận tiền')
-                            : (order.paymentMethod === 'BANK' ? '⏳ Chờ chuyển khoản' : '⏳ Chưa thu COD')}
-                        </button>
+                        {order.paymentMethod === 'BANK' ? (
+                          order.paymentStatus === 'PAID' ? (
+                            <span className="text-xs font-bold px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
+                              <span>✓</span>
+                              <span>Đã thanh toán (SePay khớp)</span>
+                            </span>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs font-bold px-2.5 py-1 rounded-xl bg-blue-50 text-blue-800 border border-blue-300 flex items-center gap-1">
+                                <span>⏳</span>
+                                <span>Chờ SePay khớp tiền</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (window.confirm('⚠️ XÁC NHẬN DUYỆT TAY:\n\nĐơn này chưa nhận được webhook tự động từ SePay. Bạn có chắc chắn khách ĐÃ chuyển khoản và tiền ĐÃ vào tài khoản ngân hàng không?')) {
+                                    handleUpdateStatus(order.id, undefined, 'PAID');
+                                  }
+                                }}
+                                className="text-[10px] text-gray-400 hover:text-blue-600 underline font-medium px-1 cursor-pointer"
+                                title="Chỉ bấm khi bạn đã kiểm tra app ngân hàng và thấy tiền đã về tài khoản"
+                              >
+                                Duyệt tay
+                              </button>
+                            </div>
+                          )
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateStatus(order.id, undefined, order.paymentStatus === 'PAID' ? 'UNPAID' : 'PAID')}
+                            title={order.paymentStatus === 'PAID' ? 'Đã thu tiền COD. Bấm để đổi lại' : 'Bấm khi shipper đã nộp tiền COD'}
+                            className={`text-xs font-bold px-2.5 py-1 rounded-xl border transition cursor-pointer active:scale-95 ${
+                              order.paymentStatus === 'PAID'
+                                ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
+                                : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300'
+                            }`}
+                          >
+                            {order.paymentStatus === 'PAID' ? '✓ Đã thu tiền COD' : '⏳ Chưa thu COD'}
+                          </button>
+                        )}
 
                         {/* 3. Phương thức thanh toán khách chọn */}
                         <span className={`text-[11px] font-bold px-2 py-0.5 rounded-lg border ${
@@ -1803,14 +1862,6 @@ export default function AdminPage() {
                             ? '💳 Chuyển khoản VietQR'
                             : '💵 Thu tiền mặt COD'}
                         </span>
-
-                        {/* 4. Huy hiệu đủ điều kiện Freeship nếu đơn >= ngưỡng */}
-                        {isOrderEligibleFreeship && (
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
-                            <span>✨</span>
-                            <span>ĐƠN ≥ {formatVND(freeshipThreshold)} (FREESHIP CHUYỂN KHOẢN)</span>
-                          </span>
-                        )}
                       </div>
 
                       {/* Right: Tổng tiền thanh toán chuẩn */}
@@ -1823,6 +1874,23 @@ export default function AdminPage() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Order Cancelled Alert */}
+                    {order.orderStatus === 'CANCELLED' && (
+                      <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-between gap-2 text-xs text-rose-800">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">❌</span>
+                          <div>
+                            <span className="font-extrabold">ĐƠN HÀNG ĐÃ HỦY ({order.cancelledBy === 'CUSTOMER' ? 'Khách hàng tự hủy' : 'Shop đã hủy'})</span>
+                            {order.cancelReason && (
+                              <p className="text-[11px] text-rose-700 font-medium mt-0.5">
+                                Lý do: <strong>{order.cancelReason}</strong>
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Customer Info & Items */}
                     {(() => {
@@ -1892,68 +1960,46 @@ export default function AdminPage() {
                                   : (totalItemCount * 0.05).toFixed(2);
 
                                 return (
-                                  <div className={`p-2.5 bg-white/90 rounded-xl border space-y-2 ${
-                                    isOrderEligibleFreeship ? 'border-emerald-300 ring-1 ring-emerald-100 shadow-2xs' : 'border-orange-200'
-                                  }`}>
-                                    {/* Freeship Alert in Admin */}
-                                    {isOrderEligibleFreeship && (
-                                      <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-[11px] space-y-0.5">
-                                        <div className="flex items-center justify-between">
-                                          <span className="font-extrabold flex items-center gap-1 text-emerald-800">
-                                            <span>🎉</span>
-                                            <span>Đơn ≥ {formatVND(freeshipThreshold)}: Đủ điều kiện FREESHIP</span>
-                                          </span>
-                                          <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white px-1.5 py-0.2 rounded">
-                                            {order.paymentMethod === 'BANK' ? 'Đã chọn CK' : 'Chờ CK'}
-                                          </span>
-                                        </div>
-                                        <p className="text-[10px] text-emerald-700">
-                                          {calculatedShippingFee === 0
-                                            ? '✅ Đơn hàng đã được áp dụng Miễn Phí Ship (0đ).'
-                                            : order.paymentStatus === 'PAID'
-                                            ? '✅ Khách đã thanh toán, bấm nút "🎁 Miễn Ship (0đ)" để cập nhật miễn ship.'
-                                            : 'Bấm nút "🎁 Miễn Ship (0đ)" bên dưới nếu khách đã chuyển khoản thành công.'}
-                                        </p>
-                                      </div>
-                                    )}
-
-                                    <div className="flex items-center justify-between gap-1 text-[11px] text-gray-500 pb-1 border-b border-orange-100">
+                                  <div className="p-2.5 bg-white/90 rounded-xl border border-amber-100 space-y-2">
+                                    <div className="flex items-center justify-between gap-1 text-xs">
                                       <span className="flex items-center gap-1 font-bold text-gray-700">
-                                        <Truck className="w-3.5 h-3.5 text-orange-600 shrink-0" />
-                                        <span>Cước SPX (Cân nặng: ~{orderWeightKg} kg):</span>
+                                        <Truck className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                                        <span>Phí vận chuyển SPX (~{orderWeightKg} kg):</span>
                                       </span>
-                                      <strong className={calculatedShippingFee > 0 ? 'text-emerald-700 font-black' : 'text-amber-600 font-bold'}>
-                                        {calculatedShippingFee > 0 ? `+${formatVND(calculatedShippingFee)}` : 'Miễn ship (0đ)'}
+                                      <strong className={calculatedShippingFee === 0 ? 'text-emerald-700 font-bold' : 'text-gray-800 font-black'}>
+                                        {calculatedShippingFee === 0 ? '0đ (Miễn phí)' : `+${formatVND(calculatedShippingFee)}`}
                                       </strong>
                                     </div>
 
-                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                      {/* Quick Preset Buttons */}
-                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                    {/* Chỉnh sửa phí ship nếu cần */}
+                                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-gray-100">
+                                      <div className="flex items-center gap-1.5 flex-1">
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          step="1000"
+                                          placeholder="0"
+                                          value={shippingFeeInputs[order.id] ?? (calculatedShippingFee || '')}
+                                          onChange={(e) => setShippingFeeInputs(prev => ({ ...prev, [order.id]: e.target.value }))}
+                                          className="w-20 px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:ring-1 focus:ring-rose-400 text-center"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => handleUpdateShippingFee(order.id)}
+                                          className="px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] font-bold transition cursor-pointer"
+                                        >
+                                          Lưu phí
+                                        </button>
+                                      </div>
+                                      {calculatedShippingFee > 0 && (
                                         <button
                                           type="button"
                                           onClick={() => handleUpdateShippingFee(order.id, 0)}
-                                          className={`px-2 py-1 rounded-lg text-[10px] font-bold transition active:scale-95 flex items-center gap-1 ${
-                                            isOrderEligibleFreeship
-                                              ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs font-black ring-2 ring-emerald-300 animate-pulse'
-                                              : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300'
-                                          }`}
-                                          title="Miễn phí vận chuyển cho khách"
+                                          className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[10px] font-bold transition cursor-pointer"
                                         >
-                                          <span>🎁 Miễn Ship (0đ)</span>
-                                          {isOrderEligibleFreeship && <span className="bg-white/20 text-white text-[9px] px-1 rounded">≥{formatVND(freeshipThreshold)}</span>}
+                                          Miễn ship (0đ)
                                         </button>
-                                        {calculatedShippingFee >= 24000 && (
-                                          <button
-                                            type="button"
-                                            onClick={() => handleUpdateShippingFee(order.id, Math.max(0, calculatedShippingFee - 24000))}
-                                            className="px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold transition active:scale-95"
-                                            title="Khách chuyển khoản: Trừ 24k phí bảo hiểm COD"
-                                          >
-                                            ⚡ Giảm 24k (CK)
-                                          </button>
-                                        )}
-                                      </div>
+                                      )}
                                     </div>
                                   </div>
                                 );
@@ -2137,8 +2183,14 @@ export default function AdminPage() {
 
                         {order.orderStatus !== 'CANCELLED' && order.orderStatus !== 'COMPLETED' && (
                           <button
-                            onClick={() => handleUpdateStatus(order.id, 'CANCELLED')}
-                            className="px-2.5 py-1.5 rounded-xl bg-gray-100 hover:bg-rose-50 text-gray-400 hover:text-rose-600 font-bold text-xs transition"
+                            type="button"
+                            onClick={() => {
+                              setCancellingOrder(order);
+                              setCancelReasonPreset('Khách yêu cầu hủy qua Zalo / Gọi điện');
+                              setCustomCancelReason('');
+                              setRestockOnCancel(true);
+                            }}
+                            className="px-2.5 py-1.5 rounded-xl bg-gray-100 hover:bg-rose-50 text-gray-500 hover:text-rose-600 font-bold text-xs transition cursor-pointer"
                           >
                             Hủy đơn
                           </button>
@@ -5195,6 +5247,147 @@ export default function AdminPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: SHOP ORDER CANCELLATION */}
+      {cancellingOrder && (
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isSubmittingCancel) setCancellingOrder(null);
+          }}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in"
+        >
+          <div className="bg-white rounded-3xl border border-rose-200 shadow-2xl max-w-lg w-full p-6 space-y-4 animate-scale-up">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-rose-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center text-lg font-bold">
+                  ❌
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-gray-800 flex items-center gap-1.5">
+                    <span>Hủy Đơn Hàng #{cancellingOrder.code}</span>
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Thao tác này sẽ đánh dấu đơn hàng là Đã Hủy và thông báo tới Telegram.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => !isSubmittingCancel && setCancellingOrder(null)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition cursor-pointer"
+                title="Đóng cửa sổ"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Order Brief Info */}
+            <div className="p-3 bg-rose-50/50 rounded-2xl border border-rose-100 text-xs space-y-1">
+              <div className="flex justify-between text-gray-700">
+                <span>Khách hàng:</span>
+                <strong className="text-gray-900">{cancellingOrder.customer?.fullName} ({cancellingOrder.customer?.phone})</strong>
+              </div>
+              <div className="flex justify-between text-gray-700">
+                <span>Tổng tiền đơn:</span>
+                <strong className="text-rose-600 font-black">{formatVND(cancellingOrder.totalAmount)}</strong>
+              </div>
+              <div className="flex justify-between text-gray-700">
+                <span>Số sản phẩm:</span>
+                <span>{cancellingOrder.items?.reduce((s, i) => s + (i.quantity || 1), 0) || 0} món</span>
+              </div>
+            </div>
+
+            {/* Cancellation Reason Selector */}
+            <div className="space-y-3">
+              <label className="text-xs font-black text-gray-700 block">
+                Chọn lý do hủy đơn:
+              </label>
+
+              <div className="space-y-1.5">
+                {[
+                  'Khách yêu cầu hủy qua Zalo / Gọi điện',
+                  'Sự cố thiếu hàng / Hết hàng trong kho',
+                  'Khách đổi ý, muốn đặt lại đơn khác',
+                  'Quá hạn thanh toán chuyển khoản',
+                  'Địa chỉ nhận hàng không chính xác / Không liên lạc được',
+                  'Lý do khác',
+                ].map((reason) => (
+                  <label
+                    key={reason}
+                    className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs cursor-pointer transition ${
+                      cancelReasonPreset === reason
+                        ? 'bg-rose-50/80 border-rose-300 text-rose-900 font-bold'
+                        : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-700'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="shopCancelReason"
+                      value={reason}
+                      checked={cancelReasonPreset === reason}
+                      onChange={() => setCancelReasonPreset(reason)}
+                      className="text-rose-600 focus:ring-rose-400"
+                    />
+                    <span>{reason}</span>
+                  </label>
+                ))}
+              </div>
+
+              {/* Custom reason input if "Lý do khác" or additional details */}
+              <div className="space-y-1 pt-1">
+                <label className="text-[11px] font-bold text-gray-600 block">
+                  Chi tiết lý do / Ghi chú nội bộ (nếu có):
+                </label>
+                <textarea
+                  rows={2}
+                  value={customCancelReason}
+                  onChange={(e) => setCustomCancelReason(e.target.value)}
+                  placeholder="Ghi rõ lý do để sau này đối chiếu hoặc thông báo cho khách..."
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:ring-2 focus:ring-rose-400 focus:outline-none"
+                />
+              </div>
+
+              {/* Auto restock checkbox */}
+              <label className="flex items-center gap-2.5 p-3 rounded-2xl bg-emerald-50/70 border border-emerald-200 text-xs cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={restockOnCancel}
+                  onChange={(e) => setRestockOnCancel(e.target.checked)}
+                  className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-400 cursor-pointer"
+                />
+                <div>
+                  <strong className="text-emerald-800 block">Tự động hoàn lại số lượng tồn kho (+Kho)</strong>
+                  <span className="text-[10px] text-emerald-600">
+                    Cộng lại số lượng các sản phẩm/phân loại trong đơn hàng này vào kho sản phẩm.
+                  </span>
+                </div>
+              </label>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+              <button
+                type="button"
+                disabled={isSubmittingCancel}
+                onClick={() => setCancellingOrder(null)}
+                className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 text-xs font-bold transition cursor-pointer"
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                disabled={isSubmittingCancel}
+                onClick={handleConfirmCancelOrder}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-extrabold text-xs shadow-md shadow-rose-200 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <span>{isSubmittingCancel ? 'Đang xử lý hủy...' : 'Xác Nhận Hủy Đơn ❌'}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

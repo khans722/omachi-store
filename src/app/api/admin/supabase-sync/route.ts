@@ -121,6 +121,7 @@ export async function POST(req: NextRequest) {
         cost_price: p.costPrice || null,
         material: p.material || '',
         dimensions: p.dimensions || '',
+        weight: Number(p.weight) > 0 ? Number(p.weight) : 50,
         images: p.images || [],
         description: p.description || '',
         is_hot: Boolean(p.isHot),

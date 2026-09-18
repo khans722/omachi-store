@@ -70,6 +70,7 @@ export interface Product {
   packageOptions?: any[];
   minOrderQuantity?: number; // Số lượng mua tối thiểu (VD: 1, 10, 50, 100)
   stepQuantity?: number;     // Bội số mua / Bước nhảy (VD: 1, 10, 50, 100)
+  weight?: number;           // Khối lượng mỗi sản phẩm (đơn vị: gram, VD: 10, 50, 100, 500)
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -145,6 +146,8 @@ export interface OrderHistoryLog {
   performedBy: string;
   oldValue?: string;
   newValue?: string;
+  cancelReason?: string;
+  cancelledBy?: string;
   timestamp: string;
 }
 
@@ -180,6 +183,8 @@ export interface Order {
   paidAt?: string;
   shippedAt?: string;
   completedAt?: string;
+  cancelReason?: string;
+  cancelledBy?: 'SHOP' | 'CUSTOMER';
 }
 
 export interface CustomerFeedback {
@@ -1791,6 +1796,7 @@ function mapProductFromSupabase(row: any): Product {
     costPrice: row.cost_price ? Number(row.cost_price) : undefined,
     material: row.material || '',
     dimensions: row.dimensions || '',
+    weight: Number(row.weight ?? 50),
     images: Array.isArray(row.images) ? row.images : [],
     description: row.description || '',
     isHot: Boolean(row.is_hot),
@@ -1843,6 +1849,8 @@ function mapOrderFromSupabase(row: any): Order {
     paidAt: row.paid_at || undefined,
     shippedAt: row.shipped_at || undefined,
     completedAt: row.completed_at || undefined,
+    cancelReason: row.cancel_reason || row.customer?.cancelReason || (Array.isArray(row.logs) ? row.logs.find((l: any) => l.cancelReason)?.cancelReason : '') || undefined,
+    cancelledBy: row.cancelled_by || row.customer?.cancelledBy || (Array.isArray(row.logs) ? row.logs.find((l: any) => l.cancelledBy)?.cancelledBy : '') || undefined,
     createdAt: row.created_at || new Date().toISOString(),
     updatedAt: row.updated_at || new Date().toISOString(),
   };
@@ -2136,6 +2144,7 @@ export const db = {
           cost_price: newProduct.costPrice || null,
           material: newProduct.material || '',
           dimensions: newProduct.dimensions || '',
+          weight: Number(newProduct.weight) > 0 ? Number(newProduct.weight) : 50,
           images: newProduct.images || [],
           description: newProduct.description || '',
           is_hot: newProduct.isHot,
@@ -2185,6 +2194,7 @@ export const db = {
           cost_price: p.costPrice || null,
           material: p.material || '',
           dimensions: p.dimensions || '',
+          weight: Number(p.weight) > 0 ? Number(p.weight) : 50,
           images: p.images || [],
           description: p.description || '',
           is_hot: p.isHot,
@@ -2964,7 +2974,7 @@ export const db = {
       return dbData.orders;
     },
 
-    async updateStatus(orderId: string, status?: OrderStatus, paymentStatus?: PaymentStatus, carrierName?: string, trackingNumber?: string, shippingFee?: number, fallbackOrder?: Order): Promise<Order | null> {
+    async updateStatus(orderId: string, status?: OrderStatus, paymentStatus?: PaymentStatus, carrierName?: string, trackingNumber?: string, shippingFee?: number, fallbackOrder?: Order, extra?: { cancelReason?: string; cancelledBy?: 'SHOP' | 'CUSTOMER'; restock?: boolean }): Promise<Order | null> {
       const dbData = readDb();
       if (!dbData.orders) dbData.orders = [];
       const cleanId = (orderId || '').replace(/^#/, '').trim().toLowerCase();
@@ -3010,14 +3020,44 @@ export const db = {
         dbData.orders[index].finalTotalAmount = itemsTotal + newShip;
       }
 
+      if (extra?.cancelReason || fallbackOrder?.cancelReason) {
+        dbData.orders[index].cancelReason = extra?.cancelReason || fallbackOrder?.cancelReason || '';
+      }
+      if (extra?.cancelledBy || fallbackOrder?.cancelledBy) {
+        dbData.orders[index].cancelledBy = extra?.cancelledBy || fallbackOrder?.cancelledBy || 'SHOP';
+      }
+
+      // Restock inventory on cancellation
+      if (status === 'CANCELLED' && oldStatus !== 'CANCELLED' && extra?.restock !== false) {
+        const items = dbData.orders[index].items || [];
+        for (const item of items) {
+          const it = item as any;
+          const prodId = it.productId || it.product?.id;
+          const pIdx = (dbData.products || []).findIndex((p: any) => p.id === prodId);
+          if (pIdx !== -1) {
+            const qty = Number(it.quantity || 1);
+            dbData.products[pIdx].stock = (dbData.products[pIdx].stock || 0) + qty;
+            if (it.selectedVariant?.name || it.variantName) {
+              const vName = it.selectedVariant?.name || it.variantName;
+              const vIdx = (dbData.products[pIdx].variants || []).findIndex((v: any) => v.name === vName);
+              if (vIdx !== -1) {
+                dbData.products[pIdx].variants[vIdx].stock = (dbData.products[pIdx].variants[vIdx].stock || 0) + qty;
+              }
+            }
+          }
+        }
+      }
+
       dbData.orders[index].updatedAt = new Date().toISOString();
       if (!dbData.orders[index].logs) dbData.orders[index].logs = [];
       dbData.orders[index].logs.push({
         id: `log-${Date.now()}`,
-        action: 'STATUS_UPDATED',
-        performedBy: 'ADMIN',
+        action: status === 'CANCELLED' ? 'ORDER_CANCELLED' : 'STATUS_UPDATED',
+        performedBy: extra?.cancelledBy === 'CUSTOMER' ? 'CUSTOMER' : 'ADMIN',
         oldValue: oldStatus,
         newValue: `${dbData.orders[index].orderStatus} (Thanh toán: ${dbData.orders[index].paymentStatus}, Ship: ${dbData.orders[index].shippingFee})`,
+        cancelReason: dbData.orders[index].cancelReason,
+        cancelledBy: dbData.orders[index].cancelledBy,
         timestamp: new Date().toISOString(),
       });
       writeDb(dbData);
@@ -3039,6 +3079,7 @@ export const db = {
           order_status: o.orderStatus,
           carrier_name: o.carrierName || '',
           tracking_number: o.trackingNumber || '',
+          customer: { ...(o.customer || {}), cancelReason: o.cancelReason, cancelledBy: o.cancelledBy },
           logs: o.logs,
           paid_at: o.paidAt || null,
           shipped_at: o.shippedAt || null,

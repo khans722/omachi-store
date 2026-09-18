@@ -1,4 +1,4 @@
-﻿-- ==============================================================================
+-- ==============================================================================
 -- OMACHI STORE - SUPABASE DATABASE SCHEMA DDL
 -- Hướng dẫn: Mở Supabase Dashboard -> SQL Editor -> Dán toàn bộ file này -> Nhấn RUN
 -- ==============================================================================
@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS public.products (
   cost_price NUMERIC,
   material TEXT,
   dimensions TEXT,
+  weight NUMERIC DEFAULT 50,
   images JSONB DEFAULT '[]'::jsonb,
   description TEXT,
   is_hot BOOLEAN DEFAULT FALSE,
@@ -185,3 +186,10 @@ CREATE INDEX IF NOT EXISTS idx_orders_created_at ON public.orders (created_at DE
 CREATE INDEX IF NOT EXISTS idx_products_category_id ON public.products (category_id);
 CREATE INDEX IF NOT EXISTS idx_products_slug ON public.products (slug);
 CREATE INDEX IF NOT EXISTS idx_customers_phone ON public.customers (phone);
+
+-- ==============================================================================
+-- CẬP NHẬT CỘT BỔ SUNG NẾU BẢNG ĐÃ TỒN TẠI (IDEMPOTENT MIGRATIONS)
+-- ==============================================================================
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS weight NUMERIC DEFAULT 50;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS cancel_reason TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS cancelled_by TEXT;

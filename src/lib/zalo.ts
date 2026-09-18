@@ -16,11 +16,12 @@ function escapeHtml(text: string): string {
 export async function sendOrderNotification(
   order: Order,
   settings: ShopSettings,
-  trigger: 'NEW_ORDER' | 'PAYMENT_SUCCESS' | 'CONFIRMED' | 'SHIPPING',
+  trigger: 'NEW_ORDER' | 'PAYMENT_SUCCESS' | 'CONFIRMED' | 'SHIPPING' | 'CANCELLED',
   requestOrigin?: string
 ) {
-  const isPaid = order.paymentStatus === 'PAID' || trigger === 'PAYMENT_SUCCESS';
-  const isPrepaid = order.paymentMethod === 'BANK' || order.paymentMethod === 'MOMO';
+  const isCancelled = order.orderStatus === 'CANCELLED' || trigger === 'CANCELLED';
+  const isPaid = (order.paymentStatus === 'PAID' || trigger === 'PAYMENT_SUCCESS') && !isCancelled;
+  const isPrepaid = (order.paymentMethod === 'BANK' || order.paymentMethod === 'MOMO') && !isCancelled;
 
   const cleanFullName = escapeHtml(order.customer.fullName);
   const cleanPhone = escapeHtml(order.customer.phone);
@@ -56,33 +57,37 @@ export async function sendOrderNotification(
   const orderViewUrl = `${baseUrl}/order/${order.code || order.id}`;
   const adminUrl = `${baseUrl}/admin`;
 
-  let title = '🌸 <b>OMACHI - CÓ ĐƠN HÀNG MỚI!</b> ✨';
-  if (isPaid) {
-    title = '💰 <b>OMACHI - ĐÃ XÁC NHẬN THANH TOÁN!</b> ✅';
-  } else if (trigger === 'CONFIRMED') {
-    title = '📦 <b>OMACHI - ĐÃ XÁC NHẬN ĐƠN HÀNG!</b> 🎀';
-  }
-
+  let title = '';
   let methodText = '';
   let paymentStatusText = '';
   let shippingFeeText = '';
   let shopNoteText = '';
 
-  if (isPaid) {
-    methodText = order.paymentMethod === 'MOMO' ? '🟣 Ví MoMo' : order.paymentMethod === 'BANK' ? '💳 Chuyển khoản VietQR' : '💵 Thu tiền COD';
-    paymentStatusText = '✅ <b>ĐÃ THANH TOÁN THÀNH CÔNG</b>';
-    shippingFeeText = '🎁 <b>0đ</b> <i>(Đã áp dụng Miễn phí ship)</i>';
-    shopNoteText = '✨ <b>TIỀN ĐÃ VỀ TÀI KHOẢN:</b> Shop an tâm đóng hàng và bàn giao bưu tá!';
+  if (isCancelled) {
+    title = `❌ <b>[ĐƠN ĐÃ HỦY] - ĐƠN HÀNG #${order.code}</b> ❌`;
+    methodText = order.paymentMethod === 'BANK' ? '💳 Chuyển khoản VietQR' : '💵 Thu tiền mặt COD';
+    paymentStatusText = '❌ <b>ĐÃ HỦY ĐƠN HÀNG</b>';
+    shippingFeeText = '0đ';
+    shopNoteText = `⚠️ <b>LÝ DO HỦY:</b> ${escapeHtml(order.cancelReason || 'Khách hàng / Shop đã hủy đơn')}\n<i>(Số lượng tồn kho sản phẩm đã được tự động hoàn trả lại)</i>`;
+  } else if (isPaid) {
+    title = `🎉 <b>[ĐÃ NHẬN TIỀN THÀNH CÔNG] - ĐƠN #${order.code}</b> ✅`;
+    methodText = '💳 Chuyển khoản VietQR (SEPAY TỰ ĐỘNG KHỚP)';
+    paymentStatusText = `✅ <b>ĐÃ THANH TOÁN ĐỦ TIỀN (+${formatVND(order.finalTotalAmount || order.totalAmount)})</b>`;
+    shippingFeeText = '🎁 <b>0đ</b> <i>(Miễn phí ship)</i>';
+    shopNoteText = `✨ <b>TIỀN ĐÃ VỀ TÀI KHOẢN QUA SEPAY:</b> Hợp lệ 100%! Shop an tâm đóng hàng và bàn giao cho bưu tá SPX!`;
   } else if (isPrepaid) {
-    methodText = order.paymentMethod === 'MOMO' ? '🟣 Ví MoMo (Chờ khách quét QR)' : '💳 Chuyển khoản VietQR (Chờ khách quét QR)';
-    paymentStatusText = '⏳ <b>CHƯA NHẬN TIỀN (Khách vừa tạo lệnh QR)</b>';
-    shippingFeeText = '0đ <i>(Tạm tính theo ưu đãi Chuyển khoản - Điều kiện: Khách phải CK đủ)</i>';
-    shopNoteText = `⚠️ <b>LƯU Ý CHO SHOP:</b> Vui lòng kiểm tra app Ngân hàng / MoMo xem đã nhận đủ <b>${formatVND(order.finalTotalAmount || order.totalAmount)}</b> chưa trước khi gửi hàng!\n<i>(Nếu khách KHÔNG chuyển khoản hoặc đổi sang COD, cước ship là 15.000đ)</i>`;
+    title = `⏳ <b>[CHỜ CHUYỂN KHOẢN] - ĐƠN HÀNG MỚI #${order.code}</b> ⚠️`;
+    methodText = '💳 Chuyển khoản VietQR (Chờ khách quét mã QR)';
+    paymentStatusText = '⛔ <b>CHƯA THANH TOÁN - CHƯA NHẬN TIỀN!</b>';
+    shippingFeeText = '0đ <i>(Tạm tính Freeship theo ưu đãi CK)</i>';
+    shopNoteText = `🚨 <b>CẢNH BÁO CHO SHOP:</b> Khách vừa tạo mã QR trên web. <b>KHÔNG ĐÓNG GỬI HÀNG</b> cho đến khi nhận được tin nhắn báo <b>"ĐÃ NHẬN TIỀN THÀNH CÔNG"</b> từ SePay!\n<i>(Hệ thống sẽ tự động hủy sau 24h nếu khách không chuyển khoản)</i>`;
   } else {
-    methodText = '💵 Thanh toán COD khi nhận hàng';
-    paymentStatusText = '📦 <b>Đơn COD - Thu tiền mặt khi giao hàng</b>';
+    // Đơn COD
+    title = `📦 <b>[ĐƠN COD - THU TIỀN TẬN NƠI] - ĐƠN HÀNG MỚI #${order.code}</b> 🚚`;
+    methodText = '💵 Thanh toán COD (Tiền mặt khi nhận hàng)';
+    paymentStatusText = '📦 <b>ĐƠN COD - Shipper SPX thu tiền khi giao</b>';
     shippingFeeText = order.shippingFee ? `<b>${formatVND(order.shippingFee)}</b>` : '15.000đ';
-    shopNoteText = '💡 <b>ĐƠN COD:</b> Shipper SPX sẽ thu đủ tiền hàng + phí ship khi giao tận nơi.';
+    shopNoteText = `💡 <b>ĐƠN COD HỢP LỆ:</b> Shop tiến hành in đơn và đóng gói giao bưu tá SPX. Shipper sẽ thu <b>${formatVND(order.finalTotalAmount || order.totalAmount)}</b> khi giao tận tay khách.`;
   }
 
   const messageHtml = `
@@ -126,19 +131,9 @@ ${shopNoteText}
       // Nút bấm tương tác trực tiếp dưới tin nhắn Telegram
       const inlineKeyboard: Array<Array<{ text: string; url: string }>> = [];
 
-      // Nút 1-chạm xác nhận đã nhận tiền nếu đơn chưa thanh toán
-      if (!isPaid && isPrepaid) {
-        inlineKeyboard.push([
-          {
-            text: `✅ Xác Nhận ĐÃ NHẬN TIỀN (${formatVND(order.finalTotalAmount || order.totalAmount)})`,
-            url: confirmPayUrl,
-          },
-        ]);
-      }
-
       // Nút xem chi tiết đơn hàng
       inlineKeyboard.push([
-        { text: `📦 Xem & Duyệt Đơn #${order.code}`, url: orderViewUrl },
+        { text: `📦 Xem & Theo Dõi Đơn #${order.code}`, url: orderViewUrl },
       ]);
 
       // Nút chat Zalo với khách

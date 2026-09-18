@@ -159,6 +159,8 @@ export interface Order {
   paidAt?: string;
   shippedAt?: string;
   completedAt?: string;
+  cancelReason?: string;
+  cancelledBy?: 'SHOP' | 'CUSTOMER';
 }
 
 export interface SavedAddress {

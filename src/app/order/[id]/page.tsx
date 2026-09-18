@@ -16,6 +16,43 @@ export default function OrderTrackingPage() {
   const [loading, setLoading] = useState(true);
   const [isDownloadingQr, setIsDownloadingQr] = useState(false);
 
+  // Cancellation State
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('Muốn đổi sản phẩm khác / thêm bớt số lượng');
+  const [customReason, setCustomReason] = useState('');
+  const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
+
+  const handleConfirmCancel = async () => {
+    if (!order) return;
+    const finalReason = customReason.trim() ? customReason.trim() : cancelReason;
+    setIsSubmittingCancel(true);
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: order.id,
+          orderStatus: 'CANCELLED',
+          cancelReason: finalReason,
+          cancelledBy: 'CUSTOMER',
+          restock: true,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOrder((prev) => prev ? { ...prev, orderStatus: 'CANCELLED', cancelReason: finalReason, cancelledBy: 'CUSTOMER' } : prev);
+        setIsCancelModalOpen(false);
+        alert('Đã hủy đơn hàng thành công! Cảm ơn bạn đã thông báo.');
+      } else {
+        alert('Không thể hủy đơn: ' + (data.message || 'Lỗi'));
+      }
+    } catch (e: any) {
+      alert('Lỗi kết nối khi hủy đơn: ' + (e.message || e));
+    } finally {
+      setIsSubmittingCancel(false);
+    }
+  };
+
   const downloadQrImage = async (url: string, filename: string) => {
     setIsDownloadingQr(true);
     try {
@@ -161,14 +198,42 @@ export default function OrderTrackingPage() {
           </p>
         </div>
 
-        <Link
-          href="/"
-          className="px-4 py-2 bg-white text-pink-600 hover:bg-pink-50 border border-pink-200 rounded-full text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Tiếp tục mua hàng</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          {order.orderStatus === 'PENDING_CONFIRM' && (
+            <button
+              type="button"
+              onClick={() => setIsCancelModalOpen(true)}
+              className="px-3.5 py-2 bg-white text-gray-500 hover:text-rose-600 hover:bg-rose-50 border border-gray-200 rounded-full text-xs font-bold transition shadow-2xs cursor-pointer"
+            >
+              Hủy đơn này
+            </button>
+          )}
+          <Link
+            href="/"
+            className="px-4 py-2 bg-white text-pink-600 hover:bg-pink-50 border border-pink-200 rounded-full text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Tiếp tục mua hàng</span>
+          </Link>
+        </div>
       </div>
+
+      {/* Alert Banner if Cancelled */}
+      {order.orderStatus === 'CANCELLED' && (
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-3xl flex items-center gap-3 shadow-xs">
+          <span className="text-2xl shrink-0">❌</span>
+          <div>
+            <h4 className="text-sm font-black text-rose-900">
+              Đơn hàng này đã bị hủy ({order.cancelledBy === 'CUSTOMER' ? 'Bạn đã hủy' : 'Shop đã hủy'})
+            </h4>
+            {order.cancelReason && (
+              <p className="text-xs text-rose-700 mt-0.5">
+                Lý do: <strong>{order.cancelReason}</strong>
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Top Alert Banner if Unpaid */}
       {order.paymentStatus !== 'PAID' && order.paymentMethod === 'BANK' && (
@@ -430,6 +495,118 @@ export default function OrderTrackingPage() {
         </div>
 
       </div>
+
+      {/* MODAL: CUSTOMER CANCEL ORDER */}
+      {isCancelModalOpen && (
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isSubmittingCancel) setIsCancelModalOpen(false);
+          }}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in"
+        >
+          <div className="bg-white rounded-3xl border border-pink-200 shadow-2xl max-w-md w-full p-6 space-y-4 animate-scale-up">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-pink-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg font-bold">
+                  ❌
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-gray-800">
+                    Hủy Đơn Hàng #{order.code}
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Đơn hàng chỉ có thể hủy khi shop chưa đóng gói.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                disabled={isSubmittingCancel}
+                onClick={() => setIsCancelModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Warning Note */}
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 space-y-1">
+              <p className="font-bold">⚠️ Bạn có chắc chắn muốn hủy đơn hàng này không?</p>
+              <p className="text-[11px] text-amber-700">
+                Nếu bạn chỉ muốn đổi mẫu charm hoặc sửa địa chỉ, bạn có thể nhắn Zalo cho shop thay vì hủy đơn nhé!
+              </p>
+            </div>
+
+            {/* Reasons Selection */}
+            <div className="space-y-2">
+              <label className="text-xs font-black text-gray-700 block">
+                Vui lòng cho shop biết lý do bạn muốn hủy đơn:
+              </label>
+
+              <div className="space-y-1.5">
+                {[
+                  'Muốn đổi sản phẩm khác / thêm bớt số lượng',
+                  'Muốn thay đổi địa chỉ nhận hàng / số điện thoại',
+                  'Đổi ý, không còn nhu cầu mua nữa',
+                  'Đặt nhầm đơn / Trùng lặp đơn hàng',
+                  'Lý do khác',
+                ].map((reason) => (
+                  <label
+                    key={reason}
+                    className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs cursor-pointer transition ${
+                      cancelReason === reason
+                        ? 'bg-rose-50/80 border-rose-300 text-rose-900 font-bold'
+                        : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-700'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="customerCancelReasonTracking"
+                      value={reason}
+                      checked={cancelReason === reason}
+                      onChange={() => setCancelReason(reason)}
+                      className="text-rose-600 focus:ring-rose-400"
+                    />
+                    <span>{reason}</span>
+                  </label>
+                ))}
+              </div>
+
+              <div className="pt-1">
+                <input
+                  type="text"
+                  value={customReason}
+                  onChange={(e) => setCustomReason(e.target.value)}
+                  placeholder="Ghi chú thêm lý do (tùy chọn)..."
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:ring-2 focus:ring-rose-400 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+              <button
+                type="button"
+                disabled={isSubmittingCancel}
+                onClick={() => setIsCancelModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 text-xs font-bold transition cursor-pointer"
+              >
+                Giữ đơn lại
+              </button>
+              <button
+                type="button"
+                disabled={isSubmittingCancel}
+                onClick={handleConfirmCancel}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-extrabold text-xs shadow-md shadow-rose-200 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <span>{isSubmittingCancel ? 'Đang hủy đơn...' : 'Xác Nhận Hủy Đơn'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

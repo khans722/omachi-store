@@ -74,6 +74,11 @@ export async function PATCH(req: NextRequest) {
     }
 
     const fallbackOrder = body.order || body.orderData;
+    const extra = {
+      cancelReason: body.cancelReason || body.cancel_reason,
+      cancelledBy: body.cancelledBy || body.cancelled_by,
+      restock: body.restock,
+    };
     const updated = await db.orders.updateStatus(
       orderId,
       body.orderStatus,
@@ -81,7 +86,8 @@ export async function PATCH(req: NextRequest) {
       body.carrierName,
       body.trackingNumber,
       body.shippingFee,
-      fallbackOrder
+      fallbackOrder,
+      extra
     );
 
     if (!updated) {
@@ -93,9 +99,14 @@ export async function PATCH(req: NextRequest) {
     const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || req.nextUrl.host;
     const requestOrigin = host ? `${protocol}://${host}` : req.nextUrl.origin;
 
-    const trigger = body.paymentStatus === 'PAID' ? 'PAYMENT_SUCCESS' : 'CONFIRMED';
+    let trigger: 'NEW_ORDER' | 'PAYMENT_SUCCESS' | 'CONFIRMED' | 'SHIPPING' | 'CANCELLED' = 'CONFIRMED';
+    if (body.orderStatus === 'CANCELLED' || updated.orderStatus === 'CANCELLED') {
+      trigger = 'CANCELLED';
+    } else if (body.paymentStatus === 'PAID') {
+      trigger = 'PAYMENT_SUCCESS';
+    }
     const settings = await db.settings.get();
-    sendOrderNotification(updated, settings, trigger, requestOrigin).catch((err) => {
+    sendOrderNotification(updated, settings, trigger as any, requestOrigin).catch((err) => {
       console.error('[ASYNC ORDER UPDATE NOTIFICATION ERROR]:', err);
     });
 

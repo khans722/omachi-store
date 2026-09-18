@@ -1,4 +1,4 @@
-﻿const { createClient } = require('@supabase/supabase-js');
+const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
 
@@ -110,6 +110,7 @@ async function runMigration() {
       cost_price: p.costPrice || null,
       material: p.material || '',
       dimensions: p.dimensions || '',
+      weight: p.weight || 50,
       images: p.images || [],
       description: p.description || '',
       is_hot: Boolean(p.isHot),
