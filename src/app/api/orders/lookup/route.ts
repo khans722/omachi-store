@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -13,11 +16,20 @@ export async function GET(req: NextRequest) {
 
     const orders = await db.orders.lookup(query, customerId);
 
-    return NextResponse.json({
-      success: true,
-      data: orders,
-      count: orders.length,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        data: orders,
+        count: orders.length,
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message || 'Lỗi tra cứu đơn hàng' }, { status: 500 });
   }

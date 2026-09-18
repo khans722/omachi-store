@@ -113,6 +113,9 @@ export interface OrderItem {
   productSku?: string;
   variantId?: string;
   variantName?: string;
+  selectedVariant?: any;
+  productImage?: string;
+  colorHex?: string;
   quantity: number;
   originalUnitPrice: number;
   appliedUnitPrice: number;

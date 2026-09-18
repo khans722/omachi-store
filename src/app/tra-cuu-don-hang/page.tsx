@@ -618,10 +618,14 @@ function OrderLookupContent() {
     let isMounted = true;
     setIsLoadingMyOrders(true);
 
-    const loadOrders = async () => {
+    const loadOrders = async (silent = false) => {
       try {
+        if (!silent) setIsLoadingMyOrders(true);
         const cleanCustPhone = (customer.phone || '').replace(/[^0-9]/g, '');
-        const res = await fetch(`/api/orders/lookup?customerId=${encodeURIComponent(customer.id)}`);
+        const res = await fetch(`/api/orders/lookup?customerId=${encodeURIComponent(customer.id)}&_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
         const data = await res.json();
         
         if (data.success && Array.isArray(data.data)) {
@@ -656,16 +660,30 @@ function OrderLookupContent() {
           }
         } catch (e) {}
       } finally {
-        if (isMounted) {
+        if (isMounted && !silent) {
           setIsLoadingMyOrders(false);
         }
       }
     };
 
-    loadOrders();
+    loadOrders(false);
+
+    // Tự động làm mới ngầm mỗi 3.5 giây để cập nhật trạng thái đơn mà khách không cần vuốt lại trang
+    const pollInterval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        loadOrders(true);
+      }
+    }, 3500);
+
+    const handleFocus = () => loadOrders(true);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('visibilitychange', handleFocus);
 
     return () => {
       isMounted = false;
+      clearInterval(pollInterval);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('visibilitychange', handleFocus);
     };
   }, [customer?.id, customer?.phone]);
 
@@ -680,25 +698,32 @@ function OrderLookupContent() {
   }, [searchParams]);
 
   // Execute manual search
-  const executeManualSearch = async (query: string) => {
+  const executeManualSearch = async (query: string, silent = false) => {
     const q = query.trim();
     if (!q) {
       setManualErrorMsg('Vui lòng nhập Số điện thoại hoặc Mã đơn hàng để tra cứu');
       return;
     }
 
-    setManualErrorMsg('');
-    setIsSearchingManual(true);
-    setManualHasSearched(true);
+    if (!silent) {
+      setManualErrorMsg('');
+      setIsSearchingManual(true);
+      setManualHasSearched(true);
+    }
 
     try {
-      const res = await fetch(`/api/orders/lookup?query=${encodeURIComponent(q)}`);
+      const res = await fetch(`/api/orders/lookup?query=${encodeURIComponent(q)}&_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
       const data = await res.json();
       if (data.success && data.data && data.data.length > 0) {
         setManualOrders(data.data);
       } else {
-        setManualOrders([]);
-        setManualErrorMsg(data.error || 'Không tìm thấy đơn hàng nào khớp với thông tin này');
+        if (!silent) {
+          setManualOrders([]);
+          setManualErrorMsg(data.error || 'Không tìm thấy đơn hàng nào khớp với thông tin này');
+        }
       }
     } catch (err: any) {
       // Local storage fallback on network failure
@@ -741,6 +766,18 @@ function OrderLookupContent() {
     e.preventDefault();
     executeManualSearch(manualQuery);
   };
+
+  // Polling tự động làm mới đơn tra cứu thủ công (để khách không phải vuốt lại màn hình khi shop cập nhật trạng thái)
+  useEffect(() => {
+    if (activeTab !== 'lookup_other' || !manualQuery.trim() || manualOrders.length === 0) return;
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        executeManualSearch(manualQuery, true);
+      }
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [activeTab, manualQuery, manualOrders.length]);
 
   // Status count stats for Shopee-style tabs
   const statusCounts = useMemo(() => {

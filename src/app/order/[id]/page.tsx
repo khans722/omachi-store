@@ -27,42 +27,58 @@ export default function OrderTrackingPage() {
     }
   };
 
-  // Auto-polling SePay khi đơn chưa thanh toán
+  // Auto-polling tự động cập nhật trạng thái đơn hàng realtime (không cần vuốt lại màn hình)
   useEffect(() => {
     if (!order) return;
-    if (order.paymentStatus === 'PAID') return;
-    if (order.paymentMethod !== 'BANK' && (order.paymentMethod as any) !== 'MOMO') return;
-    if (order.orderStatus === 'CANCELLED') return;
+    if (order.orderStatus === 'CANCELLED' || order.orderStatus === 'COMPLETED') return;
 
     let isMounted = true;
-    const checkPayment = async () => {
+    const syncOrderStatus = async () => {
       try {
+        if (document.visibilityState !== 'visible') return;
         const codeOrId = order.code || order.id;
-        const res = await fetch(`/api/orders/${encodeURIComponent(codeOrId)}`, { cache: 'no-store' });
+        const res = await fetch(`/api/orders/${encodeURIComponent(codeOrId)}?_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
         if (!res.ok) return;
         const data = await res.json();
         if (data.success && data.data) {
-          if (data.data.paymentStatus === 'PAID') {
-            if (isMounted) {
-              setOrder(data.data);
+          const fresh = data.data;
+          if (
+            isMounted &&
+            (fresh.orderStatus !== order.orderStatus ||
+              fresh.paymentStatus !== order.paymentStatus ||
+              fresh.trackingNumber !== order.trackingNumber)
+          ) {
+            if (fresh.paymentStatus === 'PAID' && order.paymentStatus !== 'PAID') {
               confetti({
                 particleCount: 120,
                 spread: 80,
                 origin: { y: 0.5 },
               });
               showToast('🎉 Thanh toán thành công! Shop đã nhận được tiền.');
+            } else if (fresh.orderStatus !== order.orderStatus) {
+              showToast(`🔔 Đơn hàng đã chuyển sang: ${fresh.orderStatus === 'PREPARING' ? 'Đang chuẩn bị & đóng gói' : fresh.orderStatus === 'SHIPPING' ? 'Đang giao hàng' : fresh.orderStatus}`);
             }
+            setOrder(fresh);
           }
         }
       } catch (e) {}
     };
 
-    const intervalId = setInterval(checkPayment, 2500);
+    const intervalId = setInterval(syncOrderStatus, 2500);
+    const handleFocus = () => syncOrderStatus();
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('visibilitychange', handleFocus);
+
     return () => {
       isMounted = false;
       clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('visibilitychange', handleFocus);
     };
-  }, [order?.id, order?.code, order?.paymentStatus, order?.paymentMethod, order?.orderStatus]);
+  }, [order?.id, order?.code, order?.paymentStatus, order?.orderStatus, order?.trackingNumber]);
 
   // Cancellation State
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);

@@ -116,6 +116,9 @@ export interface OrderItem {
   productSku: string;
   variantId?: string;
   variantName?: string;
+  selectedVariant?: any;
+  productImage?: string;
+  colorHex?: string;
   quantity: number;
   originalUnitPrice: number;
   appliedUnitPrice: number;
@@ -2793,13 +2796,26 @@ export const db = {
         const savingsAmount = Math.max(0, originalLineTotal - actualLineTotal);
         const discountPercent = originalLineTotal > 0 ? Math.round((savingsAmount / originalLineTotal) * 100) : 0;
 
+        const variantObj = it.selectedVariant || (it.variantName ? {
+          id: it.variantId || '',
+          name: it.variantName,
+          colorHex: it.colorHex || (it.selectedVariant as any)?.colorHex || '',
+          color: it.color || (it.selectedVariant as any)?.color || '',
+          image: it.variantImage || (it.selectedVariant as any)?.image || (it.selectedVariant as any)?.imageUrl || '',
+        } : undefined);
+        const resolvedVariantName = it.selectedVariant?.name || it.variantName || '';
+        const resolvedColorHex = it.selectedVariant?.colorHex || it.selectedVariant?.color || it.colorHex || it.color || '';
+
         return {
           id: `item-${Date.now()}-${idx}`,
           productId: prod.id || it.productId || '',
           productName: prod.name || it.productName || 'Mẫu Charm',
           productSku: prod.sku || it.productSku || `SKU-${idx + 1}`,
-          variantId: it.selectedVariant?.id || it.variantId,
-          variantName: it.selectedVariant?.name || it.variantName,
+          variantId: it.selectedVariant?.id || it.variantId || '',
+          variantName: resolvedVariantName,
+          selectedVariant: variantObj,
+          productImage: prod.images?.[0] || it.productImage || (it as any).image || '',
+          colorHex: resolvedColorHex,
           quantity: qty,
           originalUnitPrice,
           appliedUnitPrice,

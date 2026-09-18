@@ -277,6 +277,9 @@ export default function AdminPage() {
   const [restockOnCancel, setRestockOnCancel] = useState<boolean>(true);
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
 
+  // Manual Payment Confirmation Modal State
+  const [paymentConfirmOrder, setPaymentConfirmOrder] = useState<Order | null>(null);
+
   // Snapshot refs to detect unsaved changes
   const initialProductSnapshotRef = useRef<string>('');
   const initialCategorySnapshotRef = useRef<string>('');
@@ -2044,10 +2047,6 @@ export default function AdminPage() {
                               <p className="text-gray-700 leading-relaxed">
                                 <strong>📍 Địa chỉ:</strong> {order.customer.address}
                               </p>
-                              <p className="text-[11px] text-orange-800 bg-orange-50 px-2.5 py-1 rounded-xl border border-orange-200 flex items-center gap-1.5">
-                                <Truck className="w-3.5 h-3.5 text-orange-600 shrink-0" />
-                                <span>Vận chuyển: <strong>{order.carrierName || 'SPX Express'}</strong></span>
-                              </p>
                               {order.customer.note && (
                                 <p className="text-rose-700 font-medium bg-white p-2.5 rounded-xl border border-rose-200">
                                   📝 <strong>Ghi chú:</strong> {order.customer.note}
@@ -2055,52 +2054,50 @@ export default function AdminPage() {
                               )}
                             </div>
 
-                            {/* 2. Bảng Chi Tiết Tính Tiền (Khách đặt, Phí ship, Tổng thanh toán) */}
+                            {/* 2. Bảng Chi Tiết Tính Tiền (Gộp tiền hàng và cước ship gần nhau, tinh gọn) */}
                             <div className="p-3.5 rounded-2xl bg-amber-50/50 border border-amber-200/80 space-y-2 text-xs">
                               <h4 className="font-extrabold text-gray-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                                 <span>💰</span> Chi Tiết Tiền Hàng &amp; Cước Ship
                               </h4>
 
-                              {calculatedDiscount > 0 && (
-                                <div className="space-y-1">
-                                  <div className="flex justify-between text-gray-500 text-[11px]">
-                                    <span>Tổng giá bán lẻ ({totalItemCount} con):</span>
-                                    <span>{formatVND(calculatedRetailSubtotal)}</span>
-                                  </div>
-                                  <div className="flex justify-between text-emerald-700 font-bold text-[11px]">
-                                    <span>Chiết khấu Combo sỉ ({calculatedDiscountPercent}%):</span>
-                                    <span>-{formatVND(calculatedDiscount)}</span>
+                              <div className="space-y-1.5 pt-0.5">
+                                {/* Dòng 1: Tiền hàng */}
+                                <div className="flex justify-between text-gray-700 font-medium">
+                                  <span>Tiền hàng ({totalItemCount} món):</span>
+                                  <div className="text-right">
+                                    <strong className="text-gray-800">{formatVND(calculatedItemsTotal)}</strong>
+                                    {calculatedDiscount > 0 && (
+                                      <span className="ml-1 text-[10px] text-emerald-700 font-bold">
+                                        (-{formatVND(calculatedDiscount)})
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
-                              )}
 
-                              <div className="flex justify-between text-gray-700 font-medium">
-                                <span>Tiền hàng thực tế ({totalItemCount} món):</span>
-                                <strong className="text-gray-800">{formatVND(calculatedItemsTotal)}</strong>
+                                {/* Dòng 2: Cước vận chuyển liền kề */}
+                                <div className="flex justify-between text-gray-700 font-medium">
+                                  <span className="flex items-center gap-1">
+                                    <Truck className="w-3.5 h-3.5 text-orange-600 shrink-0" />
+                                    <span>Cước ship ({order.carrierName || 'SPX Express'}):</span>
+                                  </span>
+                                  <strong className={calculatedShippingFee === 0 ? 'text-emerald-700 font-bold' : 'text-gray-800 font-black'}>
+                                    {calculatedShippingFee === 0 ? '0đ (Miễn phí / Freeship)' : `+${formatVND(calculatedShippingFee)}`}
+                                  </strong>
+                                </div>
                               </div>
 
-                              {/* Phí vận chuyển */}
-                              <div className="flex justify-between text-gray-700 font-medium">
-                                <span className="flex items-center gap-1">
-                                  <Truck className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-                                  <span>Phí vận chuyển:</span>
-                                </span>
-                                <strong className={calculatedShippingFee === 0 ? 'text-emerald-700 font-bold' : 'text-gray-800 font-black'}>
-                                  {calculatedShippingFee === 0 ? '0đ (Miễn phí)' : `+${formatVND(calculatedShippingFee)}`}
-                                </strong>
-                              </div>
-
+                              {/* Dòng 3: Tổng thanh toán */}
                               <div className="flex justify-between items-baseline pt-2 border-t border-amber-200/80">
                                 <div>
                                   <strong className="text-gray-800 text-xs font-black block">
                                     {order.paymentStatus === 'PAID' ? 'TỔNG ĐÃ THANH TOÁN:' : 'TỔNG CẦN THANH TOÁN:'}
                                   </strong>
-                                  <span className="text-[10px] text-gray-400">
+                                  <span className="text-[10px] text-gray-500 font-medium">
                                     {order.paymentStatus === 'PAID'
-                                      ? 'Đã thanh toán'
+                                      ? 'Đã nhận đủ tiền qua ngân hàng'
                                       : order.paymentMethod === 'BANK'
-                                      ? 'Chờ chuyển khoản ngân hàng'
-                                      : 'Thu tiền khi giao hàng (COD)'}
+                                      ? 'Chờ chuyển khoản VietQR'
+                                      : 'Thu tiền mặt khi giao hàng (COD)'}
                                   </span>
                                 </div>
                                 <span className="text-base font-black text-rose-600">
@@ -2164,10 +2161,10 @@ export default function AdminPage() {
                                     </span>
                                   </div>
 
-                                  {/* Variations Checklist */}
+                                   {/* Variations Checklist */}
                                   <div className="space-y-1.5 pl-1 sm:pl-2">
                                     {group.items.map((it: any, subIdx: number) => {
-                                      const itemKey = `${order.id}-${it.productId || it.product?.id}-${it.selectedVariant?.id || subIdx}`;
+                                      const itemKey = `${order.id}-${it.productId || it.product?.id}-${it.selectedVariant?.id || it.variantId || subIdx}`;
                                       const isChecked = checkedPackingItems[itemKey] || false;
                                       const origUnit = Number(it.originalUnitPrice || it.product?.basePrice || it.appliedUnitPrice || (it.totalPrice / (it.quantity || 1)) || 0);
                                       const qty = Number(it.quantity || 1);
@@ -2176,42 +2173,66 @@ export default function AdminPage() {
                                       const itemDiscount = Math.max(0, origLine - actualLine);
                                       const itemDiscountPercent = it.discountPercent || (origLine > 0 ? Math.round((itemDiscount / origLine) * 100) : 0);
 
+                                      // Tìm thông tin biến thể & màu sắc từ item hoặc product catalog
+                                      const pId = it.productId || it.product?.id;
+                                      const matchedProd = products.find((p) => p.id === pId);
+                                      const vId = it.variantId || it.selectedVariant?.id;
+                                      const vNameRaw = it.variantName || it.selectedVariant?.name;
+                                      const matchedVar = matchedProd?.variants?.find((v) => (vId && v.id === vId) || (vNameRaw && v.name.toLowerCase() === vNameRaw.toLowerCase()));
+
+                                      const displayVariantName = vNameRaw || matchedVar?.name || '';
+                                      const displayColor = it.selectedVariant?.colorHex || it.selectedVariant?.color || it.colorHex || it.color || matchedVar?.colorHex || '';
+
                                       return (
                                         <div
                                           key={subIdx}
                                           onClick={() => toggleCheckPackingItem(itemKey)}
-                                          className={`p-2 rounded-xl border transition cursor-pointer flex items-center justify-between gap-2 text-xs select-none ${
+                                          className={`p-2.5 rounded-xl border transition cursor-pointer flex items-center justify-between gap-2 text-xs select-none ${
                                             isChecked
                                               ? 'bg-emerald-50/70 border-emerald-300'
                                               : 'bg-white hover:bg-pink-50/40 border-gray-200'
                                           }`}
                                         >
-                                          <div className="flex items-center gap-2 min-w-0">
+                                          <div className="flex items-center gap-2.5 min-w-0">
                                             <input
                                               type="checkbox"
                                               checked={isChecked}
                                               onChange={() => {}}
-                                              className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-400 cursor-pointer"
+                                              className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-400 cursor-pointer shrink-0"
                                             />
-                                            {it.selectedVariant?.color && (
+                                            {displayColor && (
                                               <span
-                                                className="w-3 h-3 rounded-full border border-gray-300 shrink-0"
-                                                style={{ backgroundColor: it.selectedVariant.color }}
+                                                className="w-3.5 h-3.5 rounded-full border border-gray-300 shrink-0 shadow-2xs"
+                                                style={{ backgroundColor: displayColor }}
+                                                title={`Mã màu: ${displayColor}`}
                                               />
                                             )}
                                             <div className="min-w-0">
-                                              <span className={`font-extrabold ${isChecked ? 'line-through text-gray-400' : 'text-gray-800'}`}>
-                                                {it.selectedVariant?.name || 'Mặc định'}
-                                              </span>
-                                              <span className="text-gray-400 mx-1.5">•</span>
-                                              <span className="font-black text-rose-600 text-xs">
-                                                x{qty} con
-                                              </span>
-                                              {itemDiscount > 0 && (
-                                                <span className="ml-1.5 text-[9px] font-bold text-emerald-800 bg-emerald-100 px-1 py-0.2 rounded border border-emerald-200">
-                                                  Giảm {itemDiscountPercent}%
+                                              <div className="flex items-center gap-1.5 flex-wrap">
+                                                {displayVariantName ? (
+                                                  <span className={`font-black ${isChecked ? 'line-through text-gray-400' : 'text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md border border-purple-200'}`}>
+                                                    {displayVariantName}
+                                                  </span>
+                                                ) : it.customHandmadeNote ? (
+                                                  <span className={`font-semibold text-rose-700 italic ${isChecked ? 'line-through text-gray-400' : ''}`}>
+                                                    &quot;{it.customHandmadeNote}&quot;
+                                                  </span>
+                                                ) : (
+                                                  <span className={`font-medium ${isChecked ? 'line-through text-gray-400' : 'text-gray-500'}`}>
+                                                    Mẫu chuẩn
+                                                  </span>
+                                                )}
+
+                                                <span className="text-gray-300">•</span>
+                                                <span className="font-black text-rose-600 text-xs">
+                                                  x{qty} con
                                                 </span>
-                                              )}
+                                                {itemDiscount > 0 && (
+                                                  <span className="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-1 py-0.2 rounded border border-emerald-200">
+                                                    Giảm {itemDiscountPercent}%
+                                                  </span>
+                                                )}
+                                              </div>
                                             </div>
                                           </div>
 
@@ -2237,14 +2258,14 @@ export default function AdminPage() {
                       {/* TRƯỜNG HỢP 1: ĐƠN CHUYỂN KHOẢN CHƯA THANH TOÁN (Chỉ có thể chờ tiền, tuyệt đối không được xác nhận đơn) */}
                       {(order.paymentMethod === 'BANK' || order.paymentMethod === 'MOMO') && order.paymentStatus !== 'PAID' && order.orderStatus !== 'CANCELLED' ? (
                         <div className="flex items-center justify-end gap-2 w-full">
-                            {/* Nút duyệt đã nhận tiền: Chuyển thẳng sang PAID và PREPARING */}
+                            {/* Nút duyệt đã nhận tiền: Mở popup xác nhận để tránh bấm nhầm */}
                             <button
                               type="button"
                               onClick={() => {
-                                handleUpdateStatus(order.id, 'PREPARING', 'PAID');
+                                setPaymentConfirmOrder(order);
                               }}
                               className="px-3 py-1.5 rounded-lg border border-emerald-300 hover:border-emerald-500 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition cursor-pointer flex items-center gap-1 shadow-2xs"
-                              title="Bấm để xác nhận khách đã chuyển khoản thành công và chuyển đơn sang chuẩn bị hàng"
+                              title="Bấm để mở hộp thoại xác nhận đã nhận tiền"
                             >
                               💳 Xác nhận đã nhận tiền
                             </button>
@@ -5618,6 +5639,99 @@ export default function AdminPage() {
                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-extrabold text-xs shadow-md shadow-rose-200 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 <span>{isSubmittingCancel ? 'Đang xử lý hủy...' : 'Xác Nhận Hủy Đơn ❌'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: XÁC NHẬN THANH TOÁN BẰNG TAY (BẢO VỆ CHỦ SHOP TRÁNH BẤM NHẦM) */}
+      {paymentConfirmOrder && (
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPaymentConfirmOrder(null);
+          }}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in"
+        >
+          <div className="bg-white rounded-3xl border border-amber-200 shadow-2xl max-w-md w-full p-6 space-y-4 animate-scale-up">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-amber-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl font-black">
+                  ⚠️
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-gray-800 flex items-center gap-1.5">
+                    <span>Xác Nhận Đã Nhận Tiền?</span>
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Đơn hàng #{paymentConfirmOrder.code} • Tránh ấn nhầm khi chưa có tiền
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setPaymentConfirmOrder(null)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition cursor-pointer"
+                title="Đóng cửa sổ"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Chi tiết giao dịch cần xác nhận */}
+            <div className="p-3.5 bg-amber-50/70 rounded-2xl border border-amber-200/80 space-y-2 text-xs text-gray-800">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Khách hàng:</span>
+                <strong className="text-gray-900">{paymentConfirmOrder.customer?.fullName} ({paymentConfirmOrder.customer?.phone})</strong>
+              </div>
+              <div className="flex justify-between items-baseline pt-1.5 border-t border-amber-200/60">
+                <span className="text-gray-600 font-bold">Số tiền cần đối soát:</span>
+                <strong className="text-base font-black text-rose-600">
+                  {formatVND(paymentConfirmOrder.finalTotalAmount || paymentConfirmOrder.totalAmount)}
+                </strong>
+              </div>
+              <div className="flex justify-between text-[11px] text-gray-500">
+                <span>Hình thức:</span>
+                <span className="font-bold text-gray-700">
+                  {paymentConfirmOrder.paymentMethod === 'BANK' ? 'Chuyển khoản VietQR' : 'Ví điện tử MoMo'}
+                </span>
+              </div>
+            </div>
+
+            {/* Cảnh báo an toàn dòng tiền */}
+            <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs space-y-1">
+              <div className="font-bold flex items-center gap-1.5 text-rose-700">
+                <span>🛡️</span> Cảnh báo an toàn dòng tiền:
+              </div>
+              <p className="text-[11px] leading-relaxed text-rose-800">
+                Chỉ bấm xác nhận khi <strong>bạn đã mở App ngân hàng</strong> và thấy tiền đã thực sự cộng vào số dư tài khoản. Thao tác này sẽ đánh dấu đơn hàng là <strong>ĐÃ THANH TOÁN (PAID)</strong>.
+              </p>
+            </div>
+
+            {/* Nút hành động */}
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setPaymentConfirmOrder(null)}
+                className="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-100 text-xs font-bold transition cursor-pointer"
+              >
+                Hủy Bỏ
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const o = paymentConfirmOrder;
+                  setPaymentConfirmOrder(null);
+                  // Giữ nguyên trạng thái đơn hàng (PENDING_CONFIRM) để shop tự tay duyệt từng bước
+                  handleUpdateStatus(o.id, o.orderStatus, 'PAID');
+                  showAdminToast(`✅ Đã xác nhận đơn #${o.code} đã thanh toán đủ ${formatVND(o.finalTotalAmount || o.totalAmount)}!`);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Check className="w-4 h-4" />
+                <span>Đã Kiểm Tra App • Xác Nhận Nhận Tiền</span>
               </button>
             </div>
           </div>
