@@ -472,7 +472,7 @@ export default function OrderTrackingPage() {
                 const isVietin = rawBank.includes('VIETIN') || rawBank.includes('CTG') || rawBank.includes('ICB') || (settings?.bankAccount || '').trim() === '106873248315';
                 const qrBank = rawBank.includes('VIETCOM') ? 'VCB' : rawBank.includes('MB') ? 'MB' : isVietin ? 'ICB' : rawBank;
                 const bankAccount = (settings?.bankAccount || '').trim();
-                const bankOwner = (settings?.bankOwner || '').trim();
+                const bankOwner = (settings?.bankOwner || 'DUONG QUOC KHANH').trim().toUpperCase();
                 const transferContent = isVietin ? `SEVQR DH ${order.code}` : `DH ${order.code}`;
 
                 if (!bankAccount || !qrBank) {

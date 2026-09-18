@@ -76,7 +76,7 @@ const DEFAULT_SETTINGS: ShopSettings = {
   enablePrepaidFreeShip: true,
   bankId: 'VCB',
   bankAccount: '1018880066',
-  bankOwner: 'DUong QUOC KHANH',
+  bankOwner: 'DUONG QUOC KHANH',
   telegramBotToken: '8643883325:AAFtYvON3zYNH6D8K1Mf8bTtHclR1ha92SQ',
   telegramChatId: '8941847464',
   enableTelegramNotify: true,

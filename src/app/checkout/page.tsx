@@ -22,6 +22,8 @@ import {
   CheckCircle2,
   Loader2,
   Bookmark,
+  Copy,
+  Clock,
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -304,30 +306,14 @@ function OrderCountdownTimer({ createdAt }: { createdAt?: string }) {
   const pad = (n: number) => String(n).padStart(2, '0');
 
   return (
-    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center space-y-1.5 shadow-2xs">
-      <div className="text-[11px] font-bold text-amber-800 flex items-center justify-center gap-1.5">
-        <span className="animate-pulse">⏳</span>
-        <span>Thời gian còn lại để hoàn tất thanh toán:</span>
-      </div>
-      <div className="flex items-center justify-center gap-2 font-mono text-xl font-black text-amber-900">
-        <div className="bg-white px-2.5 py-1 rounded-md shadow-xs border border-amber-200 text-center">
-          <span>{pad(timeLeft.hours)}</span>
-          <span className="block text-[8px] font-sans font-medium text-gray-500 uppercase tracking-tight">Giờ</span>
-        </div>
-        <span className="text-amber-500 font-bold">:</span>
-        <div className="bg-white px-2.5 py-1 rounded-md shadow-xs border border-amber-200 text-center">
-          <span>{pad(timeLeft.minutes)}</span>
-          <span className="block text-[8px] font-sans font-medium text-gray-500 uppercase tracking-tight">Phút</span>
-        </div>
-        <span className="text-amber-500 font-bold">:</span>
-        <div className="bg-white px-2.5 py-1 rounded-md shadow-xs border border-amber-200 text-center">
-          <span>{pad(timeLeft.seconds)}</span>
-          <span className="block text-[8px] font-sans font-medium text-gray-500 uppercase tracking-tight">Giây</span>
-        </div>
-      </div>
-      <p className="text-[10px] text-amber-700 font-medium">
-        Sau 24 giờ kể từ lúc đặt hàng, đơn chưa thanh toán sẽ tự động hủy trên hệ thống.
-      </p>
+    <div className="py-2 px-3 bg-amber-50/90 border border-amber-200/80 rounded-xl flex items-center justify-between gap-2 text-xs text-amber-900 shadow-2xs">
+      <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-800">
+        <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+        <span>Vui lòng thanh toán trong:</span>
+      </span>
+      <span className="font-mono font-black text-rose-600 text-xs tracking-wider bg-white px-2.5 py-0.5 rounded-lg border border-amber-200/80 shadow-2xs shrink-0">
+        {pad(timeLeft.hours)}:{pad(timeLeft.minutes)}:{pad(timeLeft.seconds)}
+      </span>
     </div>
   );
 }
@@ -1168,7 +1154,7 @@ export default function CheckoutPage() {
                   const isVietin = rawBank.includes('VIETIN') || rawBank.includes('CTG') || rawBank.includes('ICB') || (settings?.bankAccount || '').trim() === '106873248315';
                   const qrBank = rawBank.includes('VIETCOM') ? 'VCB' : rawBank.includes('MB') ? 'MB' : isVietin ? 'ICB' : rawBank;
                   const bankAccount = (settings?.bankAccount || '').trim();
-                  const bankOwner = (settings?.bankOwner || '').trim();
+                  const bankOwner = (settings?.bankOwner || 'DUONG QUOC KHANH').trim().toUpperCase();
                   const transferContent = isVietin ? `SEVQR DH ${createdOrder.code}` : `DH ${createdOrder.code}`;
 
                   if (!bankAccount || !qrBank) {
@@ -1210,55 +1196,53 @@ export default function CheckoutPage() {
                         </button>
                       </div>
 
-                      {/* Bảng chi tiết chuyển khoản có nút Copy 1 chạm */}
-                      <div className="grid grid-cols-2 gap-2 text-left pt-1">
-                        {/* Ngân hàng */}
-                        <div className="p-2 rounded-lg bg-gray-50 border border-gray-200/80">
-                          <span className="text-[10px] text-gray-500 block font-medium">Ngân hàng:</span>
-                          <span className="text-xs font-bold text-gray-900 block truncate">
-                            {rawBank || 'VietinBank'}
-                          </span>
+                      {/* Bảng chi tiết chuyển khoản: Gọn gàng 1 khung duy nhất, nút sao chép dạng pill tinh gọn */}
+                      <div className="w-full bg-stone-50/90 border border-stone-200 rounded-2xl p-2.5 space-y-2 text-xs text-left">
+                        {/* Hàng 1: Ngân hàng & Chủ tài khoản */}
+                        <div className="flex items-center justify-between gap-2 px-1 text-[11px]">
+                          <div>
+                            <span className="text-stone-400">Ngân hàng: </span>
+                            <strong className="text-stone-800 font-bold">{rawBank || 'VietinBank'}</strong>
+                          </div>
+                          <div className="text-right truncate">
+                            <span className="text-stone-400">Chủ TK: </span>
+                            <strong className="text-stone-800 font-bold uppercase">{bankOwner}</strong>
+                          </div>
                         </div>
 
-                        {/* Số tài khoản */}
-                        <div className="p-2 rounded-lg bg-gray-50 border border-gray-200/80 flex items-center justify-between gap-1">
-                          <div className="min-w-0 flex-1">
-                            <span className="text-[10px] text-gray-500 block font-medium">Số tài khoản:</span>
-                            <span className="text-xs font-extrabold text-blue-700 font-mono block truncate">
-                              {bankAccount}
-                            </span>
-                          </div>
+                        {/* Hàng 2: Số tài khoản dạng pill */}
+                        <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-stone-200/60 px-1">
+                          <span className="text-stone-500 text-[11px] font-medium">Số tài khoản:</span>
                           <button
                             type="button"
                             onClick={() => copyToClipboard(bankAccount, 'stk')}
-                            className="px-1.5 py-1 text-[10px] font-bold bg-white hover:bg-blue-50 text-blue-600 border border-blue-200 rounded shrink-0 transition"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white border border-stone-300 hover:border-blue-400 hover:bg-blue-50/40 text-blue-700 font-mono text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
+                            title="Bấm để sao chép số tài khoản"
                           >
-                            {copiedField === 'stk' ? '✓' : 'Copy'}
+                            <span>{bankAccount}</span>
+                            {copiedField === 'stk' ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                            )}
                           </button>
                         </div>
 
-                        {/* Chủ tài khoản */}
-                        <div className="p-2 rounded-lg bg-gray-50 border border-gray-200/80">
-                          <span className="text-[10px] text-gray-500 block font-medium">Chủ tài khoản:</span>
-                          <span className="text-xs font-bold text-gray-900 block truncate">
-                            {bankOwner || 'DUONG QUOC KHANH'}
-                          </span>
-                        </div>
-
-                        {/* Nội dung CK */}
-                        <div className="p-2 rounded-lg bg-amber-50 border border-amber-300 flex items-center justify-between gap-1">
-                          <div className="min-w-0 flex-1">
-                            <span className="text-[10px] text-amber-800 block font-bold">Nội dung CK (bắt buộc):</span>
-                            <span className="text-xs font-black text-rose-600 font-mono block truncate">
-                              {transferContent}
-                            </span>
-                          </div>
+                        {/* Hàng 3: Nội dung CK dạng pill */}
+                        <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-stone-200/60 px-1">
+                          <span className="text-stone-500 text-[11px] font-medium">Nội dung CK:</span>
                           <button
                             type="button"
                             onClick={() => copyToClipboard(transferContent, 'nd')}
-                            className="px-1.5 py-1 text-[10px] font-bold bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 rounded shrink-0 transition"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50/90 border border-amber-300 hover:bg-amber-100/80 text-rose-600 font-mono text-xs font-black transition shadow-2xs cursor-pointer active:scale-95"
+                            title="Bấm để sao chép nội dung chuyển khoản"
                           >
-                            {copiedField === 'nd' ? '✓' : 'Copy'}
+                            <span>{transferContent}</span>
+                            {copiedField === 'nd' ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                            )}
                           </button>
                         </div>
                       </div>
@@ -1272,10 +1256,10 @@ export default function CheckoutPage() {
                 })()}
               </div>
 
-              {/* 3. Trạng thái tự động: Siêu gọn 1 dòng */}
+              {/* 3. Trạng thái thanh toán: Gọn gàng, không rườm rà */}
               <div className="py-2 px-3 bg-blue-50 border border-blue-200/80 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-blue-800">
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600 shrink-0" />
-                <span>Đang chờ thanh toán (Tự động duyệt khi có tiền)</span>
+                <span>Đang chờ thanh toán</span>
               </div>
 
               {/* 4. Bộ đếm thời gian 24h */}
