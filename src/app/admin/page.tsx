@@ -265,6 +265,11 @@ export default function AdminPage() {
   const [restockOnCancel, setRestockOnCancel] = useState<boolean>(true);
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
 
+  // Manual Status Adjustment Modal State (Chống nhảy cóc trạng thái)
+  const [editingStatusOrder, setEditingStatusOrder] = useState<Order | null>(null);
+  const [editTargetStatus, setEditTargetStatus] = useState<OrderStatus>('PENDING_CONFIRM');
+  const [editTargetPayment, setEditTargetPayment] = useState<'UNPAID' | 'PAID'>('UNPAID');
+
   // Snapshot refs to detect unsaved changes
   const initialProductSnapshotRef = useRef<string>('');
   const initialCategorySnapshotRef = useRef<string>('');
@@ -1120,6 +1125,17 @@ export default function AdminPage() {
       (o.code && o.code.toLowerCase().replace(/^#/, '').trim() === cleanId)
     );
 
+    // Chặn nhảy cóc phi lý cho đơn Chuyển khoản VietQR / MoMo
+    if (currentOrder) {
+      const isPrepaid = currentOrder.paymentMethod === 'BANK' || currentOrder.paymentMethod === 'MOMO';
+      const willBePaid = paymentStatus ? paymentStatus === 'PAID' : currentOrder.paymentStatus === 'PAID';
+
+      if (isPrepaid && !willBePaid && (newStatus === 'PREPARING' || newStatus === 'SHIPPING' || newStatus === 'COMPLETED')) {
+        alert(`⚠️ KHÔNG THỂ CHUYỂN TRẠNG THÁI:\n\nĐơn hàng #${currentOrder.code} là Chuyển khoản VietQR nhưng CHƯA THANH TOÁN.\n\nVui lòng bấm "Xác Nhận Đã Nhận Tiền" (hoặc chờ SePay tự khớp) trước khi chuẩn bị hoặc hoàn thành đơn!`);
+        return;
+      }
+    }
+
     // Optimistic update
     let updatedTargetOrder: Order | undefined;
     setOrders(prev => {
@@ -1410,12 +1426,16 @@ export default function AdminPage() {
   }
 
   // IF AUTHENTICATED -> DASHBOARD
+  const isPrepaidUnpaid = (o: Order) => (o.paymentMethod === 'BANK' || o.paymentMethod === 'MOMO') && o.paymentStatus !== 'PAID' && o.orderStatus !== 'CANCELLED';
+
   const filteredOrders = orders.filter((o) => {
     let statusMatch = true;
-    if (selectedStatusFilter === 'PENDING_CONFIRM') statusMatch = o.orderStatus === 'PENDING_CONFIRM';
+    if (selectedStatusFilter === 'PENDING_PAYMENT') statusMatch = isPrepaidUnpaid(o);
+    else if (selectedStatusFilter === 'PENDING_CONFIRM') statusMatch = o.orderStatus === 'PENDING_CONFIRM' && !isPrepaidUnpaid(o);
     else if (selectedStatusFilter === 'PREPARING') statusMatch = o.orderStatus === 'PREPARING';
     else if (selectedStatusFilter === 'SHIPPING') statusMatch = o.orderStatus === 'SHIPPING';
     else if (selectedStatusFilter === 'COMPLETED') statusMatch = o.orderStatus === 'COMPLETED';
+    else if (selectedStatusFilter === 'CANCELLED') statusMatch = o.orderStatus === 'CANCELLED';
 
     if (!statusMatch) return false;
 
@@ -1435,8 +1455,12 @@ export default function AdminPage() {
     .filter((o) => o.paymentStatus === 'PAID')
     .reduce((sum, o) => sum + o.totalAmount, 0);
 
-  const pendingConfirmCount = orders.filter((o) => o.orderStatus === 'PENDING_CONFIRM').length;
+  const pendingPaymentCount = orders.filter(isPrepaidUnpaid).length;
+  const pendingConfirmCount = orders.filter((o) => o.orderStatus === 'PENDING_CONFIRM' && !isPrepaidUnpaid(o)).length;
   const preparingCount = orders.filter((o) => o.orderStatus === 'PREPARING').length;
+  const shippingCount = orders.filter((o) => o.orderStatus === 'SHIPPING').length;
+  const completedCount = orders.filter((o) => o.orderStatus === 'COMPLETED').length;
+  const cancelledCount = orders.filter((o) => o.orderStatus === 'CANCELLED').length;
   const totalStockCount = products.reduce((sum, p) => sum + (Number(p.stock) || 0), 0);
   const lowStockProducts = products.filter((p) => (Number(p.stock) || 0) > 0 && (Number(p.stock) || 0) <= 10);
   const outOfStockProducts = products.filter((p) => (Number(p.stock) || 0) === 0);
@@ -1444,10 +1468,12 @@ export default function AdminPage() {
 
   const statusFilterOptions = [
     { value: 'ALL', label: 'Tất cả đơn', icon: '📦', count: orders.length },
-    { value: 'PENDING_CONFIRM', label: 'Chờ xác nhận', icon: '⏳', count: pendingConfirmCount },
+    { value: 'PENDING_PAYMENT', label: 'Chờ thanh toán', icon: '⏳', count: pendingPaymentCount },
+    { value: 'PENDING_CONFIRM', label: 'Chờ xác nhận', icon: '📋', count: pendingConfirmCount },
     { value: 'PREPARING', label: 'Đang làm hàng', icon: '🔨', count: preparingCount },
-    { value: 'SHIPPING', label: 'Đang giao', icon: '🚚', count: orders.filter((o) => o.orderStatus === 'SHIPPING').length },
-    { value: 'COMPLETED', label: 'Hoàn thành', icon: '✅', count: orders.filter((o) => o.orderStatus === 'COMPLETED').length },
+    { value: 'SHIPPING', label: 'Đang giao', icon: '🚚', count: shippingCount },
+    { value: 'COMPLETED', label: 'Hoàn thành', icon: '✅', count: completedCount },
+    { value: 'CANCELLED', label: 'Đã hủy', icon: '❌', count: cancelledCount },
   ];
   const currentStatusOption = statusFilterOptions.find((o) => o.value === selectedStatusFilter) || statusFilterOptions[0];
 
@@ -1764,61 +1790,41 @@ export default function AdminPage() {
                           {new Date(order.createdAt).toLocaleString('vi-VN')}
                         </span>
 
-                        {/* 1. Trạng thái Tiến độ đơn hàng (Dropdown chọn linh hoạt) */}
-                        <div className="flex items-center gap-1.5">
-                          <select
-                            value={order.orderStatus}
-                            onChange={(e) => {
-                              const val = e.target.value as OrderStatus;
-                              if (val === 'CANCELLED') {
-                                setCancellingOrder(order);
-                                return;
-                              }
-                              handleUpdateStatus(order.id, val);
-                            }}
-                            className={`text-xs font-black px-2.5 py-1 rounded-xl border cursor-pointer transition focus:outline-none focus:ring-2 focus:ring-pink-300 ${
-                              order.orderStatus === 'PENDING_CONFIRM'
-                                ? 'bg-amber-50 text-amber-800 border-amber-300'
-                                : order.orderStatus === 'PREPARING'
-                                ? 'bg-purple-50 text-purple-800 border-purple-300'
-                                : order.orderStatus === 'SHIPPING'
-                                ? 'bg-blue-50 text-blue-800 border-blue-300'
-                                : order.orderStatus === 'COMPLETED'
-                                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                                : 'bg-gray-100 text-gray-600 border-gray-300'
-                            }`}
-                          >
-                            <option value="PENDING_CONFIRM">
-                              {order.paymentMethod === 'BANK' && order.paymentStatus !== 'PAID'
-                                ? '⏳ Chờ khách chuyển khoản'
-                                : '⏳ Chờ xác nhận đơn'}
-                            </option>
-                            <option value="PREPARING">🎨 Đang chuẩn bị &amp; đóng gói</option>
-                            <option value="SHIPPING">🚚 Đang giao hàng</option>
-                            <option value="COMPLETED">✅ Đã hoàn thành</option>
-                            <option value="CANCELLED">❌ Đã hủy đơn</option>
-                          </select>
-                        </div>
+                        {/* 1. Trạng thái Tiến độ đơn hàng (Huy hiệu cố định, không bấm nhầm) */}
+                        <span className={`text-xs font-black px-2.5 py-1 rounded-xl border flex items-center gap-1 ${
+                          order.orderStatus === 'CANCELLED'
+                            ? 'bg-rose-50 text-rose-700 border-rose-300'
+                            : order.orderStatus === 'COMPLETED'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                            : order.orderStatus === 'SHIPPING'
+                            ? 'bg-blue-50 text-blue-800 border-blue-300'
+                            : order.orderStatus === 'PREPARING'
+                            ? 'bg-purple-50 text-purple-800 border-purple-300'
+                            : (order.paymentMethod === 'BANK' || order.paymentMethod === 'MOMO') && order.paymentStatus !== 'PAID'
+                            ? 'bg-amber-50 text-amber-800 border-amber-300'
+                            : 'bg-sky-50 text-sky-800 border-sky-300'
+                        }`}>
+                          {order.orderStatus === 'CANCELLED'
+                            ? '❌ Đã hủy đơn'
+                            : order.orderStatus === 'COMPLETED'
+                            ? '✅ Đã hoàn thành'
+                            : order.orderStatus === 'SHIPPING'
+                            ? '🚚 Đang giao hàng'
+                            : order.orderStatus === 'PREPARING'
+                            ? '🎨 Đang chuẩn bị & đóng gói'
+                            : (order.paymentMethod === 'BANK' || order.paymentMethod === 'MOMO') && order.paymentStatus !== 'PAID'
+                            ? '⏳ Chờ khách chuyển khoản'
+                            : '📋 Chờ xác nhận đơn'}
+                        </span>
 
-                        {/* 2. Trạng thái Thanh toán (Chỉ hiển thị: Đã thanh toán / Chưa thanh toán) */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const next = order.paymentStatus === 'PAID' ? 'UNPAID' : 'PAID';
-                            if (next === 'PAID' && !window.confirm(`Xác nhận đánh dấu đơn #${order.code} là ĐÃ THANH TOÁN?`)) {
-                              return;
-                            }
-                            handleUpdateStatus(order.id, undefined, next);
-                          }}
-                          title={order.paymentStatus === 'PAID' ? 'Bấm để đổi sang Chưa thanh toán' : 'Bấm để đổi sang Đã thanh toán'}
-                          className={`text-xs font-bold px-2.5 py-1 rounded-xl border transition cursor-pointer active:scale-95 flex items-center gap-1 ${
-                            order.paymentStatus === 'PAID'
-                              ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
-                              : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300'
-                          }`}
-                        >
+                        {/* 2. Trạng thái Thanh toán (Huy hiệu cố định, chống bấm nhầm) */}
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-xl border flex items-center gap-1 ${
+                          order.paymentStatus === 'PAID'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                            : 'bg-amber-50 text-amber-800 border-amber-300'
+                        }`}>
                           {order.paymentStatus === 'PAID' ? '✓ Đã thanh toán' : '⏳ Chưa thanh toán'}
-                        </button>
+                        </span>
 
                         {/* 3. Phương thức thanh toán khách chọn */}
                         <span className={`text-[11px] font-bold px-2 py-0.5 rounded-lg border ${
@@ -2078,38 +2084,129 @@ export default function AdminPage() {
                       );
                     })()}
 
-                    {/* Action Buttons for Shop Owner */}
-                    <div className="pt-3 border-t border-pink-50 flex flex-wrap items-center justify-end gap-2">
-                        {order.orderStatus === 'PENDING_CONFIRM' && (
+                    {/* Action Buttons for Shop Owner (Quy trình tuần tự chuẩn E-Commerce, chống nhảy cóc) */}
+                    <div className="pt-3 border-t border-pink-50 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                      {/* Left: Cảnh báo / Hướng dẫn trạng thái */}
+                      <div className="text-xs">
+                        {(order.paymentMethod === 'BANK' || order.paymentMethod === 'MOMO') && order.paymentStatus !== 'PAID' && order.orderStatus !== 'CANCELLED' ? (
+                          order.orderStatus === 'COMPLETED' ? (
+                            <span className="text-rose-700 font-extrabold flex items-center gap-1.5 bg-rose-50 px-2.5 py-1 rounded-xl border border-rose-300 animate-pulse">
+                              <span>🚨</span>
+                              <span>ĐƠN LỆCH: Khách chưa chuyển tiền nhưng đang ở Đã hoàn thành! Hãy sửa lại hoặc xác nhận tiền.</span>
+                            </span>
+                          ) : (
+                            <span className="text-amber-800 font-bold flex items-center gap-1.5 bg-amber-50 px-2.5 py-1 rounded-xl border border-amber-200">
+                              <span>⏳</span>
+                              <span>Chờ SePay tự khớp tiền khi khách quét QR. <b>Không đóng hàng khi tiền chưa về!</b></span>
+                            </span>
+                          )
+                        ) : order.orderStatus === 'COMPLETED' ? (
+                          <span className="text-emerald-700 font-bold flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
+                            <span>✅</span>
+                            <span>Đơn hàng đã hoàn tất thành công.</span>
+                          </span>
+                        ) : order.orderStatus === 'CANCELLED' ? (
+                          <span className="text-rose-700 font-bold flex items-center gap-1 bg-rose-50 px-2.5 py-1 rounded-xl border border-rose-200">
+                            <span>❌</span>
+                            <span>Đơn hàng đã hủy ({order.cancelReason || 'Không có lý do'}). Tồn kho đã hoàn trả.</span>
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 text-[11px]">
+                            Thao tác tuần tự từng bước theo quy trình đơn hàng.
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Right: Các nút hành động */}
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        {/* 1. Đơn VietQR / MoMo chưa thanh toán: Nút Duyệt tay nhận tiền */}
+                        {(order.paymentMethod === 'BANK' || order.paymentMethod === 'MOMO') && order.paymentStatus !== 'PAID' && order.orderStatus !== 'CANCELLED' && (
+                          <>
+                            {/* Nếu đơn bị nhảy cóc sang Hoàn thành (như OM-1084): nút sửa sai về Chờ thanh toán */}
+                            {order.orderStatus !== 'PENDING_CONFIRM' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (window.confirm(`SỬA LẠI TRẠNG THÁI:\nĐưa đơn #${order.code} về đúng trạng thái "Chờ khách chuyển khoản"?`)) {
+                                    handleUpdateStatus(order.id, 'PENDING_CONFIRM', 'UNPAID');
+                                  }
+                                }}
+                                className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold text-xs transition flex items-center gap-1 cursor-pointer"
+                              >
+                                <span>↩️ Sửa lại: Về Chờ chuyển khoản</span>
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm(`XÁC NHẬN ĐÃ NHẬN TIỀN DUYỆT TAY:\n\nBạn có chắc chắn đã kiểm tra tài khoản ngân hàng và NHẬN ĐỦ ${formatVND(calculatedFinalTotal)} từ khách cho đơn #${order.code}?\n\n(Chỉ bấm Đồng ý nếu khách đã chuyển tiền thực tế!)`)) {
+                                  handleUpdateStatus(order.id, 'PENDING_CONFIRM', 'PAID');
+                                }
+                              }}
+                              className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs transition flex items-center gap-1 shadow-sm cursor-pointer active:scale-95"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Xác Nhận Đã Nhận Tiền (Duyệt Tay)</span>
+                            </button>
+                          </>
+                        )}
+
+                        {/* 2. Bước 1: Xác nhận & Chuẩn bị hàng (chỉ hiển thị khi đã thanh toán hoặc đơn COD) */}
+                        {order.orderStatus === 'PENDING_CONFIRM' && ((order.paymentMethod !== 'BANK' && order.paymentMethod !== 'MOMO') || order.paymentStatus === 'PAID') && (
                           <button
+                            type="button"
                             onClick={() => handleUpdateStatus(order.id, 'PREPARING')}
-                            className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs transition flex items-center gap-1 shadow-sm"
+                            className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs transition flex items-center gap-1 shadow-sm cursor-pointer active:scale-95"
                           >
                             <Sparkles className="w-3.5 h-3.5" />
                             <span>Xác Nhận &amp; Chuẩn Bị Hàng</span>
                           </button>
                         )}
 
+                        {/* 3. Bước 2: Đang chuẩn bị hàng -> Bàn giao Shipper */}
                         {order.orderStatus === 'PREPARING' && (
                           <button
+                            type="button"
                             onClick={() => handleUpdateStatus(order.id, 'SHIPPING')}
-                            className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs transition flex items-center gap-1 shadow-sm"
+                            className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs transition flex items-center gap-1 shadow-sm cursor-pointer active:scale-95"
                           >
                             <Truck className="w-3.5 h-3.5" />
                             <span>Đã đóng gói xong → Bàn giao Shipper</span>
                           </button>
                         )}
 
+                        {/* 4. Bước 3: Đang giao -> Giao thành công (Hoàn thành) */}
                         {order.orderStatus === 'SHIPPING' && (
                           <button
-                            onClick={() => handleUpdateStatus(order.id, 'COMPLETED')}
-                            className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition flex items-center gap-1 shadow-sm"
+                            type="button"
+                            onClick={() => {
+                              const nextPay = order.paymentMethod === 'COD' ? 'PAID' : undefined;
+                              handleUpdateStatus(order.id, 'COMPLETED', nextPay);
+                            }}
+                            className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs transition flex items-center gap-1 shadow-sm cursor-pointer active:scale-95"
                           >
                             <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Khách đã nhận → Hoàn thành</span>
+                            <span>Khách đã nhận hàng → Hoàn thành</span>
                           </button>
                         )}
 
+                        {/* 5. Nút Điều chỉnh trạng thái (Dành cho việc can thiệp an toàn khi cần) */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingStatusOrder(order);
+                            setEditTargetStatus(order.orderStatus);
+                            setEditTargetPayment(order.paymentStatus === 'PAID' ? 'PAID' : 'UNPAID');
+                          }}
+                          className="px-2.5 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs transition flex items-center gap-1 cursor-pointer"
+                          title="Điều chỉnh trạng thái thủ công an toàn"
+                        >
+                          <Settings className="w-3.5 h-3.5 text-stone-500" />
+                          <span>Điều chỉnh</span>
+                        </button>
+
+                        {/* 6. Nút Hủy đơn */}
                         {order.orderStatus !== 'CANCELLED' && order.orderStatus !== 'COMPLETED' && (
                           <button
                             type="button"
@@ -2125,6 +2222,7 @@ export default function AdminPage() {
                           </button>
                         )}
                       </div>
+                    </div>
 
                   </div>
                 );
@@ -5293,6 +5391,146 @@ export default function AdminPage() {
                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-extrabold text-xs shadow-md shadow-rose-200 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 <span>{isSubmittingCancel ? 'Đang xử lý hủy...' : 'Xác Nhận Hủy Đơn ❌'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: MANUAL STATUS & PAYMENT ADJUSTMENT (CHỐNG NHẢY CÓC BẤY NGỜ) */}
+      {editingStatusOrder && (
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditingStatusOrder(null);
+          }}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in"
+        >
+          <div className="bg-white rounded-3xl border border-pink-200 shadow-2xl max-w-md w-full p-6 space-y-4 animate-scale-up">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-pink-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-stone-100 text-stone-700 flex items-center justify-center text-lg font-bold">
+                  ⚙️
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-gray-800">
+                    Điều Chỉnh Đơn #{editingStatusOrder.code}
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Chỉ can thiệp khi có nhầm lẫn hoặc cần khôi phục trạng thái
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingStatusOrder(null)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Brief order info */}
+            <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200 text-xs space-y-1">
+              <div className="flex justify-between text-gray-600">
+                <span>Khách hàng:</span>
+                <span className="font-bold text-gray-900">{editingStatusOrder.customer?.fullName} ({editingStatusOrder.customer?.phone})</span>
+              </div>
+              <div className="flex justify-between text-gray-600">
+                <span>Phương thức:</span>
+                <span className="font-bold text-gray-900">
+                  {editingStatusOrder.paymentMethod === 'BANK' ? '💳 Chuyển khoản VietQR' : editingStatusOrder.paymentMethod === 'MOMO' ? '🟣 Ví MoMo' : '💵 Thu tiền mặt COD'}
+                </span>
+              </div>
+              <div className="flex justify-between text-gray-600">
+                <span>Tổng tiền:</span>
+                <span className="font-black text-rose-600">{formatVND(editingStatusOrder.finalTotalAmount || editingStatusOrder.totalAmount)}</span>
+              </div>
+            </div>
+
+            {/* Form controls */}
+            <div className="space-y-3">
+              {/* 1. Tiến độ đơn */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  1. Tiến độ xử lý đơn hàng:
+                </label>
+                <select
+                  value={editTargetStatus}
+                  onChange={(e) => setEditTargetStatus(e.target.value as OrderStatus)}
+                  className="w-full px-3 py-2 bg-stone-50 border border-gray-300 rounded-xl text-xs font-bold text-gray-800 focus:ring-2 focus:ring-rose-400 focus:outline-none"
+                >
+                  <option value="PENDING_CONFIRM">⏳ Chờ xác nhận đơn (hoặc Chờ khách chuyển khoản)</option>
+                  <option value="PREPARING">🎨 Đang chuẩn bị &amp; đóng gói</option>
+                  <option value="SHIPPING">🚚 Đang giao hàng</option>
+                  <option value="COMPLETED">✅ Đã hoàn thành</option>
+                </select>
+              </div>
+
+              {/* 2. Trạng thái thanh toán */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  2. Trạng thái thanh toán:
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditTargetPayment('UNPAID')}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                      editTargetPayment === 'UNPAID'
+                        ? 'bg-amber-100 border-amber-400 text-amber-900 ring-2 ring-amber-400'
+                        : 'bg-stone-50 border-gray-200 text-gray-600 hover:bg-stone-100'
+                    }`}
+                  >
+                    <span>⏳ Chưa thanh toán</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditTargetPayment('PAID')}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                      editTargetPayment === 'PAID'
+                        ? 'bg-emerald-100 border-emerald-400 text-emerald-900 ring-2 ring-emerald-400'
+                        : 'bg-stone-50 border-gray-200 text-gray-600 hover:bg-stone-100'
+                    }`}
+                  >
+                    <span>✓ Đã thanh toán</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Validation warning */}
+              {(editingStatusOrder.paymentMethod === 'BANK' || editingStatusOrder.paymentMethod === 'MOMO') && editTargetPayment === 'UNPAID' && editTargetStatus === 'COMPLETED' && (
+                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-[11px] text-rose-700 font-bold flex items-center gap-1.5">
+                  <span>⚠️</span>
+                  <span>Cảnh báo: Đơn Chuyển khoản chưa thanh toán thì KHÔNG thể lưu trạng thái Hoàn thành!</span>
+                </div>
+              )}
+            </div>
+
+            {/* Footer buttons */}
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-pink-100">
+              <button
+                type="button"
+                onClick={() => setEditingStatusOrder(null)}
+                className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 text-xs font-bold transition cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const isPrepaid = editingStatusOrder.paymentMethod === 'BANK' || editingStatusOrder.paymentMethod === 'MOMO';
+                  if (isPrepaid && editTargetPayment !== 'PAID' && editTargetStatus === 'COMPLETED') {
+                    alert('⚠️ Lỗi: Không thể hoàn thành đơn hàng Chuyển khoản khi khách chưa thanh toán tiền!');
+                    return;
+                  }
+                  await handleUpdateStatus(editingStatusOrder.id, editTargetStatus, editTargetPayment);
+                  setEditingStatusOrder(null);
+                  setActionSuccessMsg(`Đã cập nhật trạng thái đơn #${editingStatusOrder.code} thành công! ✨`);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-900 text-white text-xs font-bold transition shadow-sm cursor-pointer"
+              >
+                Lưu Thay Đổi
               </button>
             </div>
           </div>
