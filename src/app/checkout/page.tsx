@@ -1283,6 +1283,33 @@ export default function CheckoutPage() {
                         </button>
                       </div>
                     </div>
+
+                    {/* Nút kiểm tra thanh toán ngay */}
+                    <div className="w-full pt-1">
+                      <button
+                        type="button"
+                        disabled={isCheckingPayment}
+                        onClick={handleCheckPaymentNow}
+                        className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer disabled:opacity-50"
+                      >
+                        {isCheckingPayment ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>Đang kiểm tra giao dịch SePay...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Check className="w-4 h-4" />
+                            <span>Tôi đã chuyển khoản xong • Kiểm tra ngay</span>
+                          </>
+                        )}
+                      </button>
+                      {checkPaymentNotice && (
+                        <p className="mt-2 text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-2.5 font-medium text-center">
+                          {checkPaymentNotice}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 );
               })()}
@@ -1358,110 +1385,90 @@ export default function CheckoutPage() {
           </div>
         ) : (
           /* ========================================================
-             MÀN HÌNH ĐẶT HÀNG / THANH TOÁN THÀNH CÔNG (COD HOẶC VIETQR ĐÃ PAID)
+             MÀN HÌNH ĐẶT HÀNG THÀNH CÔNG (ĐỒNG BỘ CHUẨN CẢ COD VÀ VIETQR ĐÃ THANH TOÁN)
              ======================================================== */
           <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden flex flex-col animate-fade-in text-center">
-            {createdOrder.paymentStatus === 'PAID' ? (
-              <>
-                {/* Header Paid */}
-                <div className="p-5 text-white bg-gradient-to-r from-emerald-600 to-teal-700">
-                  <div className="w-12 h-12 mx-auto rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl mb-2">
-                    🎉
+            {/* Header đồng bộ màu hồng thương hiệu Omachi */}
+            <div className="p-5 text-white bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600">
+              <div className="w-12 h-12 mx-auto rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl mb-2 shadow-inner">
+                ✨
+              </div>
+              <h3 className="text-base sm:text-lg font-black uppercase tracking-wide">
+                Đặt Hàng Thành Công
+              </h3>
+              <p className="text-xs text-white/90 font-medium">
+                Đơn hàng: <strong className="font-mono text-white">#{createdOrder.code}</strong> • {createdOrder.paymentMethod === 'BANK' ? 'Chuyển khoản VietQR' : 'Tiền mặt khi nhận (COD)'}
+              </p>
+            </div>
+
+            <div className="p-5 space-y-4">
+              {/* Badge & Lời cảm ơn */}
+              <div className="py-3 px-4 bg-pink-50/70 rounded-2xl border border-pink-200/80 space-y-1.5">
+                {createdOrder.paymentMethod === 'BANK' && createdOrder.paymentStatus === 'PAID' ? (
+                  <span className="text-xs font-bold text-emerald-800 bg-emerald-100/90 px-3 py-1 rounded-full border border-emerald-300 inline-flex items-center gap-1 shadow-2xs">
+                    ✅ ĐÃ THANH TOÁN THÀNH CÔNG (VIETQR)
+                  </span>
+                ) : (
+                  <span className="text-xs font-bold text-pink-800 bg-white px-3 py-1 rounded-full border border-pink-200 inline-flex items-center gap-1 shadow-2xs">
+                    💵 THANH TOÁN TIỀN MẶT KHI NHẬN HÀNG (COD)
+                  </span>
+                )}
+                <p className="text-xs text-pink-900 leading-relaxed pt-1">
+                  Cảm ơn bạn <strong>{createdOrder.customer.fullName}</strong> đã đặt hàng tại Omachi!{' '}
+                  {createdOrder.paymentMethod === 'BANK' && createdOrder.paymentStatus === 'PAID'
+                    ? 'Hệ thống đã nhận đủ thanh toán. Đơn hàng đang ở trạng thái Chờ Shop xác nhận để chuẩn bị gửi bạn nhé! 💕'
+                    : 'Shop sẽ sớm xác nhận đơn hàng, đóng gói cẩn thận và liên hệ trước khi giao cho bạn nhé! 💕'}
+                </p>
+              </div>
+
+              {/* Khung chi tiết đơn hàng */}
+              <div className="px-3.5 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-xs text-left space-y-2 text-gray-700">
+                <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+                  <span className="text-gray-600 font-medium">
+                    {createdOrder.paymentMethod === 'BANK' ? 'Tổng tiền đã thanh toán:' : 'Tổng tiền thanh toán COD:'}
+                  </span>
+                  <div className="text-right">
+                    <strong className="text-rose-600 font-black text-sm">
+                      {formatVND(createdOrder.finalTotalAmount || createdOrder.totalAmount)}
+                    </strong>
+                    {createdOrder.paymentMethod === 'BANK' && createdOrder.paymentStatus === 'PAID' && (
+                      <span className="ml-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-md">
+                        Đã thu đủ
+                      </span>
+                    )}
                   </div>
-                  <h3 className="text-base sm:text-lg font-black uppercase tracking-wide">
-                    Thanh Toán Thành Công
-                  </h3>
-                  <p className="text-xs text-white/90 font-medium">
-                    Đơn hàng: <strong className="font-mono text-white">#{createdOrder.code}</strong> • {formatVND(createdOrder.finalTotalAmount || createdOrder.totalAmount)}
-                  </p>
                 </div>
 
-                <div className="p-5 space-y-4">
-                  <div className="py-3 px-4 bg-emerald-50 rounded-2xl border border-emerald-200/80 space-y-1.5">
-                    <span className="text-xs font-bold text-emerald-800 bg-white px-3 py-1 rounded-full border border-emerald-200 inline-block shadow-2xs">
-                      ✅ HỆ THỐNG SEPAY ĐÃ KHỚP THANH TOÁN
-                    </span>
-                    <p className="text-xs text-emerald-900 leading-relaxed pt-1">
-                      Cảm ơn bạn <strong>{createdOrder.customer.fullName}</strong>! Xưởng Omachi đã nhận đủ tiền và đang chuẩn bị đóng gói xuất kho cho bạn nhé! 💕
-                    </p>
-                  </div>
-
-                  <div className="px-3.5 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-xs text-left space-y-1 text-gray-700">
-                    <p><strong>Người nhận:</strong> {createdOrder.customer.fullName} ({createdOrder.customer.phone})</p>
-                    <p className="truncate"><strong>Địa chỉ:</strong> {createdOrder.customer.address}</p>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-1">
-                    <Link
-                      href={loggedInCustomer ? '/tra-cuu-don-hang' : `/tra-cuu-don-hang?code=${encodeURIComponent(createdOrder.code)}`}
-                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white hover:bg-gray-100 border border-gray-200 text-gray-700 font-bold text-xs transition"
-                    >
-                      📦 Xem Đơn Hàng Của Tôi
-                    </Link>
-                    <Link
-                      href="/"
-                      className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs transition shadow-xs"
-                    >
-                      🏠 Tiếp Tục Mua Sắm
-                    </Link>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                {/* Header COD */}
-                <div className="p-5 text-white bg-gradient-to-r from-rose-500 to-pink-600">
-                  <div className="w-12 h-12 mx-auto rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl mb-2">
-                    ✨
-                  </div>
-                  <h3 className="text-base sm:text-lg font-black uppercase tracking-wide">
-                    Đặt Hàng Thành Công
-                  </h3>
-                  <p className="text-xs text-white/90 font-medium">
-                    Đơn hàng: <strong className="font-mono text-white">#{createdOrder.code}</strong> • Tiền mặt khi nhận (COD)
-                  </p>
+                <div className="flex justify-between items-center text-xs pb-2 border-b border-gray-100">
+                  <span className="text-gray-600 font-medium">Trạng thái đơn hàng:</span>
+                  <span className="inline-flex items-center gap-1 text-amber-700 font-bold bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+                    <Clock className="w-3 h-3 text-amber-600" />
+                    <span>Chờ Shop xác nhận đơn</span>
+                  </span>
                 </div>
 
-                <div className="p-5 space-y-4">
-                  <div className="py-3 px-4 bg-pink-50/70 rounded-2xl border border-pink-200/80 space-y-1.5">
-                    <span className="text-xs font-bold text-pink-800 bg-white px-3 py-1 rounded-full border border-pink-200 inline-block shadow-2xs">
-                      💵 THANH TOÁN TIỀN MẶT KHI NHẬN HÀNG (COD)
-                    </span>
-                    <p className="text-xs text-pink-900 leading-relaxed pt-1">
-                      Cảm ơn bạn <strong>{createdOrder.customer.fullName}</strong> đã đặt hàng tại Omachi! Shop sẽ soạn hàng, đóng gói cẩn thận và liên hệ trước khi giao.
-                    </p>
-                  </div>
-
-                  <div className="px-3.5 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-xs text-left space-y-1 text-gray-700">
-                    <div className="flex justify-between">
-                      <span>Tổng tiền thanh toán COD:</span>
-                      <strong className="text-rose-600 font-black text-sm">
-                        {formatVND(createdOrder.finalTotalAmount || createdOrder.totalAmount)}
-                      </strong>
-                    </div>
-                    <div className="pt-1 border-t border-gray-200">
-                      <p><strong>Người nhận:</strong> {createdOrder.customer.fullName} ({createdOrder.customer.phone})</p>
-                      <p className="truncate"><strong>Địa chỉ:</strong> {createdOrder.customer.address}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-1">
-                    <Link
-                      href={loggedInCustomer ? '/tra-cuu-don-hang' : `/tra-cuu-don-hang?code=${encodeURIComponent(createdOrder.code)}`}
-                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white hover:bg-gray-100 border border-gray-200 text-gray-700 font-bold text-xs transition"
-                    >
-                      📦 Xem Đơn Hàng Của Tôi
-                    </Link>
-                    <Link
-                      href="/"
-                      className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-xs transition shadow-xs"
-                    >
-                      🏠 Tiếp Tục Mua Sắm
-                    </Link>
-                  </div>
+                <div className="pt-0.5 space-y-1">
+                  <p><strong>Người nhận:</strong> {createdOrder.customer.fullName} ({createdOrder.customer.phone})</p>
+                  <p className="truncate"><strong>Địa chỉ:</strong> {createdOrder.customer.address}</p>
                 </div>
-              </>
-            )}
+              </div>
+
+              {/* Dãy nút điều hướng chân trang */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-1">
+                <Link
+                  href={loggedInCustomer ? '/tra-cuu-don-hang' : `/tra-cuu-don-hang?code=${encodeURIComponent(createdOrder.code)}`}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white hover:bg-gray-100 border border-gray-200 text-gray-700 font-bold text-xs transition text-center shadow-2xs"
+                >
+                  📦 Xem Đơn Hàng Của Tôi
+                </Link>
+                <Link
+                  href="/"
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-xs transition shadow-xs text-center"
+                >
+                  🏠 Tiếp Tục Mua Sắm
+                </Link>
+              </div>
+            </div>
           </div>
         )}
       </div>

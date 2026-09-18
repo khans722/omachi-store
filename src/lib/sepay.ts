@@ -124,7 +124,8 @@ export async function checkAndSyncSepayForOrder(
 
     // 4. Tìm thấy giao dịch hợp lệ -> Cập nhật đơn hàng sang PAID ngay lập tức!
     console.log(`[SEPAY ACTIVE MATCH]: Khớp giao dịch ${matchedTx.id} cho đơn #${order.code}!`);
-    const newOrderStatus = order.orderStatus === 'PENDING_CONFIRM' ? 'PREPARING' : order.orderStatus;
+    // Giữ nguyên trạng thái đơn hàng (PENDING_CONFIRM), chỉ đổi paymentStatus sang PAID để shop tự tay duyệt
+    const newOrderStatus = order.orderStatus;
     const updated = await db.orders.updateStatus(
       order.id,
       newOrderStatus,

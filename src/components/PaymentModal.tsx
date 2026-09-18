@@ -203,7 +203,7 @@ export default function PaymentModal({
                   Đơn hàng #{orderCode}
                 </h4>
                 <p className="text-xs text-gray-600 max-w-xs mx-auto">
-                  Hệ thống SePay đã nhận đủ tiền thanh toán. Xưởng Omachi đã tiếp nhận đơn và đang chuẩn bị đóng gói xuất kho cho bạn! 💕
+                  Hệ thống SePay đã nhận đủ tiền thanh toán. Đơn hàng đang ở trạng thái Chờ Shop xác nhận để chuẩn bị gửi bạn nhé! 💕
                 </p>
               </div>
             </div>

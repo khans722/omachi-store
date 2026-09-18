@@ -90,10 +90,10 @@ export async function POST(req: NextRequest) {
       // Vẫn ghi nhận nhưng không đổi sang PAID hoàn toàn, hoặc ghi chú vào log
     }
 
-    // Cập nhật trạng thái đơn sang PAID
+    // Cập nhật trạng thái thanh toán sang PAID, giữ nguyên trạng thái đơn hàng (PENDING_CONFIRM) để shop tự xác nhận
     const updated = await db.orders.updateStatus(
       order.id,
-      order.orderStatus === 'PENDING_CONFIRM' ? 'PREPARING' : order.orderStatus,
+      order.orderStatus, // Giữ nguyên trạng thái (PENDING_CONFIRM), không tự ý nhảy PREPARING
       'PAID',
       order.carrierName,
       order.trackingNumber,
