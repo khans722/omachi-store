@@ -21,6 +21,12 @@ export default function OrderTrackingPage() {
   const [cancelReason, setCancelReason] = useState('Muốn đổi sản phẩm khác / thêm bớt số lượng');
   const [customReason, setCustomReason] = useState('');
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
+  const [toastMessage, setToastMessage] = useState<{ text: string; isError?: boolean } | null>(null);
+
+  const showToast = (text: string, isError = false) => {
+    setToastMessage({ text, isError });
+    setTimeout(() => setToastMessage(null), 4000);
+  };
 
   const handleConfirmCancel = async () => {
     if (!order) return;
@@ -42,12 +48,12 @@ export default function OrderTrackingPage() {
       if (data.success) {
         setOrder((prev) => prev ? { ...prev, orderStatus: 'CANCELLED', cancelReason: finalReason, cancelledBy: 'CUSTOMER' } : prev);
         setIsCancelModalOpen(false);
-        alert('Đã hủy đơn hàng thành công! Cảm ơn bạn đã thông báo.');
+        showToast('Đã hủy đơn hàng thành công! Cảm ơn bạn đã thông báo.');
       } else {
-        alert('Không thể hủy đơn: ' + (data.message || 'Lỗi'));
+        showToast('Không thể hủy đơn: ' + (data.message || 'Lỗi'), true);
       }
     } catch (e: any) {
-      alert('Lỗi kết nối khi hủy đơn: ' + (e.message || e));
+      showToast('Lỗi kết nối khi hủy đơn: ' + (e.message || e), true);
     } finally {
       setIsSubmittingCancel(false);
     }
@@ -184,7 +190,24 @@ export default function OrderTrackingPage() {
   const currentStep = getStepIndex(order.orderStatus);
 
   return (
-    <div className="py-6 space-y-8 max-w-4xl mx-auto">
+    <div className="py-6 space-y-8 max-w-4xl mx-auto relative">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-5 right-5 z-[99999] max-w-sm w-full px-4 sm:px-0">
+          <div className={`p-3.5 rounded-2xl shadow-xl text-xs sm:text-sm font-semibold flex items-center justify-between gap-3 text-white ${
+            toastMessage.isError ? 'bg-rose-600' : 'bg-emerald-600'
+          }`}>
+            <span>{toastMessage.text}</span>
+            <button
+              type="button"
+              onClick={() => setToastMessage(null)}
+              className="text-white/70 hover:text-white cursor-pointer font-bold ml-2"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
       
       {/* Header */}
       <div className="bg-gradient-to-r from-pink-100 via-purple-100 to-yellow-50 rounded-3xl p-6 border border-pink-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

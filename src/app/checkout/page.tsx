@@ -1272,22 +1272,10 @@ export default function CheckoutPage() {
                 })()}
               </div>
 
-              {/* 3. Khung Radar Tự Động Kiểm Tra Chuyển Khoản */}
-              <div className="p-3 bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 border border-blue-200 rounded-2xl flex items-center gap-3 text-left shadow-2xs">
-                <div className="relative flex items-center justify-center shrink-0 w-8 h-8 rounded-full bg-blue-600/10 text-blue-600">
-                  <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                    <p className="text-xs font-black text-blue-900">
-                      Đang tự động kiểm tra chuyển khoản...
-                    </p>
-                  </div>
-                  <p className="text-[11px] text-blue-700 leading-tight mt-0.5">
-                    Hệ thống sẽ <strong>tự động chuyển sang Đặt Hàng Thành Công</strong> ngay khi ngân hàng báo có tiền. Quý khách không cần thao tác thêm!
-                  </p>
-                </div>
+              {/* 3. Trạng thái tự động: Siêu gọn 1 dòng */}
+              <div className="py-2 px-3 bg-blue-50 border border-blue-200/80 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-blue-800">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600 shrink-0" />
+                <span>Đang chờ thanh toán (Tự động duyệt khi có tiền)</span>
               </div>
 
               {/* 4. Bộ đếm thời gian 24h */}

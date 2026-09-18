@@ -532,6 +532,12 @@ function OrderLookupContent() {
   const [customerCancelReason, setCustomerCancelReason] = useState<string>('Muốn đổi sản phẩm khác / thêm bớt số lượng');
   const [customCustomerReason, setCustomCustomerReason] = useState<string>('');
   const [isSubmittingCancel, setIsSubmittingCancel] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<{ text: string; isError?: boolean } | null>(null);
+
+  const showToast = (text: string, isError = false) => {
+    setToastMessage({ text, isError });
+    setTimeout(() => setToastMessage(null), 4000);
+  };
 
   const handleCustomerConfirmCancel = async () => {
     if (!cancellingOrder) return;
@@ -575,12 +581,12 @@ function OrderLookupContent() {
         } catch (e) {}
 
         setCancellingOrder(null);
-        alert('Đã hủy đơn hàng thành công! Cảm ơn bạn đã thông báo.');
+        showToast('Đã hủy đơn hàng thành công! Cảm ơn bạn đã thông báo.');
       } else {
-        alert('Không thể hủy đơn: ' + (data.message || 'Lỗi hệ thống'));
+        showToast('Không thể hủy đơn: ' + (data.message || 'Lỗi hệ thống'), true);
       }
     } catch (e: any) {
-      alert('Lỗi kết nối khi hủy đơn: ' + (e.message || e));
+      showToast('Lỗi kết nối khi hủy đơn: ' + (e.message || e), true);
     } finally {
       setIsSubmittingCancel(false);
     }
@@ -814,7 +820,24 @@ function OrderLookupContent() {
   const zaloUrl = settings?.zaloOfficialUrl || (zaloHotline ? `https://zalo.me/${zaloHotline.replace(/[^0-9]/g, '')}` : 'https://zalo.me');
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 space-y-8 animate-fade-in">
+    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 space-y-8 animate-fade-in relative">
+      {/* Floating Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-5 right-5 z-[99999] max-w-sm w-full px-4 sm:px-0">
+          <div className={`p-3.5 rounded-2xl shadow-xl text-xs sm:text-sm font-semibold flex items-center justify-between gap-3 text-white ${
+            toastMessage.isError ? 'bg-rose-600' : 'bg-emerald-600'
+          }`}>
+            <span>{toastMessage.text}</span>
+            <button
+              type="button"
+              onClick={() => setToastMessage(null)}
+              className="text-white/70 hover:text-white cursor-pointer font-bold ml-2"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
       
       {/* Header Banner */}
       <div className="text-center space-y-3">

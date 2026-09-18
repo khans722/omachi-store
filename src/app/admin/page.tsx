@@ -36,6 +36,7 @@ import {
   ImagePlus,
   Search,
   AlertTriangle,
+  AlertCircle,
   ArrowRight,
   Clock,
   ChevronDown,
@@ -129,6 +130,17 @@ export default function AdminPage() {
   const [testZaloStatus, setTestZaloStatus] = useState<string>('');
   const [showTelegramGuide, setShowTelegramGuide] = useState(false);
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string>('');
+  const [actionErrorMsg, setActionErrorMsg] = useState<string>('');
+
+  const showAdminToast = (msg: string, isError = false) => {
+    if (isError) {
+      setActionErrorMsg(msg);
+      setTimeout(() => setActionErrorMsg(''), 4500);
+    } else {
+      setActionSuccessMsg(msg);
+      setTimeout(() => setActionSuccessMsg(''), 3500);
+    }
+  };
   const [shippingFeeInputs, setShippingFeeInputs] = useState<{ [orderId: string]: string }>({});
 
   useEffect(() => {
@@ -270,71 +282,28 @@ export default function AdminPage() {
   const initialCategorySnapshotRef = useRef<string>('');
   const initialFeedbackSnapshotRef = useRef<string>('');
 
-  // Safe close handlers with unsaved changes confirmation
+  // Close handlers: Đóng modal ngay lập tức, không dùng hộp thoại window.confirm gây phiền toái
   const handleCloseProductModal = () => {
-    if (editingProduct && initialProductSnapshotRef.current) {
-      try {
-        const isDirty = JSON.stringify(editingProduct) !== initialProductSnapshotRef.current;
-        if (isDirty) {
-          const confirmed = window.confirm(
-            '⚠️ Bạn có thay đổi thông tin sản phẩm chưa được lưu!\n\nNếu đóng cửa sổ bây giờ, các nội dung vừa chỉnh sửa sẽ bị mất.\n\nBạn có chắc chắn muốn đóng không?'
-          );
-          if (!confirmed) return;
-        }
-      } catch (e) {}
-    }
-    initialProductSnapshotRef.current = '';
     setIsProductModalOpen(false);
     setEditingProduct(null);
   };
 
   const handleCloseRestockModal = () => {
-    const totalAdded = Object.values(restockQuantities).reduce((a, b) => a + (Number(b) || 0), 0);
-    if (totalAdded > 0) {
-      const confirmed = window.confirm(
-        `⚠️ Phiếu nhập kho đang có ${totalAdded} sản phẩm nhập dở!\n\nNếu đóng bây giờ, số lượng này sẽ không được cập nhật vào kho.\n\nBạn có chắc chắn muốn đóng không?`
-      );
-      if (!confirmed) return;
-    }
     setRestockProduct(null);
     setRestockQuantities({});
   };
 
   const handleCloseCategoryModal = () => {
-    if (editingCategory && initialCategorySnapshotRef.current) {
-      try {
-        const isDirty = JSON.stringify(editingCategory) !== initialCategorySnapshotRef.current;
-        if (isDirty) {
-          const confirmed = window.confirm(
-            '⚠️ Bạn có thay đổi danh mục chưa được lưu!\n\nNếu đóng cửa sổ bây giờ, các nội dung vừa chỉnh sửa sẽ bị mất.\n\nBạn có chắc chắn muốn đóng không?'
-          );
-          if (!confirmed) return;
-        }
-      } catch (e) {}
-    }
-    initialCategorySnapshotRef.current = '';
     setIsCategoryModalOpen(false);
     setEditingCategory(null);
   };
 
   const handleCloseFeedbackModal = () => {
-    if (editingFeedback && initialFeedbackSnapshotRef.current) {
-      try {
-        const isDirty = JSON.stringify(editingFeedback) !== initialFeedbackSnapshotRef.current;
-        if (isDirty) {
-          const confirmed = window.confirm(
-            '⚠️ Bạn có thay đổi đánh giá chưa được lưu!\n\nNếu đóng cửa sổ bây giờ, các nội dung vừa chỉnh sửa sẽ bị mất.\n\nBạn có chắc chắn muốn đóng không?'
-          );
-          if (!confirmed) return;
-        }
-      } catch (e) {}
-    }
-    initialFeedbackSnapshotRef.current = '';
     setIsFeedbackModalOpen(false);
     setEditingFeedback(null);
   };
 
-  // Keyboard Escape & BeforeUnload Protection
+  // Keyboard Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -345,34 +314,11 @@ export default function AdminPage() {
       }
     };
 
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      let isAnyDirty = false;
-      if (isProductModalOpen && editingProduct && initialProductSnapshotRef.current) {
-        if (JSON.stringify(editingProduct) !== initialProductSnapshotRef.current) isAnyDirty = true;
-      }
-      if (restockProduct && Object.values(restockQuantities).some((v) => (Number(v) || 0) > 0)) {
-        isAnyDirty = true;
-      }
-      if (isCategoryModalOpen && editingCategory && initialCategorySnapshotRef.current) {
-        if (JSON.stringify(editingCategory) !== initialCategorySnapshotRef.current) isAnyDirty = true;
-      }
-      if (isFeedbackModalOpen && editingFeedback && initialFeedbackSnapshotRef.current) {
-        if (JSON.stringify(editingFeedback) !== initialFeedbackSnapshotRef.current) isAnyDirty = true;
-      }
-
-      if (isAnyDirty) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-
     window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [isProductModalOpen, editingProduct, restockProduct, restockQuantities, isCategoryModalOpen, editingCategory, isFeedbackModalOpen, editingFeedback]);
+  }, [isProductModalOpen, restockProduct, isCategoryModalOpen, isFeedbackModalOpen]);
 
   // Image upload state
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -506,7 +452,7 @@ export default function AdminPage() {
   // Wholesale Template Helpers
   const handleSaveCurrentTiersAsShopDefault = async () => {
     if (!editingProduct?.comboTiers || editingProduct.comboTiers.length === 0) {
-      alert('Vui lòng thêm ít nhất 1 mốc sỉ trước khi lưu làm mẫu!');
+      showAdminToast('Vui lòng thêm ít nhất 1 mốc sỉ trước khi lưu làm mẫu!', true);
       return;
     }
     const base = Number(editingProduct.basePrice) || 1;
@@ -877,7 +823,7 @@ export default function AdminPage() {
   const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingCategory?.name?.trim()) {
-      alert('Vui lòng nhập tên danh mục!');
+      showAdminToast('Vui lòng nhập tên danh mục!', true);
       return;
     }
 
@@ -895,8 +841,7 @@ export default function AdminPage() {
       const data = await res.json();
 
       if (data.success) {
-        setActionSuccessMsg(isEdit ? 'Cập nhật danh mục thành công!' : 'Tạo danh mục mới thành công! ✨');
-        setTimeout(() => setActionSuccessMsg(''), 4000);
+        showAdminToast(isEdit ? 'Cập nhật danh mục thành công!' : 'Tạo danh mục mới thành công! ✨');
         await fetchCategories();
         initialCategorySnapshotRef.current = '';
         setIsCategoryModalOpen(false);
@@ -912,35 +857,27 @@ export default function AdminPage() {
           }) : null);
         }
       } else {
-        alert(data.error || 'Có lỗi xảy ra khi lưu danh mục');
+        showAdminToast(data.error || 'Có lỗi xảy ra khi lưu danh mục', true);
       }
     } catch (err: any) {
-      alert('Lỗi kết nối: ' + (err.message || err));
+      showAdminToast('Lỗi kết nối: ' + (err.message || err), true);
     } finally {
       setSavingCategory(false);
     }
   };
 
   const handleDeleteCategory = async (id: string, name: string) => {
-    const productsInCat = products.filter((p) => p.categoryId === id || p.category === id);
-    const confirmMsg = productsInCat.length > 0
-      ? `Danh mục "${name}" đang có ${productsInCat.length} sản phẩm. Bạn vẫn muốn xóa chứ?`
-      : `Bạn có chắc chắn muốn xóa danh mục "${name}"?`;
-
-    if (!confirm(confirmMsg)) return;
-
     try {
       const res = await fetch(`/api/categories?id=${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
-        setActionSuccessMsg(`Đã xóa danh mục "${name}" thành công!`);
-        setTimeout(() => setActionSuccessMsg(''), 4000);
+        showAdminToast(`Đã xóa danh mục "${name}" thành công!`);
         await fetchCategories();
       } else {
-        alert(data.error || 'Lỗi khi xóa danh mục');
+        showAdminToast(data.error || 'Lỗi khi xóa danh mục', true);
       }
     } catch (err: any) {
-      alert('Lỗi kết nối: ' + (err.message || err));
+      showAdminToast('Lỗi kết nối: ' + (err.message || err), true);
     }
   };
 
@@ -997,7 +934,7 @@ export default function AdminPage() {
 
     const trimmedName = (editingProduct.name || '').trim();
     if (!trimmedName) {
-      alert('⚠️ Vui lòng nhập Tên Mẫu Charm / Sản Phẩm trước khi lưu!');
+      showAdminToast('⚠️ Vui lòng nhập Tên Mẫu Charm / Sản Phẩm trước khi lưu!', true);
       setProductModalTab('BASIC');
       return;
     }
@@ -1027,35 +964,35 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setActionSuccessMsg(isNew ? 'Đã thêm mẫu charm mới thành công! ✨' : 'Đã lưu sản phẩm thành công! ✨');
-        setTimeout(() => setActionSuccessMsg(''), 3500);
+        showAdminToast(isNew ? 'Đã thêm mẫu charm mới thành công! ✨' : 'Đã lưu sản phẩm thành công! ✨');
         initialProductSnapshotRef.current = '';
         setIsProductModalOpen(false);
         setEditingProduct(null);
         fetchProducts();
       } else {
-        alert('❌ Không thể lưu sản phẩm: ' + (data.message || 'Lỗi không xác định từ máy chủ'));
+        showAdminToast('❌ Không thể lưu sản phẩm: ' + (data.message || 'Lỗi không xác định từ máy chủ'), true);
       }
     } catch (err: any) {
       console.error('Lỗi khi lưu sản phẩm:', err);
-      alert('❌ Lỗi kết nối khi lưu sản phẩm: ' + (err.message || 'Vui lòng kiểm tra lại mạng'));
+      showAdminToast('❌ Lỗi kết nối khi lưu sản phẩm: ' + (err.message || 'Vui lòng kiểm tra lại mạng'), true);
     } finally {
       setIsSavingProduct(false);
     }
   };
 
   const handleDeleteProduct = async (id: string, name: string) => {
-    if (!confirm(`Bạn có chắc muốn xóa mẫu charm "${name}" không?`)) return;
     try {
       const res = await fetch(`/api/products?id=${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
-        setActionSuccessMsg(`Đã xóa mẫu charm "${name}"!`);
-        setTimeout(() => setActionSuccessMsg(''), 3000);
+        showAdminToast(`Đã xóa mẫu charm "${name}"!`);
         fetchProducts();
+      } else {
+        showAdminToast(data.message || 'Không thể xóa sản phẩm', true);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      showAdminToast('Lỗi khi xóa: ' + (err.message || err), true);
     }
   };
 
@@ -1107,17 +1044,18 @@ export default function AdminPage() {
   };
 
   const handleDeleteFeedback = async (id: string, name: string) => {
-    if (!confirm(`Bạn có chắc muốn xóa đánh giá của khách "${name}" không?`)) return;
     try {
       const res = await fetch(`/api/feedbacks?id=${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
-        setActionSuccessMsg(`Đã xóa feedback của "${name}"!`);
-        setTimeout(() => setActionSuccessMsg(''), 3000);
+        showAdminToast(`Đã xóa feedback của "${name}"!`);
         fetchFeedbacks();
+      } else {
+        showAdminToast(data.message || 'Không thể xóa đánh giá', true);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      showAdminToast('Lỗi khi xóa: ' + (err.message || err), true);
     }
   };
 
@@ -1135,7 +1073,7 @@ export default function AdminPage() {
       const willBePaid = paymentStatus ? paymentStatus === 'PAID' : currentOrder.paymentStatus === 'PAID';
 
       if (isPrepaid && !willBePaid && (newStatus === 'PREPARING' || newStatus === 'SHIPPING' || newStatus === 'COMPLETED')) {
-        alert(`⚠️ KHÔNG THỂ CHUYỂN TRẠNG THÁI:\n\nĐơn hàng #${currentOrder.code} là Chuyển khoản VietQR nhưng CHƯA THANH TOÁN.\n\nVui lòng bấm "Xác Nhận Đã Nhận Tiền" (hoặc chờ SePay tự khớp) trước khi chuẩn bị hoặc hoàn thành đơn!`);
+        showAdminToast(`⚠️ Đơn #${currentOrder.code} là Chuyển khoản VietQR nhưng CHƯA THANH TOÁN. Cần duyệt tiền trước!`, true);
         return;
       }
     }
@@ -1245,16 +1183,15 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (data.success && data.data) {
-        setActionSuccessMsg(`Đã hủy đơn #${cancellingOrder.code} thành công! (${finalReason}) ✨`);
-        setTimeout(() => setActionSuccessMsg(''), 4000);
+        showAdminToast(`Đã hủy đơn #${cancellingOrder.code} thành công! (${finalReason}) ✨`);
         setOrders(prev => prev.map(o => (o.id === cancellingOrder.id || o.code === cancellingOrder.code) ? { ...o, ...data.data, orderStatus: 'CANCELLED', cancelReason: finalReason, cancelledBy: 'SHOP' } : o));
         setCancellingOrder(null);
         fetchProducts();
       } else {
-        alert('Không thể hủy đơn: ' + (data.message || 'Lỗi máy chủ'));
+        showAdminToast('Không thể hủy đơn: ' + (data.message || 'Lỗi máy chủ'), true);
       }
     } catch (e: any) {
-      alert('Lỗi kết nối khi hủy đơn: ' + (e.message || e));
+      showAdminToast('Lỗi kết nối khi hủy đơn: ' + (e.message || e), true);
     } finally {
       setIsSubmittingCancel(false);
     }
@@ -1522,12 +1459,40 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {actionSuccessMsg && (
-        <div className="bg-emerald-50 text-emerald-800 text-xs font-bold p-3 rounded-xl sm:rounded-2xl border border-emerald-200 animate-fade-in flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
-          <span>{actionSuccessMsg}</span>
-        </div>
-      )}
+      {/* Floating Global Toast Notification */}
+      <div className="fixed top-5 right-5 z-[99999] flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4 sm:px-0">
+        {actionSuccessMsg && (
+          <div className="pointer-events-auto bg-emerald-700/95 backdrop-blur text-white text-xs sm:text-sm font-semibold p-3.5 rounded-2xl shadow-xl border border-emerald-500/30 animate-fade-in flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="w-5 h-5 text-emerald-200 shrink-0" />
+              <span>{actionSuccessMsg}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActionSuccessMsg('')}
+              className="text-white/70 hover:text-white text-sm font-bold ml-2 cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        {actionErrorMsg && (
+          <div className="pointer-events-auto bg-rose-700/95 backdrop-blur text-white text-xs sm:text-sm font-semibold p-3.5 rounded-2xl shadow-xl border border-rose-500/30 animate-fade-in flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <AlertCircle className="w-5 h-5 text-rose-200 shrink-0" />
+              <span>{actionErrorMsg}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActionErrorMsg('')}
+              className="text-white/70 hover:text-white text-sm font-bold ml-2 cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+      </div>
 
       {testZaloStatus && (
         <div className="bg-purple-50 text-purple-800 text-xs font-bold p-3 rounded-xl sm:rounded-2xl border border-purple-200 animate-fade-in">
@@ -2097,9 +2062,7 @@ export default function AdminPage() {
                             <button
                               type="button"
                               onClick={() => {
-                                if (window.confirm(`XÁC NHẬN DUYỆT TAY ĐẶC BIỆT:\n\nBạn chỉ bấm Đồng ý khi đã kiểm tra tài khoản ngân hàng và thực sự nhận đủ ${formatVND(calculatedFinalTotal)} từ khách cho đơn #${order.code}!`)) {
-                                  handleUpdateStatus(order.id, 'PENDING_CONFIRM', 'PAID');
-                                }
+                                handleUpdateStatus(order.id, 'PENDING_CONFIRM', 'PAID');
                               }}
                               className="px-2.5 py-1 rounded-lg border border-gray-200 hover:border-emerald-400 bg-gray-50 hover:bg-emerald-50 text-gray-500 hover:text-emerald-700 text-[11px] font-medium transition cursor-pointer"
                               title="Chỉ dùng khi có trường hợp đặc biệt khách gửi bill chuyển khoản riêng qua Zalo"
