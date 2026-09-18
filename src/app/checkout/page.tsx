@@ -1190,7 +1190,7 @@ export default function CheckoutPage() {
                       className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer disabled:opacity-50 mt-1"
                     >
                       <Download className="w-3.5 h-3.5" />
-                      <span>{isDownloadingQr ? 'Đang tải ảnh...' : '📥 Tải ảnh mã QR về máy (Để quét từ thư viện)'}</span>
+                      <span>{isDownloadingQr ? 'Đang tải...' : 'Tải mã QR'}</span>
                     </button>
 
                     {/* Bảng thông tin chuyển khoản: Gọn gàng 1 khung duy nhất, nút sao chép dạng pill tinh gọn */}
