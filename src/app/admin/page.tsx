@@ -249,6 +249,120 @@ export default function AdminPage() {
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [editingFeedback, setEditingFeedback] = useState<Partial<CustomerFeedback> | null>(null);
 
+  // Quick Restock State
+  const [restockProduct, setRestockProduct] = useState<Product | null>(null);
+  const [restockQuantities, setRestockQuantities] = useState<{ [key: number]: number }>({});
+  const [isRestocking, setIsRestocking] = useState(false);
+
+  // Snapshot refs to detect unsaved changes
+  const initialProductSnapshotRef = useRef<string>('');
+  const initialCategorySnapshotRef = useRef<string>('');
+  const initialFeedbackSnapshotRef = useRef<string>('');
+
+  // Safe close handlers with unsaved changes confirmation
+  const handleCloseProductModal = () => {
+    if (editingProduct && initialProductSnapshotRef.current) {
+      try {
+        const isDirty = JSON.stringify(editingProduct) !== initialProductSnapshotRef.current;
+        if (isDirty) {
+          const confirmed = window.confirm(
+            '⚠️ Bạn có thay đổi thông tin sản phẩm chưa được lưu!\n\nNếu đóng cửa sổ bây giờ, các nội dung vừa chỉnh sửa sẽ bị mất.\n\nBạn có chắc chắn muốn đóng không?'
+          );
+          if (!confirmed) return;
+        }
+      } catch (e) {}
+    }
+    initialProductSnapshotRef.current = '';
+    setIsProductModalOpen(false);
+    setEditingProduct(null);
+  };
+
+  const handleCloseRestockModal = () => {
+    const totalAdded = Object.values(restockQuantities).reduce((a, b) => a + (Number(b) || 0), 0);
+    if (totalAdded > 0) {
+      const confirmed = window.confirm(
+        `⚠️ Phiếu nhập kho đang có ${totalAdded} sản phẩm nhập dở!\n\nNếu đóng bây giờ, số lượng này sẽ không được cập nhật vào kho.\n\nBạn có chắc chắn muốn đóng không?`
+      );
+      if (!confirmed) return;
+    }
+    setRestockProduct(null);
+    setRestockQuantities({});
+  };
+
+  const handleCloseCategoryModal = () => {
+    if (editingCategory && initialCategorySnapshotRef.current) {
+      try {
+        const isDirty = JSON.stringify(editingCategory) !== initialCategorySnapshotRef.current;
+        if (isDirty) {
+          const confirmed = window.confirm(
+            '⚠️ Bạn có thay đổi danh mục chưa được lưu!\n\nNếu đóng cửa sổ bây giờ, các nội dung vừa chỉnh sửa sẽ bị mất.\n\nBạn có chắc chắn muốn đóng không?'
+          );
+          if (!confirmed) return;
+        }
+      } catch (e) {}
+    }
+    initialCategorySnapshotRef.current = '';
+    setIsCategoryModalOpen(false);
+    setEditingCategory(null);
+  };
+
+  const handleCloseFeedbackModal = () => {
+    if (editingFeedback && initialFeedbackSnapshotRef.current) {
+      try {
+        const isDirty = JSON.stringify(editingFeedback) !== initialFeedbackSnapshotRef.current;
+        if (isDirty) {
+          const confirmed = window.confirm(
+            '⚠️ Bạn có thay đổi đánh giá chưa được lưu!\n\nNếu đóng cửa sổ bây giờ, các nội dung vừa chỉnh sửa sẽ bị mất.\n\nBạn có chắc chắn muốn đóng không?'
+          );
+          if (!confirmed) return;
+        }
+      } catch (e) {}
+    }
+    initialFeedbackSnapshotRef.current = '';
+    setIsFeedbackModalOpen(false);
+    setEditingFeedback(null);
+  };
+
+  // Keyboard Escape & BeforeUnload Protection
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isProductModalOpen) handleCloseProductModal();
+        else if (restockProduct) handleCloseRestockModal();
+        else if (isCategoryModalOpen) handleCloseCategoryModal();
+        else if (isFeedbackModalOpen) handleCloseFeedbackModal();
+      }
+    };
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      let isAnyDirty = false;
+      if (isProductModalOpen && editingProduct && initialProductSnapshotRef.current) {
+        if (JSON.stringify(editingProduct) !== initialProductSnapshotRef.current) isAnyDirty = true;
+      }
+      if (restockProduct && Object.values(restockQuantities).some((v) => (Number(v) || 0) > 0)) {
+        isAnyDirty = true;
+      }
+      if (isCategoryModalOpen && editingCategory && initialCategorySnapshotRef.current) {
+        if (JSON.stringify(editingCategory) !== initialCategorySnapshotRef.current) isAnyDirty = true;
+      }
+      if (isFeedbackModalOpen && editingFeedback && initialFeedbackSnapshotRef.current) {
+        if (JSON.stringify(editingFeedback) !== initialFeedbackSnapshotRef.current) isAnyDirty = true;
+      }
+
+      if (isAnyDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isProductModalOpen, editingProduct, restockProduct, restockQuantities, isCategoryModalOpen, editingCategory, isFeedbackModalOpen, editingFeedback]);
+
   // Image upload state
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageUploadError, setImageUploadError] = useState('');
@@ -445,11 +559,6 @@ export default function AdminPage() {
     });
   };
 
-  // Quick Restock State
-  const [restockProduct, setRestockProduct] = useState<Product | null>(null);
-  const [restockQuantities, setRestockQuantities] = useState<{ [key: number]: number }>({});
-  const [isRestocking, setIsRestocking] = useState(false);
-
   const handleOpenRestock = (prod: Product) => {
     setRestockProduct(prod);
     const initial: { [key: number]: number } = {};
@@ -469,14 +578,19 @@ export default function AdminPage() {
     setIsRestocking(true);
     try {
       let addedTotal = 0;
-      const updatedVariants = (restockProduct.variants || []).map((v, i) => {
-        const add = Number(restockQuantities[i]) || 0;
-        addedTotal += add;
-        return {
-          ...v,
-          stock: (v.stock || 0) + add
-        };
-      });
+      let updatedVariants: ProductVariant[] | undefined = undefined;
+      if (restockProduct.variants && restockProduct.variants.length > 0) {
+        updatedVariants = restockProduct.variants.map((v, i) => {
+          const add = Number(restockQuantities[i]) || 0;
+          addedTotal += add;
+          return {
+            ...v,
+            stock: (v.stock || 0) + add
+          };
+        });
+      } else {
+        addedTotal = Number(restockQuantities[0]) || 0;
+      }
 
       const updatedProduct: Product = {
         ...restockProduct,
@@ -495,6 +609,7 @@ export default function AdminPage() {
         setActionSuccessMsg(`✅ Nhập kho thành công +${addedTotal} sản phẩm cho "${restockProduct.name}"!`);
         confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
         setRestockProduct(null);
+        setRestockQuantities({});
       }
     } catch (err) {
       console.error(err);
@@ -721,17 +836,21 @@ export default function AdminPage() {
 
   // Category CRUD Handlers
   const handleOpenAddCategory = () => {
-    setEditingCategory({
+    const newCat = {
       name: '',
       icon: '🌸',
       description: '',
       displayOrder: categories.length + 1,
-    });
+    };
+    setEditingCategory(newCat);
+    initialCategorySnapshotRef.current = JSON.stringify(newCat);
     setIsCategoryModalOpen(true);
   };
 
   const handleOpenEditCategory = (cat: Category) => {
-    setEditingCategory({ ...cat });
+    const editCat = { ...cat };
+    setEditingCategory(editCat);
+    initialCategorySnapshotRef.current = JSON.stringify(editCat);
     setIsCategoryModalOpen(true);
   };
 
@@ -759,7 +878,9 @@ export default function AdminPage() {
         setActionSuccessMsg(isEdit ? 'Cập nhật danh mục thành công!' : 'Tạo danh mục mới thành công! ✨');
         setTimeout(() => setActionSuccessMsg(''), 4000);
         await fetchCategories();
+        initialCategorySnapshotRef.current = '';
         setIsCategoryModalOpen(false);
+        setEditingCategory(null);
 
         // If user is currently editing a product, auto-select this category!
         if (editingProduct && data.data) {
@@ -808,7 +929,7 @@ export default function AdminPage() {
     const timestamp = Date.now();
     const defaultCat = categories[0] || { id: 'cat-1', slug: 'beads-haul', name: 'Hạt Cườm & Beads' };
     setProductModalTab('BASIC');
-    setEditingProduct({
+    const newProd: Partial<Product> = {
       name: '',
       sku: `OM-PROD-${timestamp.toString().slice(-4)}`,
       category: defaultCat.slug,
@@ -831,17 +952,22 @@ export default function AdminPage() {
       reviewCount: 0,
       variants: [],
       comboTiers: [],
-    });
+    };
+    setEditingProduct(newProd);
+    initialProductSnapshotRef.current = JSON.stringify(newProd);
     setIsProductModalOpen(true);
   };
 
   const handleOpenEditProduct = (prod: Product) => {
     setProductModalTab('BASIC');
-    setEditingProduct({
+    const editProd: Partial<Product> = {
       ...prod,
-      variants: prod.variants || [],
-      comboTiers: prod.comboTiers || [],
-    });
+      variants: prod.variants ? JSON.parse(JSON.stringify(prod.variants)) : [],
+      comboTiers: prod.comboTiers ? JSON.parse(JSON.stringify(prod.comboTiers)) : [],
+      images: prod.images ? [...prod.images] : [],
+    };
+    setEditingProduct(editProd);
+    initialProductSnapshotRef.current = JSON.stringify(editProd);
     setIsProductModalOpen(true);
   };
 
@@ -883,7 +1009,9 @@ export default function AdminPage() {
       if (data.success) {
         setActionSuccessMsg(isNew ? 'Đã thêm mẫu charm mới thành công! ✨' : 'Đã lưu sản phẩm thành công! ✨');
         setTimeout(() => setActionSuccessMsg(''), 3500);
+        initialProductSnapshotRef.current = '';
         setIsProductModalOpen(false);
+        setEditingProduct(null);
         fetchProducts();
       } else {
         alert('❌ Không thể lưu sản phẩm: ' + (data.message || 'Lỗi không xác định từ máy chủ'));
@@ -913,18 +1041,22 @@ export default function AdminPage() {
 
   // Feedback CRUD Handlers
   const handleOpenAddFeedback = () => {
-    setEditingFeedback({
+    const newFb = {
       customerName: '',
       customerLocation: 'Hà Nội',
       comment: '',
       rating: 5,
       purchasedProduct: 'Vòng tay cườm handmade',
-    });
+    };
+    setEditingFeedback(newFb);
+    initialFeedbackSnapshotRef.current = JSON.stringify(newFb);
     setIsFeedbackModalOpen(true);
   };
 
   const handleOpenEditFeedback = (fb: CustomerFeedback) => {
-    setEditingFeedback({ ...fb });
+    const editFb = { ...fb };
+    setEditingFeedback(editFb);
+    initialFeedbackSnapshotRef.current = JSON.stringify(editFb);
     setIsFeedbackModalOpen(true);
   };
 
@@ -944,7 +1076,9 @@ export default function AdminPage() {
       if (data.success) {
         setActionSuccessMsg(isNew ? 'Đã thêm feedback mới thành công! ✨' : 'Đã cập nhật feedback thành công! ✨');
         setTimeout(() => setActionSuccessMsg(''), 3000);
+        initialFeedbackSnapshotRef.current = '';
         setIsFeedbackModalOpen(false);
+        setEditingFeedback(null);
         fetchFeedbacks();
       }
     } catch (err) {
@@ -3769,7 +3903,12 @@ export default function AdminPage() {
 
       {/* PRODUCT ADD / EDIT MODAL - MODERN MINIMALIST DESIGN */}
       {isProductModalOpen && editingProduct && (
-        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) handleCloseProductModal();
+          }}
+          className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+        >
           <div className="bg-white rounded-2xl border border-stone-200 shadow-2xl max-w-3xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-scale-up">
             
             {/* 1. MODAL HEADER */}
@@ -3784,8 +3923,9 @@ export default function AdminPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setIsProductModalOpen(false)}
+                onClick={handleCloseProductModal}
                 className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition cursor-pointer"
+                title="Đóng cửa sổ"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -4510,7 +4650,7 @@ export default function AdminPage() {
               <div className="pt-4 mt-6 border-t border-stone-200 flex items-center justify-end gap-2.5 bg-white">
                 <button
                   type="button"
-                  onClick={() => setIsProductModalOpen(false)}
+                  onClick={handleCloseProductModal}
                   disabled={isSavingProduct}
                   className="px-5 py-2 rounded-xl border border-stone-200 text-stone-600 hover:bg-stone-50 font-semibold transition text-xs cursor-pointer"
                 >
@@ -4540,7 +4680,12 @@ export default function AdminPage() {
 
       {/* FEEDBACK ADD / EDIT MODAL */}
       {isFeedbackModalOpen && editingFeedback && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) handleCloseFeedbackModal();
+          }}
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
+        >
           <div className="bg-white rounded-3xl border border-pink-200 shadow-2xl max-w-lg w-full p-6 space-y-4 animate-scale-up">
             <div className="flex items-center justify-between pb-3 border-b border-pink-100">
               <div className="flex items-center gap-2">
@@ -4551,8 +4696,9 @@ export default function AdminPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setIsFeedbackModalOpen(false)}
-                className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition"
+                onClick={handleCloseFeedbackModal}
+                className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition cursor-pointer"
+                title="Đóng cửa sổ"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -4625,8 +4771,8 @@ export default function AdminPage() {
               <div className="pt-3 border-t border-pink-100 flex items-center justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => setIsFeedbackModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 font-bold transition"
+                  onClick={handleCloseFeedbackModal}
+                  className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 font-bold transition cursor-pointer"
                 >
                   Hủy Bỏ
                 </button>
@@ -4643,34 +4789,40 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* MODAL: QUICK RESTOCK (PHIẾU NHẬP KHO THÊM CHỐNG NHẦM LẪN) */}
+      {/* MODAL: RESTOCK (PHIẾU NHẬP KHO CHỐNG NHẦM LẪN) */}
       {restockProduct && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) handleCloseRestockModal();
+          }}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in"
+        >
           <div className="bg-white rounded-3xl border border-emerald-200 shadow-2xl max-w-2xl w-full p-6 space-y-5 animate-scale-up">
             
             {/* Header */}
             <div className="flex items-center justify-between border-b border-emerald-100 pb-3.5">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg font-bold">
-                  ⚡
+                  📦
                 </div>
                 <div>
                   <h3 className="text-base font-black text-gray-800 flex items-center gap-1.5">
-                    <span>Phiếu Nhập Hàng Thêm Nhanh</span>
+                    <span>Phiếu Nhập Kho</span>
                     <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                       Chống nhầm lẫn 100%
                     </span>
                   </h3>
                   <p className="text-xs text-gray-500">
-                    Chỉ cần điền số lượng nhập thêm, hệ thống tự động cộng dồn vào kho mà không sợ bấm nhầm sửa giá!
+                    Điền số lượng nhập thêm cho từng phân loại, hệ thống sẽ tự động cộng dồn vào kho.
                   </p>
                 </div>
               </div>
 
               <button
                 type="button"
-                onClick={() => setRestockProduct(null)}
-                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition"
+                onClick={handleCloseRestockModal}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition cursor-pointer"
+                title="Đóng phiếu nhập"
               >
                 ✕
               </button>
@@ -4820,9 +4972,9 @@ export default function AdminPage() {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setRestockProduct(null)}
+                      onClick={handleCloseRestockModal}
                       disabled={isRestocking}
-                      className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 font-bold text-xs transition"
+                      className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 font-bold text-xs transition cursor-pointer"
                     >
                       Hủy Bỏ
                     </button>
@@ -4849,7 +5001,12 @@ export default function AdminPage() {
 
       {/* CATEGORY ADD/EDIT MODAL */}
       {isCategoryModalOpen && editingCategory && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) handleCloseCategoryModal();
+          }}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in"
+        >
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-pink-100 space-y-5">
             <div className="flex items-center justify-between border-b border-pink-100 pb-3">
               <div className="flex items-center gap-2">
@@ -4863,8 +5020,9 @@ export default function AdminPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setIsCategoryModalOpen(false)}
+                onClick={handleCloseCategoryModal}
                 className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition cursor-pointer"
+                title="Đóng cửa sổ"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -4922,7 +5080,7 @@ export default function AdminPage() {
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-pink-100">
                 <button
                   type="button"
-                  onClick={() => setIsCategoryModalOpen(false)}
+                  onClick={handleCloseCategoryModal}
                   disabled={savingCategory}
                   className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 text-xs font-bold transition cursor-pointer"
                 >
