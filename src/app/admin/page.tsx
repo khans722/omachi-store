@@ -195,7 +195,6 @@ export default function AdminPage() {
       setTimeout(() => setActionSuccessMsg(''), 3500);
     }
   };
-  const [shippingFeeInputs, setShippingFeeInputs] = useState<{ [orderId: string]: string }>({});
 
   useEffect(() => {
     const handleOutside = (e: MouseEvent) => {
@@ -1471,109 +1470,6 @@ export default function AdminPage() {
     }
   };
 
-  const handleUpdateShippingFee = async (orderId: string, explicitFee?: number) => {
-    const rawVal = explicitFee !== undefined ? explicitFee : shippingFeeInputs[orderId];
-    if (rawVal === undefined || rawVal === '') return;
-    const numVal = Math.max(0, Number(rawVal) || 0);
-    setShippingFeeInputs(prev => ({ ...prev, [orderId]: String(numVal) }));
-
-    const cleanId = (orderId || '').toLowerCase().replace(/^#/, '').trim();
-    const currentOrder = orders.find(o => 
-      (o.id && o.id.toLowerCase().replace(/^#/, '').trim() === cleanId) || 
-      (o.code && o.code.toLowerCase().replace(/^#/, '').trim() === cleanId)
-    );
-
-    // Optimistic state update immediately
-    let updatedTargetOrder: Order | undefined;
-    setOrders(prev => {
-      const updatedList = prev.map(o => {
-        const oId = (o.id || '').toLowerCase().replace(/^#/, '').trim();
-        const oCode = (o.code || '').toLowerCase().replace(/^#/, '').trim();
-        if (oId === cleanId || oCode === cleanId) {
-          const itemsTotal = o.itemsTotalAmount || o.subtotal || 0;
-          const updated = {
-            ...o,
-            shippingFee: numVal,
-            itemsTotalAmount: itemsTotal,
-            totalAmount: itemsTotal + numVal,
-            finalTotalAmount: itemsTotal + numVal,
-            updatedAt: new Date().toISOString(),
-          };
-          updatedTargetOrder = updated;
-          return updated;
-        }
-        return o;
-      });
-      try {
-        localStorage.setItem('omachi_admin_orders_v2', JSON.stringify(updatedList));
-      } catch (e) {}
-      return updatedList;
-    });
-
-    try {
-      const orderPayload = updatedTargetOrder || currentOrder;
-      const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: orderId,
-          shippingFee: numVal,
-          order: orderPayload,
-        }),
-      });
-      const data = await res.json();
-      if (data.success && data.data) {
-        setActionSuccessMsg(`Đã cập nhật phí ship ${formatVND(numVal)} cho đơn #${data.data.code}! ✨`);
-        setTimeout(() => setActionSuccessMsg(''), 3000);
-        setOrders(prev => {
-          const list = prev.map(o => {
-            const oId = (o.id || '').toLowerCase().replace(/^#/, '').trim();
-            const oCode = (o.code || '').toLowerCase().replace(/^#/, '').trim();
-            return (oId === cleanId || oCode === cleanId) ? { ...o, ...data.data } : o;
-          });
-          try {
-            localStorage.setItem('omachi_admin_orders_v2', JSON.stringify(list));
-          } catch (e) {}
-          return list;
-        });
-      } else {
-        // Fallback to /api/orders
-        const resFallback = await fetch('/api/orders', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: orderId,
-            shippingFee: numVal,
-            order: orderPayload,
-          }),
-        });
-        const dataFallback = await resFallback.json();
-        if (dataFallback.success && dataFallback.data) {
-          setActionSuccessMsg(`Đã cập nhật phí ship ${formatVND(numVal)} cho đơn #${dataFallback.data.code}! ✨`);
-          setTimeout(() => setActionSuccessMsg(''), 3000);
-          setOrders(prev => {
-            const list = prev.map(o => {
-              const oId = (o.id || '').toLowerCase().replace(/^#/, '').trim();
-              const oCode = (o.code || '').toLowerCase().replace(/^#/, '').trim();
-              return (oId === cleanId || oCode === cleanId) ? { ...o, ...dataFallback.data } : o;
-            });
-            try {
-              localStorage.setItem('omachi_admin_orders_v2', JSON.stringify(list));
-            } catch (e) {}
-            return list;
-          });
-        } else {
-          setActionSuccessMsg(`Đã lưu phí ship ${formatVND(numVal)} cho đơn #${currentOrder?.code || orderId} tại bộ nhớ Admin! ✨`);
-          setTimeout(() => setActionSuccessMsg(''), 3000);
-        }
-      }
-    } catch (err) {
-      console.error(err);
-      setActionSuccessMsg(`Đã lưu phí ship ${formatVND(numVal)} cho đơn #${currentOrder?.code || orderId} tại bộ nhớ Admin! ✨`);
-      setTimeout(() => setActionSuccessMsg(''), 3000);
-    }
-  };
-
   const handleTestZalo = async () => {
     const targetPhone = settings.zaloPhone || settings.hotline || '';
     const cleanPhone = targetPhone.replace(/[^0-9]/g, '');
@@ -2339,36 +2235,15 @@ export default function AdminPage() {
                                 </div>
                               </div>
 
-                              {/* 2. Cước vận chuyển & Chỉnh sửa nhanh */}
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-gray-700 font-medium py-1">
+                              {/* 2. Cước vận chuyển (Tự động tính theo khối lượng & tỉnh thành) */}
+                              <div className="flex items-center justify-between text-gray-700 font-medium py-1">
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <Truck className="w-3.5 h-3.5 text-orange-600 shrink-0" />
                                   <span className="text-xs">Cước vận chuyển ({order.carrierName || 'SPX Express'}):</span>
-                                  <strong className={calculatedShippingFee === 0 ? 'text-emerald-700 font-bold text-xs sm:text-sm' : 'text-gray-800 font-black text-xs sm:text-sm'}>
-                                    {calculatedShippingFee === 0 ? '0đ (Miễn phí)' : `+${formatVND(calculatedShippingFee)}`}
-                                  </strong>
                                 </div>
-
-                                {/* Form chỉnh cước ship nhanh cho admin */}
-                                <div className="flex items-center gap-1.5 flex-wrap sm:justify-end">
-                                  <div className="flex items-center gap-1">
-                                    {[0, 15000, 20000, 25000, 30000].map((fee) => (
-                                      <button
-                                        key={fee}
-                                        type="button"
-                                        onClick={() => handleUpdateShippingFee(order.id, fee)}
-                                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition cursor-pointer ${
-                                          calculatedShippingFee === fee
-                                            ? 'bg-orange-500 text-white border-orange-500 shadow-2xs'
-                                            : 'bg-white text-stone-600 border-stone-200 hover:bg-orange-50 hover:text-orange-600'
-                                        }`}
-                                        title={`Đặt cước ship ${fee === 0 ? '0đ (Freeship)' : formatVND(fee)}`}
-                                      >
-                                        {fee === 0 ? '0đ' : `${fee / 1000}k`}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
+                                <strong className={calculatedShippingFee === 0 ? 'text-emerald-700 font-bold text-xs sm:text-sm' : 'text-gray-800 font-black text-xs sm:text-sm'}>
+                                  {calculatedShippingFee === 0 ? '0đ (Miễn phí)' : `+${formatVND(calculatedShippingFee)}`}
+                                </strong>
                               </div>
 
                               {/* 3. TỔNG THANH TOÁN */}

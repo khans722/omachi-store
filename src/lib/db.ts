@@ -2097,15 +2097,46 @@ export const db = {
 
     async update(id: string, updateData: Partial<Category>): Promise<Category | null> {
       const dbData = readDb();
-      if (!dbData.categories) return null;
-      const index = dbData.categories.findIndex((c) => c.id === id);
-      if (index === -1) return null;
+      if (!dbData.categories) dbData.categories = [];
+      let index = dbData.categories.findIndex((c) => c.id === id);
+
+      if (index === -1) {
+        try {
+          const { data, error } = await supabase.from('categories').select('*').eq('id', id).maybeSingle();
+          if (!error && data) {
+            const cat = mapCategoryFromSupabase(data);
+            dbData.categories.push(cat);
+            index = dbData.categories.length - 1;
+          }
+        } catch (e) {}
+      }
+
+      if (index === -1) {
+        if (updateData.name) {
+          const newCat: Category = {
+            id,
+            code: updateData.code || `CAT_${Date.now().toString().slice(-4)}`,
+            name: updateData.name,
+            slug: updateData.slug || updateData.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+            icon: updateData.icon || '🌸',
+            description: updateData.description || '',
+            displayOrder: updateData.displayOrder || 1,
+            isActive: updateData.isActive !== false,
+            createdAt: updateData.createdAt || new Date().toISOString(),
+          };
+          dbData.categories.push(newCat);
+          index = dbData.categories.length - 1;
+        } else {
+          return null;
+        }
+      }
+
       dbData.categories[index] = {
         ...dbData.categories[index],
         ...updateData,
       };
       if (updateData.name) {
-        dbData.products.forEach((p) => {
+        (dbData.products || []).forEach((p) => {
           if (p.categoryId === id || (p as any).category === dbData.categories[index].slug) {
             p.categoryName = updateData.name!;
           }
@@ -2287,8 +2318,63 @@ export const db = {
 
     async update(id: string, updateData: Partial<Product>): Promise<Product | null> {
       const dbData = readDb();
-      const index = dbData.products.findIndex((p) => p.id === id);
-      if (index === -1) return null;
+      if (!dbData.products) dbData.products = [];
+      let index = dbData.products.findIndex((p) => p.id === id);
+
+      if (index === -1) {
+        // Tra cứu Supabase nếu RAM serverless chưa nạp (Cold start)
+        try {
+          const { data, error } = await supabase.from('products').select('*').eq('id', id).maybeSingle();
+          if (!error && data) {
+            const prod = mapProductFromSupabase(data);
+            dbData.products.push(prod);
+            index = dbData.products.length - 1;
+          }
+        } catch (e) {}
+      }
+
+      if (index === -1) {
+        // Nếu sản phẩm có thông tin cơ bản đầy đủ, tự động tạo/khôi phục
+        if (updateData.name) {
+          const fallbackCat = dbData.categories?.[0] || { id: 'cat-1', name: 'Hạt Cườm', slug: 'beads-haul' };
+          const newProd: Product = {
+            id,
+            sku: updateData.sku || `OM-PROD-${Date.now().toString().slice(-4)}`,
+            name: updateData.name,
+            slug: updateData.slug || updateData.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+            categoryId: updateData.categoryId || fallbackCat.id,
+            categoryName: updateData.categoryName || fallbackCat.name,
+            basePrice: Number(updateData.basePrice || 0),
+            originalPrice: Number(updateData.originalPrice || updateData.basePrice || 0),
+            costPrice: updateData.costPrice ? Number(updateData.costPrice) : undefined,
+            material: updateData.material || '',
+            dimensions: updateData.dimensions || '',
+            weight: Number(updateData.weight) > 0 ? Number(updateData.weight) : 50,
+            images: updateData.images || [],
+            description: updateData.description || '',
+            isHot: Boolean(updateData.isHot),
+            isNewArrival: Boolean(updateData.isNewArrival),
+            isCustomizable: Boolean(updateData.isCustomizable),
+            stock: Number(updateData.stock || 100),
+            soldCount: Number(updateData.soldCount || 0),
+            ratingAvg: Number(updateData.ratingAvg || 5),
+            ratingCount: Number(updateData.ratingCount || 0),
+            variants: updateData.variants || [],
+            comboTiers: updateData.comboTiers || [],
+            packageOptions: updateData.packageOptions || [],
+            minOrderQuantity: Number(updateData.minOrderQuantity || 1),
+            stepQuantity: Number(updateData.stepQuantity || 1),
+            isActive: updateData.isActive !== false,
+            createdAt: updateData.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          dbData.products.push(newProd);
+          index = dbData.products.length - 1;
+        } else {
+          return null;
+        }
+      }
+
       dbData.products[index] = {
         ...dbData.products[index],
         ...updateData,
@@ -2300,8 +2386,8 @@ export const db = {
       try {
         const p = dbData.products[index];
         const weightVal = Number(p.weight) > 0 ? Number(p.weight) : 50;
-        const variantsWithWeight = (p.variants || []).map((v: any) => ({ ...v, weight: weightVal }));
-        const pkgWithWeight = (p.packageOptions || []).map((pkg: any) => ({ ...pkg, _weight: weightVal }));
+        const variantsWithWeight = (p.variants || []).map((v: any) => ({ ...v, weight: (v.weight && Number(v.weight) > 0) ? Number(v.weight) : weightVal }));
+        const pkgWithWeight = (p.packageOptions || []).map((pkg: any) => ({ ...pkg, _weight: (pkg._weight && Number(pkg._weight) > 0) ? Number(pkg._weight) : weightVal }));
         const baseRow = {
           id: p.id,
           sku: p.sku,
@@ -2349,10 +2435,12 @@ export const db = {
 
     async delete(id: string): Promise<boolean> {
       const dbData = readDb();
+      if (!dbData.products) dbData.products = [];
       const index = dbData.products.findIndex((p) => p.id === id);
-      if (index === -1) return false;
-      dbData.products.splice(index, 1);
-      writeDb(dbData);
+      if (index !== -1) {
+        dbData.products.splice(index, 1);
+        writeDb(dbData);
+      }
       invalidateProductsCache();
 
       try {
