@@ -190,7 +190,7 @@ export default function OrderTrackingPage() {
             <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
               order.paymentStatus === 'PAID' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'
             }`}>
-              {order.paymentStatus === 'PAID' ? '✓ ĐÃ THANH TOÁN' : '⏳ CHỜ THANH TOÁN'}
+              {order.paymentStatus === 'PAID' ? '✓ ĐÃ THANH TOÁN' : '⏳ CHƯA THANH TOÁN'}
             </span>
           </div>
           <p className="text-xs text-gray-500 mt-1">

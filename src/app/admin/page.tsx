@@ -374,7 +374,6 @@ export default function AdminPage() {
   // Image upload state
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageUploadError, setImageUploadError] = useState('');
-  const [copiedSepayWebhook, setCopiedSepayWebhook] = useState(false);
 
   const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -1806,47 +1805,25 @@ export default function AdminPage() {
                           </select>
                         </div>
 
-                        {/* 2. Trạng thái Thanh toán (Tự động thích ứng theo Bank hoặc COD) */}
-                        {order.paymentMethod === 'BANK' ? (
-                          order.paymentStatus === 'PAID' ? (
-                            <span className="text-xs font-bold px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
-                              <span>✓</span>
-                              <span>Đã thanh toán (SePay khớp)</span>
-                            </span>
-                          ) : (
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs font-bold px-2.5 py-1 rounded-xl bg-blue-50 text-blue-800 border border-blue-300 flex items-center gap-1">
-                                <span>⏳</span>
-                                <span>Chờ SePay khớp tiền</span>
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (window.confirm('⚠️ XÁC NHẬN DUYỆT TAY:\n\nĐơn này chưa nhận được webhook tự động từ SePay. Bạn có chắc chắn khách ĐÃ chuyển khoản và tiền ĐÃ vào tài khoản ngân hàng không?')) {
-                                    handleUpdateStatus(order.id, undefined, 'PAID');
-                                  }
-                                }}
-                                className="text-[10px] text-gray-400 hover:text-blue-600 underline font-medium px-1 cursor-pointer"
-                                title="Chỉ bấm khi bạn đã kiểm tra app ngân hàng và thấy tiền đã về tài khoản"
-                              >
-                                Duyệt tay
-                              </button>
-                            </div>
-                          )
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateStatus(order.id, undefined, order.paymentStatus === 'PAID' ? 'UNPAID' : 'PAID')}
-                            title={order.paymentStatus === 'PAID' ? 'Đã thu tiền COD. Bấm để đổi lại' : 'Bấm khi shipper đã nộp tiền COD'}
-                            className={`text-xs font-bold px-2.5 py-1 rounded-xl border transition cursor-pointer active:scale-95 ${
-                              order.paymentStatus === 'PAID'
-                                ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
-                                : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300'
-                            }`}
-                          >
-                            {order.paymentStatus === 'PAID' ? '✓ Đã thu tiền COD' : '⏳ Chưa thu COD'}
-                          </button>
-                        )}
+                        {/* 2. Trạng thái Thanh toán (Chỉ hiển thị: Đã thanh toán / Chưa thanh toán) */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = order.paymentStatus === 'PAID' ? 'UNPAID' : 'PAID';
+                            if (next === 'PAID' && !window.confirm(`Xác nhận đánh dấu đơn #${order.code} là ĐÃ THANH TOÁN?`)) {
+                              return;
+                            }
+                            handleUpdateStatus(order.id, undefined, next);
+                          }}
+                          title={order.paymentStatus === 'PAID' ? 'Bấm để đổi sang Chưa thanh toán' : 'Bấm để đổi sang Đã thanh toán'}
+                          className={`text-xs font-bold px-2.5 py-1 rounded-xl border transition cursor-pointer active:scale-95 flex items-center gap-1 ${
+                            order.paymentStatus === 'PAID'
+                              ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
+                              : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300'
+                          }`}
+                        >
+                          {order.paymentStatus === 'PAID' ? '✓ Đã thanh toán' : '⏳ Chưa thanh toán'}
+                        </button>
 
                         {/* 3. Phương thức thanh toán khách chọn */}
                         <span className={`text-[11px] font-bold px-2 py-0.5 rounded-lg border ${
@@ -1953,71 +1930,28 @@ export default function AdminPage() {
                                 <strong className="text-gray-800">{formatVND(calculatedItemsTotal)}</strong>
                               </div>
 
-                              {/* Phí ship sau khi cân hàng thực tế */}
-                              {(() => {
-                                const orderWeightKg = (Number(order.totalWeight) || 0) > 0
-                                  ? ((Number(order.totalWeight) || 0) / 1000).toFixed(2)
-                                  : (totalItemCount * 0.05).toFixed(2);
-
-                                return (
-                                  <div className="p-2.5 bg-white/90 rounded-xl border border-amber-100 space-y-2">
-                                    <div className="flex items-center justify-between gap-1 text-xs">
-                                      <span className="flex items-center gap-1 font-bold text-gray-700">
-                                        <Truck className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-                                        <span>Phí vận chuyển SPX (~{orderWeightKg} kg):</span>
-                                      </span>
-                                      <strong className={calculatedShippingFee === 0 ? 'text-emerald-700 font-bold' : 'text-gray-800 font-black'}>
-                                        {calculatedShippingFee === 0 ? '0đ (Miễn phí)' : `+${formatVND(calculatedShippingFee)}`}
-                                      </strong>
-                                    </div>
-
-                                    {/* Chỉnh sửa phí ship nếu cần */}
-                                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-gray-100">
-                                      <div className="flex items-center gap-1.5 flex-1">
-                                        <input
-                                          type="number"
-                                          min="0"
-                                          step="1000"
-                                          placeholder="0"
-                                          value={shippingFeeInputs[order.id] ?? (calculatedShippingFee || '')}
-                                          onChange={(e) => setShippingFeeInputs(prev => ({ ...prev, [order.id]: e.target.value }))}
-                                          className="w-20 px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:ring-1 focus:ring-rose-400 text-center"
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={() => handleUpdateShippingFee(order.id)}
-                                          className="px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] font-bold transition cursor-pointer"
-                                        >
-                                          Lưu phí
-                                        </button>
-                                      </div>
-                                      {calculatedShippingFee > 0 && (
-                                        <button
-                                          type="button"
-                                          onClick={() => handleUpdateShippingFee(order.id, 0)}
-                                          className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[10px] font-bold transition cursor-pointer"
-                                        >
-                                          Miễn ship (0đ)
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })()}
+                              {/* Phí vận chuyển */}
+                              <div className="flex justify-between text-gray-700 font-medium">
+                                <span className="flex items-center gap-1">
+                                  <Truck className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                                  <span>Phí vận chuyển:</span>
+                                </span>
+                                <strong className={calculatedShippingFee === 0 ? 'text-emerald-700 font-bold' : 'text-gray-800 font-black'}>
+                                  {calculatedShippingFee === 0 ? '0đ (Miễn phí)' : `+${formatVND(calculatedShippingFee)}`}
+                                </strong>
+                              </div>
 
                               <div className="flex justify-between items-baseline pt-2 border-t border-amber-200/80">
                                 <div>
                                   <strong className="text-gray-800 text-xs font-black block">
-                                    {order.paymentMethod === 'BANK'
-                                      ? (order.paymentStatus === 'PAID' ? 'TỔNG ĐÃ CHUYỂN KHOẢN:' : 'TỔNG CẦN CHUYỂN KHOẢN:')
-                                      : 'TỔNG THANH TOÁN (COD):'}
+                                    {order.paymentStatus === 'PAID' ? 'TỔNG ĐÃ THANH TOÁN:' : 'TỔNG CẦN THANH TOÁN:'}
                                   </strong>
                                   <span className="text-[10px] text-gray-400">
-                                    {order.paymentMethod === 'BANK'
-                                      ? (order.paymentStatus === 'PAID' ? 'Đã nhận đủ tiền qua ngân hàng' : 'Khách cần chuyển khoản đúng số tiền này')
-                                      : calculatedShippingFee > 0
-                                      ? 'Đã cộng tiền hàng & tiền ship'
-                                      : 'Tiền hàng (chờ cộng ship thực tế)'}
+                                    {order.paymentStatus === 'PAID'
+                                      ? 'Đã thanh toán'
+                                      : order.paymentMethod === 'BANK'
+                                      ? 'Chờ chuyển khoản ngân hàng'
+                                      : 'Thu tiền khi giao hàng (COD)'}
                                   </span>
                                 </div>
                                 <span className="text-base font-black text-rose-600">
@@ -2317,8 +2251,8 @@ export default function AdminPage() {
                   </span>
                   {[
                     { id: 'all', label: 'Tất cả' },
-                    { id: 'PAID', label: 'Đã thu' },
-                    { id: 'UNPAID', label: 'Chờ thu' },
+                    { id: 'PAID', label: 'Đã thanh toán' },
+                    { id: 'UNPAID', label: 'Chưa thanh toán' },
                   ].map((pay) => (
                     <button
                       key={pay.id}
@@ -2501,7 +2435,7 @@ export default function AdminPage() {
                                   ? 'bg-emerald-100 text-emerald-700'
                                   : 'bg-amber-100 text-amber-700'
                               }`}>
-                                {isPaid ? 'Đã thanh toán' : 'Chờ thu'}
+                                {isPaid ? 'Đã thanh toán' : 'Chưa thanh toán'}
                               </span>
                             </td>
                             <td className="py-3 px-3 sm:px-4 text-center">
@@ -2545,7 +2479,7 @@ export default function AdminPage() {
                           )}
                         </td>
                         <td colSpan={2} className="py-3 px-3 sm:px-4 text-center text-[10px] text-gray-500">
-                          {finalFilteredOrders.filter(o => o.paymentStatus === 'PAID' || o.orderStatus === 'COMPLETED').length} đã thu / {finalFilteredOrders.length} đơn
+                          {finalFilteredOrders.filter(o => o.paymentStatus === 'PAID' || o.orderStatus === 'COMPLETED').length} đã thanh toán / {finalFilteredOrders.length} đơn
                         </td>
                       </tr>
                     </tfoot>
@@ -3857,17 +3791,21 @@ export default function AdminPage() {
                       <div>
                         <label className="font-bold text-gray-700 block mb-1">Ngân Hàng:</label>
                         <select
-                          value={settings.bankId || 'MB'}
+                          value={settings.bankId || 'ICB'}
                           onChange={(e) => setSettings({ ...settings, bankId: e.target.value })}
                           className="w-full px-2.5 py-2 bg-white border border-sky-200 rounded-xl font-bold text-gray-800 focus:ring-2 focus:ring-sky-400 focus:outline-none text-xs"
                         >
+                          <option value="ICB">VietinBank (Công Thương)</option>
                           <option value="MB">MBBank (Quân Đội)</option>
                           <option value="VCB">Vietcombank</option>
+                          <option value="BIDV">BIDV</option>
                           <option value="TCB">Techcombank</option>
                           <option value="ACB">ACB</option>
                           <option value="VPB">VPBank</option>
                           <option value="TPB">TPBank</option>
-                          <option value="BIDV">BIDV</option>
+                          <option value="STB">Sacombank</option>
+                          <option value="HDB">HDBank</option>
+                          <option value="SHB">SHB</option>
                           <option value="VIB">VIB</option>
                           <option value="AGR">Agribank</option>
                         </select>
@@ -3897,80 +3835,7 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {/* Tự Động Xác Nhận Thanh Toán SePay Webhook */}
-                  <div className="p-4 bg-gradient-to-br from-blue-50/60 via-indigo-50/30 to-white rounded-xl border border-blue-200 space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-black shadow-xs">
-                          ⚡
-                        </span>
-                        <div>
-                          <h5 className="font-extrabold text-blue-950 text-xs sm:text-sm flex items-center gap-1.5">
-                            <span>Tự Động Nhận Tiền &amp; Duyệt Đơn (SePay Webhook)</span>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
-                              Đang trực 24/7
-                            </span>
-                          </h5>
-                          <p className="text-[11px] text-blue-800 font-medium mt-0.5">
-                            Khi khách quét mã VietQR chuyển khoản, SePay sẽ tự động phát hiện số dư và duyệt đơn sang ĐÃ THANH TOÁN ngay lập tức.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Webhook URL with Copy Button */}
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-gray-700 block">
-                        Đường dẫn Webhook SePay của website (Dán vào SePay):
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          readOnly
-                          value={typeof window !== 'undefined' ? `${window.location.origin}/api/webhook/sepay` : 'https://omachi-store-theta.vercel.app/api/webhook/sepay'}
-                          className="flex-1 px-3 py-2 bg-white border border-blue-200 rounded-xl font-mono text-[11px] text-gray-800 font-bold select-all focus:outline-none"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const url = typeof window !== 'undefined' ? `${window.location.origin}/api/webhook/sepay` : 'https://omachi-store-theta.vercel.app/api/webhook/sepay';
-                            navigator.clipboard.writeText(url);
-                            setCopiedSepayWebhook(true);
-                            setTimeout(() => setCopiedSepayWebhook(false), 2500);
-                          }}
-                          className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 shadow-xs active:scale-95 cursor-pointer"
-                        >
-                          {copiedSepayWebhook ? (
-                            <>
-                              <Check className="w-3.5 h-3.5" />
-                              <span>Đã sao chép!</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-3.5 h-3.5" />
-                              <span>Sao chép URL</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Hướng dẫn 3 bước */}
-                    <div className="p-3 bg-white rounded-xl border border-blue-100 text-[11px] text-gray-600 space-y-1.5">
-                      <p className="font-bold text-blue-900 flex items-center gap-1">
-                        <span>💡</span>
-                        <span>Cách kích hoạt tự động nhận tiền qua SePay:</span>
-                      </p>
-                      <ol className="list-decimal list-inside space-y-1 text-[11px] text-gray-700 leading-relaxed">
-                        <li>Đăng nhập <a href="https://my.sepay.vn" target="_blank" rel="noreferrer" className="text-blue-600 font-bold underline">my.sepay.vn</a> và liên kết tài khoản ngân hàng của bạn.</li>
-                        <li>Vào menu <strong>Tích hợp &gt; Webhooks</strong> &gt; Nhấn <strong>Thêm Webhook</strong>.</li>
-                        <li>Dán đường dẫn ở ô trên vào <strong>Webhook URL</strong> &gt; Chọn sự kiện <strong>Giao dịch tiền vào</strong> &gt; Bấm <strong>Lưu</strong>.</li>
-                      </ol>
-                      <p className="text-[10px] text-stone-500 italic pt-1 border-t border-stone-100">
-                        * Khi khách chuyển khoản đúng nội dung mã đơn (VD: <strong>DH OM-1084</strong>), SePay sẽ tự động cập nhật đơn hàng thành Đã thanh toán và báo Telegram cho bạn!
-                      </p>
-                    </div>
-                  </div>
 
                   {/* 8. CƠ SỞ DỮ LIỆU ĐÁM MÂY SUPABASE (CLOUD DATABASE) */}
                   <div className="p-4 bg-gradient-to-br from-emerald-50/50 via-teal-50/30 to-white rounded-2xl border-2 border-emerald-300 shadow-xs space-y-3">

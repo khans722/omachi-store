@@ -129,16 +129,16 @@ function OrderCard({
                 ? '💳 VietQR'
                 : '💵 COD'}
             </span>
-            {order.paymentStatus !== 'PAID' && (order.paymentMethod === 'BANK' || order.paymentMethod === 'MOMO') ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                <span>Chờ thanh toán</span>
-              </span>
-            ) : order.paymentStatus === 'PAID' ? (
+            {order.paymentStatus === 'PAID' ? (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                 <span>✓ Đã thanh toán</span>
               </span>
-            ) : null}
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                <span>Chưa thanh toán</span>
+              </span>
+            )}
           </div>
           <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" />
