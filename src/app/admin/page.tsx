@@ -1787,13 +1787,25 @@ export default function AdminPage() {
                         </span>
 
                         {/* 2. Trạng thái Thanh toán (Huy hiệu cố định, chống bấm nhầm) */}
-                        <span className={`text-xs font-bold px-2.5 py-1 rounded-xl border flex items-center gap-1 ${
-                          order.paymentStatus === 'PAID'
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                            : 'bg-amber-50 text-amber-800 border-amber-300'
-                        }`}>
-                          {order.paymentStatus === 'PAID' ? '✓ Đã thanh toán' : '⏳ Chưa thanh toán'}
-                        </span>
+                        {order.paymentMethod === 'COD' ? (
+                          order.paymentStatus === 'PAID' ? (
+                            <span className="text-xs font-bold px-2.5 py-1 rounded-xl border flex items-center gap-1 bg-emerald-50 text-emerald-800 border-emerald-300">
+                              ✓ Đã thu tiền COD
+                            </span>
+                          ) : (
+                            <span className="text-xs font-bold px-2.5 py-1 rounded-xl border flex items-center gap-1 bg-stone-50 text-stone-700 border-stone-200">
+                              💵 Thu tiền khi giao (COD)
+                            </span>
+                          )
+                        ) : (
+                          <span className={`text-xs font-bold px-2.5 py-1 rounded-xl border flex items-center gap-1 ${
+                            order.paymentStatus === 'PAID'
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                              : 'bg-amber-50 text-amber-800 border-amber-300'
+                          }`}>
+                            {order.paymentStatus === 'PAID' ? '✓ Đã thanh toán' : '⏳ Chờ chuyển khoản'}
+                          </span>
+                        )}
 
                         {/* 3. Phương thức thanh toán khách chọn */}
                         <span className={`text-[11px] font-bold px-2 py-0.5 rounded-lg border ${

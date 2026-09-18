@@ -217,11 +217,23 @@ export default function OrderTrackingPage() {
             <h1 className="text-xl sm:text-2xl font-black text-gray-800">
               Đơn Hàng #{order.code}
             </h1>
-            <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
-              order.paymentStatus === 'PAID' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'
-            }`}>
-              {order.paymentStatus === 'PAID' ? '✓ ĐÃ THANH TOÁN' : '⏳ CHƯA THANH TOÁN'}
-            </span>
+            {order.paymentMethod === 'COD' ? (
+              order.paymentStatus === 'PAID' ? (
+                <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                  ✓ ĐÃ THANH TOÁN (COD)
+                </span>
+              ) : (
+                <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700">
+                  💵 TIỀN MẶT KHI NHẬN (COD)
+                </span>
+              )
+            ) : (
+              <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
+                order.paymentStatus === 'PAID' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'
+              }`}>
+                {order.paymentStatus === 'PAID' ? '✓ ĐÃ THANH TOÁN' : '⏳ CHỜ THANH TOÁN'}
+              </span>
+            )}
           </div>
           <p className="text-xs text-gray-500 mt-1">
             Đặt lúc: {new Date(order.createdAt).toLocaleString('vi-VN')}
@@ -439,8 +451,18 @@ export default function OrderTrackingPage() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-gray-500">Trạng thái:</span>
-              <strong className={order.paymentStatus === 'PAID' ? 'text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md font-bold' : 'text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md font-bold'}>
-                {order.paymentStatus === 'PAID' ? '✓ Đã thanh toán' : '⏳ Chưa thanh toán'}
+              <strong className={
+                order.paymentStatus === 'PAID' 
+                  ? 'text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md font-bold' 
+                  : order.paymentMethod === 'COD'
+                  ? 'text-stone-700 bg-stone-100 px-2 py-0.5 rounded-md font-bold'
+                  : 'text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md font-bold'
+              }>
+                {order.paymentStatus === 'PAID'
+                  ? '✓ Đã thanh toán'
+                  : order.paymentMethod === 'COD'
+                  ? '💵 Thu tiền khi nhận hàng (COD)'
+                  : '⏳ Chờ chuyển khoản'}
               </strong>
             </div>
           </div>
