@@ -2770,15 +2770,15 @@ export default function AdminPage() {
                         </div>
                       </div>
 
-                      {/* Right: Quick Restock Trigger Button */}
+                      {/* Right: Restock Trigger Button */}
                       <div className="flex items-center gap-2 self-end lg:self-center">
                         <button
                           type="button"
                           onClick={() => handleOpenRestock(prod)}
-                          className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs shadow-md transition flex items-center gap-1.5 active:scale-95"
+                          className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs shadow-md transition flex items-center gap-1.5 active:scale-95 cursor-pointer"
                         >
                           <Boxes className="w-4 h-4" />
-                          <span>⚡ Nhập Kho Thêm Nhanh</span>
+                          <span>📦 Nhập Kho</span>
                         </button>
                       </div>
 
@@ -2826,25 +2826,6 @@ export default function AdminPage() {
                                       </strong> cái
                                     </p>
                                   </div>
-                                </div>
-
-                                <div className="flex items-center gap-1 shrink-0">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleQuickAddStock(prod, vIdx, 10)}
-                                    className="px-2 py-1 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-[10px] font-bold shadow-2xs transition active:scale-95"
-                                    title={`Bấm để cộng nhanh +10 cái vào phân loại ${v.name}`}
-                                  >
-                                    +10
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleQuickAddStock(prod, vIdx, 50)}
-                                    className="px-2 py-1 bg-white hover:bg-teal-50 text-teal-700 border border-teal-200 rounded-lg text-[10px] font-bold shadow-2xs transition active:scale-95"
-                                    title={`Bấm để cộng nhanh +50 cái vào phân loại ${v.name}`}
-                                  >
-                                    +50
-                                  </button>
                                 </div>
                               </div>
                             );
@@ -4728,7 +4709,6 @@ export default function AdminPage() {
                     <p className="text-[11px] text-gray-500">Kho hiện tại: <strong>{restockProduct.stock || 0} cái</strong></p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-emerald-600">+</span>
                     <input
                       type="number"
                       min="0"
@@ -4776,36 +4756,9 @@ export default function AdminPage() {
                           </div>
                         </div>
 
-                        {/* Quick Presets & Input */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {/* Quick Add Presets */}
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => handleRestockPreset(idx, 10)}
-                              className="px-2 py-1 bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[10px] font-bold transition active:scale-95"
-                            >
-                              +10
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRestockPreset(idx, 50)}
-                              className="px-2 py-1 bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[10px] font-bold transition active:scale-95"
-                            >
-                              +50
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRestockPreset(idx, 100)}
-                              className="px-2 py-1 bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[10px] font-bold transition active:scale-95"
-                            >
-                              +100
-                            </button>
-                          </div>
-
-                          {/* Manual Input */}
+                        {/* Input & Projected Stock */}
+                        <div className="flex items-center gap-3">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-black text-emerald-600">+</span>
                             <input
                               type="number"
                               min="0"
@@ -4813,13 +4766,13 @@ export default function AdminPage() {
                               value={addQty === 0 ? '' : addQty}
                               onChange={(e) => setRestockQuantities({ ...restockQuantities, [idx]: Math.max(0, parseInt(e.target.value) || 0) })}
                               placeholder="0"
-                              className="w-20 px-2.5 py-1.5 bg-white border border-emerald-300 rounded-xl font-black text-center text-xs focus:ring-2 focus:ring-emerald-400 focus:outline-none"
+                              className="w-24 px-3 py-2 bg-white border border-emerald-300 rounded-xl font-black text-center text-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none"
                             />
                             {addQty > 0 && (
                               <button
                                 type="button"
                                 onClick={() => setRestockQuantities({ ...restockQuantities, [idx]: 0 })}
-                                className="text-[10px] text-gray-400 hover:text-rose-500 font-bold p-1"
+                                className="text-xs text-gray-400 hover:text-rose-500 font-bold p-1 cursor-pointer"
                                 title="Xóa số lượng nhập"
                               >
                                 ✕
@@ -4828,18 +4781,17 @@ export default function AdminPage() {
                           </div>
 
                           {/* Projected Stock */}
-                          <div className="min-w-[100px] text-right">
+                          <div className="min-w-[120px] text-right">
                             {isActivelyRestocking ? (
-                              <span className="text-xs font-black text-emerald-700 bg-emerald-100/70 px-2 py-1 rounded-lg border border-emerald-300">
+                              <span className="text-xs font-black text-emerald-700 bg-emerald-100/70 px-2.5 py-1 rounded-lg border border-emerald-300">
                                 ➔ {newStock} (+{addQty})
                               </span>
                             ) : (
-                              <span className="text-[11px] text-gray-400 italic">
+                              <span className="text-xs text-gray-400 italic">
                                 Giữ nguyên: {currentStock}
                               </span>
                             )}
                           </div>
-
                         </div>
 
                       </div>
