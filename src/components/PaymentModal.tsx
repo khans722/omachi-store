@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Order, ShopSettings } from '@/types';
 import { formatVND } from '@/lib/utils';
-import { X, MessageCircle, Download } from 'lucide-react';
+import { X, MessageCircle, Download, Loader2 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 interface PaymentModalProps {
   order: Order | null;
@@ -21,8 +22,67 @@ export default function PaymentModal({
   onPaymentConfirmed,
 }: PaymentModalProps) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [isPaidSuccess, setIsPaidSuccess] = useState(false);
+
+  // Auto-polling SePay
+  useEffect(() => {
+    if (!isOpen || !order) return;
+    if (order.paymentStatus === 'PAID') {
+      setIsPaidSuccess(true);
+      return;
+    }
+
+    setIsPaidSuccess(false);
+    let isMounted = true;
+
+    const checkOrderPayment = async () => {
+      try {
+        const orderIdOrCode = order.id || order.code;
+        const res = await fetch(`/api/orders/${encodeURIComponent(orderIdOrCode)}`, {
+          cache: 'no-store',
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.success && data.data) {
+          const freshOrder = data.data;
+          if (freshOrder.paymentStatus === 'PAID') {
+            if (isMounted) {
+              setIsPaidSuccess(true);
+              confetti({
+                particleCount: 120,
+                spread: 80,
+                origin: { y: 0.5 },
+              });
+              if (onPaymentConfirmed) {
+                onPaymentConfirmed();
+              }
+            }
+          }
+        }
+      } catch (err) {}
+    };
+
+    const firstTimer = setTimeout(checkOrderPayment, 1200);
+    const intervalId = setInterval(checkOrderPayment, 2500);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(firstTimer);
+      clearInterval(intervalId);
+    };
+  }, [isOpen, order?.id, order?.code, order?.paymentStatus, onPaymentConfirmed]);
 
   if (!isOpen || !order) return null;
+
+  const copyToClipboard = (text: string, field: string) => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        setCopiedField(field);
+        setTimeout(() => setCopiedField(null), 2000);
+      }).catch(() => {});
+    }
+  };
 
   const downloadQrImage = async (url: string, filename: string) => {
     setIsDownloading(true);
@@ -65,18 +125,18 @@ export default function PaymentModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
       <div
-        className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-pink-100 overflow-hidden max-h-[92vh] flex flex-col"
+        className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="p-4 sm:p-5 text-white flex items-center justify-between bg-gradient-to-r from-blue-600 to-indigo-700">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-lg shrink-0">
-              💳
+              {isPaidSuccess ? '🎉' : '💳'}
             </div>
             <div>
               <h3 className="text-sm sm:text-base font-black uppercase tracking-wide">
-                Chuyển Khoản VietQR
+                {isPaidSuccess ? 'Thanh Toán Thành Công' : 'Chuyển Khoản VietQR'}
               </h3>
               <p className="text-[11px] text-white/80 font-medium">
                 Đơn hàng: <strong className="font-mono text-white">#{orderCode}</strong> • {formatVND(amount)}
@@ -93,80 +153,148 @@ export default function PaymentModal({
           </button>
         </div>
 
-        {/* Scrollable Content */}
-        <div className="p-4 sm:p-5 overflow-y-auto space-y-4">
-          
-          {/* VietQR Code Container */}
-          {!bankAccount || !bankId ? (
-            <div className="py-12 px-4 text-center space-y-3 bg-blue-50/40 rounded-2xl border border-blue-100">
-              <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
-              <p className="text-xs text-gray-600 font-medium">Đang tải thông tin thanh toán từ hệ thống...</p>
+        {/* Content */}
+        <div className="p-4 sm:p-5 overflow-y-auto space-y-3.5">
+          {isPaidSuccess ? (
+            /* Khi SePay đã khớp thanh toán thành công */
+            <div className="py-6 px-4 text-center space-y-3">
+              <div className="w-16 h-16 mx-auto rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-3xl shadow-xs animate-bounce">
+                ✓
+              </div>
+              <div className="space-y-1">
+                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 inline-block">
+                  ✅ ĐÃ THANH TOÁN THÀNH CÔNG (SEPAY)
+                </span>
+                <h4 className="text-lg font-black text-gray-900 pt-1">
+                  Đơn hàng #{orderCode}
+                </h4>
+                <p className="text-xs text-gray-600 max-w-xs mx-auto">
+                  Hệ thống SePay đã nhận đủ tiền thanh toán. Xưởng Omachi đã tiếp nhận đơn và đang chuẩn bị đóng gói xuất kho cho bạn! 💕
+                </p>
+              </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center text-center p-3 sm:p-4 bg-blue-50/40 rounded-2xl border border-blue-100">
-              <div className="relative p-2 bg-white rounded-2xl border border-blue-200 shadow-sm">
-                <img
-                  src={vietQrUrl}
-                  alt="Mã VietQR"
-                  className="w-52 h-auto sm:w-60 object-contain rounded-xl"
-                />
-                <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 text-white text-[10px] font-black px-3 py-0.5 rounded-full shadow-xs whitespace-nowrap bg-blue-600">
-                  Quét bằng App Ngân Hàng (VietQR)
+            /* Màn hình chờ chuyển khoản VietQR */
+            <>
+              {!bankAccount || !bankId ? (
+                <div className="py-12 px-4 text-center space-y-3 bg-blue-50/40 rounded-2xl border border-blue-100">
+                  <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+                  <p className="text-xs text-gray-600 font-medium">Đang tải thông tin thanh toán từ hệ thống...</p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center text-center p-3 sm:p-4 bg-blue-50/40 rounded-2xl border border-blue-100 space-y-2.5">
+                  <div className="relative p-2 bg-white rounded-2xl border border-blue-200 shadow-sm">
+                    <img
+                      src={vietQrUrl}
+                      alt="Mã VietQR"
+                      className="w-48 h-auto sm:w-56 object-contain rounded-xl"
+                    />
+                    <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 text-white text-[10px] font-black px-3 py-0.5 rounded-full shadow-xs whitespace-nowrap bg-blue-600">
+                      Quét bằng App Ngân Hàng
+                    </div>
+                  </div>
+
+                  {/* Nút tải mã QR về máy */}
+                  <button
+                    type="button"
+                    disabled={isDownloading}
+                    onClick={() => downloadQrImage(vietQrUrl, `vietqr-omachi-${orderCode}.png`)}
+                    className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer disabled:opacity-50 mt-1"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>{isDownloading ? 'Đang tải ảnh...' : '📥 Tải ảnh mã QR về máy (Để quét từ thư viện)'}</span>
+                  </button>
+
+                  {/* Bảng thông tin chuyển khoản có nút Copy 1 chạm */}
+                  <div className="grid grid-cols-2 gap-2 text-left w-full pt-1">
+                    <div className="p-2 rounded-lg bg-white border border-gray-200">
+                      <span className="text-[10px] text-gray-500 block font-medium">Ngân hàng:</span>
+                      <span className="text-xs font-bold text-gray-900 block truncate">
+                        {rawBank || 'VietinBank'}
+                      </span>
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-white border border-gray-200 flex items-center justify-between gap-1">
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[10px] text-gray-500 block font-medium">Số tài khoản:</span>
+                        <span className="text-xs font-extrabold text-blue-700 font-mono block truncate">
+                          {bankAccount}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(bankAccount, 'stk')}
+                        className="px-1.5 py-1 text-[10px] font-bold bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded shrink-0 transition cursor-pointer"
+                      >
+                        {copiedField === 'stk' ? '✓' : 'Copy'}
+                      </button>
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-white border border-gray-200">
+                      <span className="text-[10px] text-gray-500 block font-medium">Chủ tài khoản:</span>
+                      <span className="text-xs font-bold text-gray-900 block truncate">
+                        {bankOwner || 'DUONG QUOC KHANH'}
+                      </span>
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-amber-50 border border-amber-300 flex items-center justify-between gap-1">
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[10px] text-amber-800 block font-bold">Nội dung CK:</span>
+                        <span className="text-xs font-black text-rose-600 font-mono block truncate">
+                          {transferContent}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(transferContent, 'nd')}
+                        className="px-1.5 py-1 text-[10px] font-bold bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 rounded shrink-0 transition cursor-pointer"
+                      >
+                        {copiedField === 'nd' ? '✓' : 'Copy'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Khung Radar Tự Động Kiểm Tra SePay */}
+              <div className="p-3 bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 border border-blue-200 rounded-2xl flex items-center gap-3 text-left shadow-2xs">
+                <div className="relative flex items-center justify-center shrink-0 w-8 h-8 rounded-full bg-blue-600/10 text-blue-600">
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                    <p className="text-xs font-black text-blue-900">
+                      Đang tự động kiểm tra chuyển khoản...
+                    </p>
+                  </div>
+                  <p className="text-[11px] text-blue-700 leading-tight mt-0.5">
+                    Hệ thống sẽ <strong>tự động xác nhận thành công</strong> ngay khi tiền vào tài khoản. Quý khách không cần bấm thêm gì cả!
+                  </p>
                 </div>
               </div>
-
-              <p className="text-xs text-gray-600 pt-4 font-medium">
-                Mở App <strong>Ngân hàng bất kỳ</strong> &gt; Chọn <strong>Quét mã QR</strong> để chuyển tiền nhanh tự động
-              </p>
-
-              {/* Nút tải mã QR về máy dành cho khách dùng 1 điện thoại */}
-              <button
-                type="button"
-                disabled={isDownloading}
-                onClick={() => downloadQrImage(vietQrUrl, `vietqr-omachi-${orderCode}.png`)}
-                className="mt-3 w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer disabled:opacity-50"
-              >
-                <Download className="w-4 h-4" />
-                <span>{isDownloading ? 'Đang tải ảnh...' : '📥 Tải ảnh mã QR về máy (Để quét từ ảnh)'}</span>
-              </button>
-
-            {/* Hướng dẫn quét từ ảnh */}
-            <div className="mt-3 p-3 bg-white rounded-xl border border-blue-100 text-[11px] text-blue-900 text-left space-y-1.5 w-full">
-              <p className="font-bold flex items-center gap-1 text-[11px] text-blue-800">
-                <span>💡</span>
-                <span>Thanh toán dễ dàng trên 1 chiếc điện thoại:</span>
-              </p>
-              <ol className="list-decimal list-inside space-y-1 text-[10.5px] text-blue-700 leading-relaxed">
-                <li>Bấm nút <strong>&quot;Tải ảnh mã QR về máy&quot;</strong> ở trên.</li>
-                <li>Mở App Ngân hàng &gt; Bấm <strong>Quét QR</strong>.</li>
-                <li>Chọn biểu tượng <strong>&quot;Ảnh / Thư viện&quot;</strong> để chọn mã vừa tải về là xong!</li>
-              </ol>
-            </div>
-          </div>
+            </>
           )}
         </div>
 
-        {/* Footer actions */}
+        {/* Footer actions: KHÔNG CÓ NÚT THỦ CÔNG "TÔI ĐÃ CHUYỂN KHOẢN XONG" */}
         <div className="p-3.5 sm:p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-2">
           <a
-            href={`${zaloUrl}?text=${encodeURIComponent(`Chào shop Omachi, mình vừa chuyển khoản thanh toán đơn hàng #${orderCode}. Shop kiểm tra giúp mình nhé!`)}`}
+            href={`${zaloUrl}?text=${encodeURIComponent(`Chào shop Omachi, mình cần hỗ trợ đơn hàng #${orderCode}.`)}`}
             target="_blank"
             rel="noreferrer"
             className="px-3 py-2 bg-white hover:bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
           >
             <MessageCircle className="w-3.5 h-3.5" />
-            <span>Báo Zalo</span>
+            <span>Nhắn Zalo shop</span>
           </a>
 
           <button
             type="button"
-            onClick={() => {
-              if (onPaymentConfirmed) onPaymentConfirmed();
-              onClose();
-            }}
-            className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl shadow-xs transition cursor-pointer text-center"
+            onClick={onClose}
+            className="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold rounded-xl transition cursor-pointer"
           >
-            ✓ Tôi đã chuyển khoản xong
+            {isPaidSuccess ? 'Xong' : 'Đóng'}
           </button>
         </div>
       </div>
