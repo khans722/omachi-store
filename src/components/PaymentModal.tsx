@@ -183,23 +183,20 @@ export default function PaymentModal({
                 </div>
               ) : (
                 <div className="flex flex-col items-center text-center p-3 sm:p-4 bg-blue-50/40 rounded-2xl border border-blue-100 space-y-2.5">
-                  <div className="relative p-2 bg-white rounded-2xl border border-blue-200 shadow-sm">
+                  <div className="p-2 bg-white rounded-2xl border border-blue-200 shadow-sm">
                     <img
                       src={vietQrUrl}
                       alt="Mã VietQR"
                       className="w-48 h-auto sm:w-56 object-contain rounded-xl"
                     />
-                    <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 text-white text-[10px] font-black px-3 py-0.5 rounded-full shadow-xs whitespace-nowrap bg-blue-600">
-                      Quét bằng App Ngân Hàng
-                    </div>
                   </div>
 
-                  {/* Nút tải mã QR về máy */}
+                  {/* Nút tải mã QR */}
                   <button
                     type="button"
                     disabled={isDownloading}
                     onClick={() => downloadQrImage(vietQrUrl, `vietqr-omachi-${orderCode}.png`)}
-                    className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer disabled:opacity-50 mt-1"
+                    className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer disabled:opacity-50"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>{isDownloading ? 'Đang tải...' : 'Tải mã QR'}</span>
