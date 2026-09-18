@@ -825,7 +825,7 @@ export default function AdminPage() {
       isHot: false,
       isNewArrival: true,
       isCustomizable: false,
-      stock: 100,
+      stock: 0,
       soldCount: 0,
       rating: 5.0,
       reviewCount: 0,
@@ -865,12 +865,10 @@ export default function AdminPage() {
     finalProduct.costPrice = Number(finalProduct.costPrice) || 0;
     finalProduct.weight = Number(finalProduct.weight) > 0 ? Number(finalProduct.weight) : 50;
 
-    // Auto calculate total stock if variants exist
+    // Tự động tính tổng tồn kho theo các phân loại hiện có
     if (finalProduct.variants && finalProduct.variants.length > 0) {
       const sumVariantStock = finalProduct.variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
-      if (sumVariantStock > 0) {
-        finalProduct.stock = sumVariantStock;
-      }
+      finalProduct.stock = sumVariantStock;
     }
 
     try {
@@ -2482,42 +2480,23 @@ export default function AdminPage() {
 
                       {/* Color Variants Configuration Details */}
                       {prod.variants && prod.variants.length > 0 && (
-                        <div className="bg-white p-2.5 sm:p-3 rounded-xl border border-pink-100 text-[11px] space-y-2">
-                          <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-                            <span className="flex items-center gap-1.5 font-bold text-gray-700 text-xs">
-                              <Palette className="w-3.5 h-3.5 text-pink-500 shrink-0" />
-                              <span>Chi tiết phân loại ({prod.variants.length} màu):</span>
-                            </span>
-                            <span className="text-[10px] sm:text-xs font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
-                              Tổng tồn kho: {(prod.stock || 0).toLocaleString('vi-VN')} cái
-                            </span>
+                        <div className="bg-white p-2.5 sm:p-3 rounded-xl border border-pink-100 text-[11px] space-y-1.5">
+                          <div className="flex items-center gap-1.5 font-bold text-gray-700 text-xs">
+                            <Palette className="w-3.5 h-3.5 text-pink-500 shrink-0" />
+                            <span>Phân loại màu sắc ({prod.variants.length}):</span>
                           </div>
-                          <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                            {prod.variants.map((v, i) => {
-                              const vStock = v.stock ?? 0;
-                              return (
-                                <div
-                                  key={i}
-                                  className={`flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-[10px] sm:text-[11px] border ${
-                                    vStock <= 0
-                                      ? 'bg-rose-50/70 border-rose-200 text-rose-700'
-                                      : vStock <= 5
-                                      ? 'bg-amber-50/70 border-amber-200 text-amber-800'
-                                      : 'bg-emerald-50/60 border-emerald-200 text-emerald-800'
-                                  }`}
-                                >
-                                  {v.colorHex && (
-                                    <span className="w-2.5 h-2.5 rounded-full border border-black/20 shrink-0" style={{ backgroundColor: v.colorHex }} />
-                                  )}
-                                  <span className="font-bold">{v.name}</span>
-                                  <span className={`text-[9px] sm:text-[10px] font-black px-1.5 py-0.2 rounded-md ${
-                                    vStock <= 0 ? 'bg-rose-200 text-rose-800' : 'bg-white/80 text-gray-800'
-                                  }`}>
-                                    {vStock <= 0 ? 'Hết hàng' : `Còn ${vStock.toLocaleString('vi-VN')}`}
-                                  </span>
-                                </div>
-                              );
-                            })}
+                          <div className="flex flex-wrap gap-1.5">
+                            {prod.variants.map((v, i) => (
+                              <div
+                                key={i}
+                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-stone-50 border border-stone-200 text-stone-700"
+                              >
+                                {v.colorHex && (
+                                  <span className="w-2.5 h-2.5 rounded-full border border-black/20 shrink-0" style={{ backgroundColor: v.colorHex }} />
+                                )}
+                                <span>{v.name}</span>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       )}
@@ -2537,38 +2516,23 @@ export default function AdminPage() {
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-pink-100/60 mt-2 flex-wrap gap-2">
+                    <div className="flex items-center justify-end pt-2 border-t border-pink-100/60 mt-2 gap-1.5">
                       <button
                         type="button"
-                        onClick={() => {
-                          setInventorySearch(prod.name);
-                          setActiveTab('inventory');
-                        }}
-                        className="px-2.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 text-xs font-bold transition flex items-center gap-1 shadow-2xs"
-                        title="Chuyển sang tab kho để nhập hàng thêm"
+                        onClick={() => handleOpenEditProduct(prod)}
+                        className="px-3 py-1.5 rounded-xl bg-white border border-pink-200 text-pink-700 hover:bg-pink-100 text-xs font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer"
                       >
-                        <Boxes className="w-3.5 h-3.5 text-purple-600" />
-                        <span>📦 Nhập Kho</span>
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>Sửa</span>
                       </button>
-
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEditProduct(prod)}
-                          className="px-2.5 py-1.5 rounded-xl bg-white border border-pink-200 text-pink-700 hover:bg-pink-100 text-xs font-bold transition flex items-center gap-1 shadow-2xs"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                          <span>Sửa</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteProduct(prod.id, prod.name)}
-                          className="px-2.5 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 text-xs font-bold transition flex items-center gap-1"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>Xóa</span>
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteProduct(prod.id, prod.name)}
+                        className="px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Xóa</span>
+                      </button>
                     </div>
                   </div>
                 );
@@ -4096,7 +4060,7 @@ export default function AdminPage() {
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="font-semibold text-stone-700 text-xs">Giá vốn nhập kho (VNĐ)</label>
+                          <label className="font-semibold text-stone-700 text-xs">Giá vốn / Giá nhập (VNĐ)</label>
                           <input
                             type="number"
                             min={0}
@@ -4472,7 +4436,7 @@ export default function AdminPage() {
                         <div>
                           <h4 className="font-bold text-stone-800 flex items-center gap-1.5 text-xs">
                             <Palette className="w-4 h-4 text-stone-600" />
-                            <span>Phân Loại Màu Sắc &amp; Tồn Kho</span>
+                            <span>Phân Loại Màu Sắc / Phiên Bản</span>
                           </h4>
                           <p className="text-[11px] text-stone-400">
                             Nếu sản phẩm có nhiều màu sắc/phiên bản, thêm danh sách bên dưới
@@ -4490,7 +4454,7 @@ export default function AdminPage() {
                                   id: `v-${Date.now()}`,
                                   name: `Màu ${currentVariants.length + 1}`,
                                   colorHex: '#FFB6C1',
-                                  stock: 100,
+                                  stock: 0,
                                   soldCount: 0,
                                   isActive: true,
                                 },
@@ -4511,7 +4475,7 @@ export default function AdminPage() {
                           </p>
                         ) : (
                           (editingProduct.variants || []).map((variant, vIdx) => (
-                            <div key={vIdx} className="flex flex-wrap sm:flex-nowrap items-center gap-2 p-2 rounded-xl bg-stone-50 border border-stone-200/80">
+                            <div key={vIdx} className="flex items-center gap-2.5 p-2 rounded-xl bg-stone-50 border border-stone-200/80">
                               <div className="w-9 shrink-0 flex items-center justify-center">
                                 <input
                                   type="color"
@@ -4537,23 +4501,7 @@ export default function AdminPage() {
                                     setEditingProduct({ ...editingProduct, variants: newVariants });
                                   }}
                                   placeholder="VD: Hồng Pastel, Trắng Kem..."
-                                  className="w-full px-2.5 py-1 bg-white border border-stone-200 rounded-lg font-semibold text-stone-800 text-xs"
-                                />
-                              </div>
-
-                              <div className="w-24">
-                                <span className="text-[10px] text-stone-500 block">Tồn kho:</span>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  step="any"
-                                  value={variant.stock ?? 0}
-                                  onChange={(e) => {
-                                    const newVariants = [...(editingProduct.variants || [])];
-                                    newVariants[vIdx] = { ...newVariants[vIdx], stock: Number(e.target.value) };
-                                    setEditingProduct({ ...editingProduct, variants: newVariants });
-                                  }}
-                                  className="w-full px-2 py-1 bg-white border border-stone-200 rounded-lg font-bold text-stone-800 text-center text-xs"
+                                  className="w-full px-2.5 py-1.5 bg-white border border-stone-200 rounded-lg font-semibold text-stone-800 text-xs"
                                 />
                               </div>
 
