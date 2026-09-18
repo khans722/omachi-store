@@ -152,8 +152,14 @@ export default function OrderTrackingPage() {
   }
 
   // Steps indicator logic
+  const isPrepaidUnpaid = (order.paymentMethod === 'BANK' || (order.paymentMethod as any) === 'MOMO') && order.paymentStatus !== 'PAID';
   const steps: { key: OrderStatus; label: string; desc: string; icon: any }[] = [
-    { key: 'PENDING_CONFIRM', label: 'Đặt hàng thành công', desc: 'Đã nhận thông tin', icon: Clock },
+    { 
+      key: 'PENDING_CONFIRM', 
+      label: isPrepaidUnpaid ? 'Chờ thanh toán' : 'Đặt hàng thành công', 
+      desc: isPrepaidUnpaid ? 'Vui lòng quét mã QR chuyển khoản' : 'Đã nhận thông tin', 
+      icon: Clock 
+    },
     { key: 'PREPARING', label: 'Shop đang chuẩn bị hàng', desc: 'Đang kiểm tra & đóng gói hàng', icon: Sparkles },
     { key: 'SHIPPING', label: 'Đang giao hàng', desc: 'Đã bàn giao shipper', icon: Truck },
     { key: 'COMPLETED', label: 'Giao thành công', desc: 'Khách đã nhận hàng xinh', icon: PackageCheck },

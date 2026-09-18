@@ -30,8 +30,28 @@ import {
 } from 'lucide-react';
 import PaymentModal from '@/components/PaymentModal';
 
-function getStatusBadge(status: string) {
-  switch (status) {
+function getStatusBadge(order: Order) {
+  if (order.orderStatus === 'CANCELLED') {
+    return {
+      label: 'Đã hủy đơn',
+      bg: 'bg-rose-50 text-rose-800 border-rose-200',
+      dot: 'bg-rose-500',
+      step: 0,
+    };
+  }
+
+  // Đơn chuyển khoản (VietQR / MoMo) chưa thanh toán tiền
+  const isPrepaidUnpaid = (order.paymentMethod === 'BANK' || order.paymentMethod === 'MOMO') && order.paymentStatus !== 'PAID';
+  if (isPrepaidUnpaid && order.orderStatus === 'PENDING_CONFIRM') {
+    return {
+      label: 'Chờ thanh toán',
+      bg: 'bg-amber-50 text-amber-800 border-amber-300',
+      dot: 'bg-amber-500',
+      step: 1,
+    };
+  }
+
+  switch (order.orderStatus) {
     case 'PENDING_CONFIRM':
       return {
         label: 'Chờ xác nhận đơn',
@@ -60,13 +80,6 @@ function getStatusBadge(status: string) {
         dot: 'bg-emerald-500',
         step: 4,
       };
-    case 'CANCELLED':
-      return {
-        label: 'Đã hủy đơn',
-        bg: 'bg-rose-50 text-rose-800 border-rose-200',
-        dot: 'bg-rose-500',
-        step: 0,
-      };
     default:
       return {
         label: 'Đang xử lý',
@@ -89,7 +102,8 @@ function OrderCard({
   onCancelOrder?: (order: Order) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const status = getStatusBadge(order.orderStatus);
+  const status = getStatusBadge(order);
+  const isPrepaidUnpaid = (order.paymentMethod === 'BANK' || order.paymentMethod === 'MOMO') && order.paymentStatus !== 'PAID';
   const orderDate = new Date(order.createdAt).toLocaleDateString('vi-VN', {
     day: '2-digit',
     month: '2-digit',
@@ -129,15 +143,17 @@ function OrderCard({
                 ? '💳 VietQR'
                 : '💵 COD'}
             </span>
-            {order.paymentStatus === 'PAID' ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <span>✓ Đã thanh toán</span>
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                <span>Chưa thanh toán</span>
-              </span>
+            {(!isPrepaidUnpaid || order.orderStatus !== 'PENDING_CONFIRM') && (
+              order.paymentStatus === 'PAID' ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span>✓ Đã thanh toán</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  <span>Chưa thanh toán</span>
+                </span>
+              )
             )}
           </div>
           <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5">

@@ -1788,7 +1788,11 @@ export default function AdminPage() {
                                 : 'bg-gray-100 text-gray-600 border-gray-300'
                             }`}
                           >
-                            <option value="PENDING_CONFIRM">⏳ Chờ xác nhận đơn</option>
+                            <option value="PENDING_CONFIRM">
+                              {order.paymentMethod === 'BANK' && order.paymentStatus !== 'PAID'
+                                ? '⏳ Chờ khách chuyển khoản'
+                                : '⏳ Chờ xác nhận đơn'}
+                            </option>
                             <option value="PREPARING">🎨 Đang chuẩn bị &amp; đóng gói</option>
                             <option value="SHIPPING">🚚 Đang giao hàng</option>
                             <option value="COMPLETED">✅ Đã hoàn thành</option>
