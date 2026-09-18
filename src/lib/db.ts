@@ -1955,9 +1955,11 @@ function mapSettingsFromSupabase(row: any, fallback: ShopSettings): ShopSettings
   };
 }
 
-// ==========================================
-// EXPORTED CLOUD + LOCAL HYBRID DATABASE ENGINE
-// ==========================================
+let serverOrdersCache: { data: Order[]; expiresAt: number } | null = null;
+
+export function invalidateOrdersCache() {
+  serverOrdersCache = null;
+}
 
 export const db = {
   // RAW DATABASE
@@ -2284,24 +2286,30 @@ export const db = {
     },
 
     async getById(id: string): Promise<Customer | undefined> {
+      const local = (readDb().customers || []).find((c) => c.id === id);
+      if (local) return local;
+
       try {
         const { data, error } = await supabase.from('customers').select('*').eq('id', id).maybeSingle();
         if (!error && data) return mapCustomerFromSupabase(data);
       } catch (err) {
         console.warn('[Supabase customers.getById fallback]:', err);
       }
-      return (readDb().customers || []).find((c) => c.id === id);
+      return undefined;
     },
 
     async findByPhone(phone: string): Promise<Customer | undefined> {
       const cleanPhone = phone.replace(/[^0-9]/g, '');
+      const local = (readDb().customers || []).find((c) => (c.phone || '').replace(/[^0-9]/g, '') === cleanPhone);
+      if (local) return local;
+
       try {
         const { data, error } = await supabase.from('customers').select('*').eq('phone', cleanPhone).maybeSingle();
         if (!error && data) return mapCustomerFromSupabase(data);
       } catch (err) {
         console.warn('[Supabase customers.findByPhone fallback]:', err);
       }
-      return (readDb().customers || []).find((c) => c.phone.replace(/[^0-9]/g, '') === cleanPhone);
+      return undefined;
     },
 
     async register(data: { fullName: string; phone: string; password?: string; address?: string; city?: string; email?: string }): Promise<{ customer: Customer; error?: string }> {
@@ -2590,24 +2598,50 @@ export const db = {
   // ORDERS TABLE
   orders: {
     async getAll(): Promise<Order[]> {
-      try {
-        const { data, error } = await supabase
-          .from('orders')
-          .select('*')
-          .order('created_at', { ascending: false });
-        if (!error && Array.isArray(data) && data.length > 0) {
-          const list = data.map(mapOrderFromSupabase);
-          const local = readDb();
-          local.orders = list;
-          return list;
-        }
-      } catch (err) {
-        console.warn('[Supabase orders.getAll fallback]:', err);
+      if (serverOrdersCache && Date.now() < serverOrdersCache.expiresAt) {
+        return serverOrdersCache.data;
       }
-      return readDb().orders || [];
+      const localOrders = readDb().orders || [];
+
+      // Tra cứu Supabase nhưng giới hạn thời gian 350ms nếu đã có localOrders
+      // để tránh việc mạng lag/Supabase cold-start làm trang Admin hoặc Checkout bị treo quay vòng
+      const fetchSupabase = async (): Promise<Order[] | null> => {
+        try {
+          const { data, error } = await supabase
+            .from('orders')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(100);
+          if (!error && Array.isArray(data) && data.length > 0) {
+            return data.map(mapOrderFromSupabase);
+          }
+        } catch (err) {
+          console.warn('[Supabase orders.getAll fallback]:', err);
+        }
+        return null;
+      };
+
+      let freshList: Order[] | null = null;
+      if (localOrders.length > 0) {
+        freshList = await Promise.race([
+          fetchSupabase(),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 350))
+        ]);
+      } else {
+        freshList = await fetchSupabase();
+      }
+
+      if (freshList && freshList.length > 0) {
+        serverOrdersCache = { data: freshList, expiresAt: Date.now() + 4000 };
+        return freshList;
+      }
+
+      serverOrdersCache = { data: localOrders, expiresAt: Date.now() + 2000 };
+      return localOrders;
     },
 
     async clearAll(): Promise<boolean> {
+      invalidateOrdersCache();
       const dbData = readDb();
       dbData.orders = [];
       dbData.customers = [];
@@ -2644,39 +2678,27 @@ export const db = {
       if (!idOrCode) return undefined;
       const clean = idOrCode.replace(/^#/, '').trim();
       const lower = clean.toLowerCase();
+
+      // 1. Tìm ngay trong bộ nhớ cục bộ (0ms)
+      const local = (readDb().orders || []).find((o) => 
+        (o.id && o.id.toLowerCase() === lower) || 
+        (o.code && o.code.replace(/^#/, '').toLowerCase() === lower)
+      );
+      if (local) return local;
+
+      // 2. Nếu chưa có mới tra cứu Supabase
       try {
-        let { data, error } = await supabase
+        let { data } = await supabase
           .from('orders')
           .select('*')
-          .eq('code', clean)
+          .or(`code.eq.${clean},id.eq.${clean}`)
           .maybeSingle();
-
-        if (!data) {
-          const res = await supabase
-            .from('orders')
-            .select('*')
-            .eq('id', clean)
-            .maybeSingle();
-          if (res.data) data = res.data;
-        }
-
-        if (!data) {
-          const res = await supabase
-            .from('orders')
-            .select('*')
-            .ilike('code', clean)
-            .maybeSingle();
-          if (res.data) data = res.data;
-        }
 
         if (data) return mapOrderFromSupabase(data);
       } catch (err) {
         console.warn('[Supabase orders.getById fallback]:', err);
       }
-      return (readDb().orders || []).find((o) => 
-        (o.id && o.id.toLowerCase() === lower) || 
-        (o.code && o.code.replace(/^#/, '').toLowerCase() === lower)
-      );
+      return undefined;
     },
 
     async getByPhone(phone: string): Promise<Order[]> {
@@ -2703,15 +2725,8 @@ export const db = {
       const q = raw.toLowerCase().replace(/^#/, '');
       const cleanDigits = raw.replace(/[^0-9]/g, '');
       
-      let orders: Order[] = [];
-      try {
-        const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
-        if (!error && Array.isArray(data) && data.length > 0) {
-          orders = data.map(mapOrderFromSupabase);
-        }
-      } catch (e) {}
-
-      if (orders.length === 0) {
+      let orders: Order[] = await this.getAll();
+      if (!orders || orders.length === 0) {
         orders = readDb().orders || [];
       }
 
@@ -2900,13 +2915,13 @@ export const db = {
       const orderWard = (orderInput.customer as any)?.ward || '';
       const setAsDefault = (orderInput as any)?.setAsDefaultAddress !== false;
 
-      // Tìm khách hàng từ Supabase hoặc local DB
+      // Tìm khách hàng từ RAM local DB trước (0ms) thay vì chờ mạng Supabase
       let targetCust: Customer | undefined;
       if (linkedCustomerId) {
-        targetCust = await db.customers.getById(linkedCustomerId);
+        targetCust = (dbData.customers || []).find((c) => c.id === linkedCustomerId);
       }
       if (!targetCust && cleanPhone) {
-        targetCust = await db.customers.findByPhone(cleanPhone);
+        targetCust = (dbData.customers || []).find((c) => (c.phone || '').replace(/[^0-9]/g, '') === cleanPhone);
       }
 
       if (targetCust) {
@@ -3018,6 +3033,7 @@ export const db = {
 
       dbData.orders.unshift(newOrder);
       writeDb(dbData);
+      invalidateOrdersCache();
 
       // Cập nhật thông tin khách hàng và tồn kho sản phẩm lên Supabase song song trong background (không chặn khách)
       (async () => {
@@ -3063,7 +3079,7 @@ export const db = {
 
       try {
         const itemsSummary = mappedItems.map(i => `${i.productName || 'Sản phẩm'} (x${i.quantity || 1})`).join(', ');
-        await supabase.from('orders').upsert({
+        const upsertPromise = supabase.from('orders').upsert({
           id: newOrder.id,
           code: newOrder.code,
           customer_id: newOrder.customerId || null,
@@ -3091,6 +3107,12 @@ export const db = {
           created_at: newOrder.createdAt,
           updated_at: newOrder.updatedAt,
         });
+
+        // Giới hạn thời gian chờ Supabase tối đa 200ms để người mua nhận phản hồi tức thì
+        await Promise.race([
+          upsertPromise,
+          new Promise((resolve) => setTimeout(resolve, 200))
+        ]);
       } catch (err) {
         console.warn('[Supabase orders.create upsert error]:', err);
       }
@@ -3117,10 +3139,11 @@ export const db = {
         dbData.orders.unshift(order);
       }
       writeDb(dbData);
+      invalidateOrdersCache();
 
       try {
         const itemsSummary = (order.items || []).map(i => `${i.productName || 'Sản phẩm'} (x${i.quantity || 1})`).join(', ');
-        await supabase.from('orders').upsert({
+        const upsertPromise = supabase.from('orders').upsert({
           id: order.id,
           code: order.code,
           customer_id: order.customerId || null,
@@ -3152,6 +3175,10 @@ export const db = {
           created_at: order.createdAt,
           updated_at: order.updatedAt,
         });
+        await Promise.race([
+          upsertPromise,
+          new Promise((resolve) => setTimeout(resolve, 250))
+        ]);
       } catch (e) {}
       return order;
     },
@@ -3177,6 +3204,7 @@ export const db = {
         }
       });
       writeDb(dbData);
+      invalidateOrdersCache();
 
       try {
         const rows = ordersList.map(order => {
@@ -3337,10 +3365,11 @@ export const db = {
         timestamp: new Date().toISOString(),
       });
       writeDb(dbData);
+      invalidateOrdersCache();
 
       try {
         const o = dbData.orders[index];
-        await supabase.from('orders').upsert({
+        const upsertPromise = supabase.from('orders').upsert({
           id: o.id,
           code: o.code,
           customer_id: o.customerId || null,
@@ -3362,6 +3391,10 @@ export const db = {
           completed_at: o.completedAt || null,
           updated_at: o.updatedAt,
         });
+        await Promise.race([
+          upsertPromise,
+          new Promise((resolve) => setTimeout(resolve, 250))
+        ]);
       } catch (e) {}
 
       return dbData.orders[index];

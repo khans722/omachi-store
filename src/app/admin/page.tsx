@@ -115,7 +115,15 @@ export default function AdminPage() {
   const [pinError, setPinError] = useState('');
 
   const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'inventory' | 'revenue' | 'categories' | 'feedbacks' | 'settings'>('orders');
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<Order[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('omachi_admin_orders_v2');
+        if (cached) return JSON.parse(cached);
+      } catch (e) {}
+    }
+    return [];
+  });
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [feedbacks, setFeedbacks] = useState<CustomerFeedback[]>([]);
@@ -842,6 +850,12 @@ export default function AdminPage() {
           });
         }
       } catch (e) {}
+
+      // NGAY LẬP TỨC: Cập nhật orders từ cache local để Admin nhìn thấy ngay ở 0ms (Stale-While-Revalidate)
+      if (localOrders.length > 0) {
+        setOrders(localOrders);
+        setLoading(false);
+      }
 
       const res = await fetch('/api/orders', {
         cache: 'no-store',
