@@ -2,51 +2,35 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { sendOrderNotification } from '@/lib/zalo';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   const orders = await db.orders.getAll();
-  const now = Date.now();
-  const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-  const backgroundTasks: Promise<any>[] = [];
 
-  for (const o of orders as any[]) {
-    if (
-      (o.paymentMethod === 'BANK' || o.paymentMethod === 'MOMO') &&
-      o.paymentStatus !== 'PAID' &&
-      o.orderStatus === 'PENDING'
-    ) {
-      const createdTime = new Date(o.createdAt).getTime();
-      if (!isNaN(createdTime) && now - createdTime > TWENTY_FOUR_HOURS) {
-        o.orderStatus = 'CANCELLED';
-        o.cancelReason = 'Hệ thống tự động hủy do quá hạn 24h chưa chuyển khoản thanh toán';
-        backgroundTasks.push(
-          db.orders.updateStatus(o.id, 'CANCELLED', 'UNPAID', undefined, undefined, undefined, {
-            ...o,
-            cancelReason: 'Hệ thống tự động hủy do quá hạn 24h chưa chuyển khoản thanh toán'
-          }).catch(() => {})
-        );
-      }
-    }
-
-    // 2. Tự động khắc phục đơn Chuyển khoản chưa thanh toán nhưng bị nhảy sai trạng thái
+  // Chuẩn hóa trạng thái đơn hàng trên RAM cực nhanh, không gọi cập nhật nặng nề làm nghẽn Admin
+  const sanitized = (orders as any[]).map((o) => {
     if (
       (o.paymentMethod === 'BANK' || o.paymentMethod === 'MOMO') &&
       o.paymentStatus !== 'PAID' &&
       o.orderStatus !== 'CANCELLED' &&
       o.orderStatus !== 'PENDING_CONFIRM'
     ) {
-      o.orderStatus = 'PENDING_CONFIRM';
-      backgroundTasks.push(
-        db.orders.updateStatus(o.id, 'PENDING_CONFIRM', 'UNPAID').catch(() => {})
-      );
+      return { ...o, orderStatus: 'PENDING_CONFIRM' };
     }
-  }
+    return o;
+  });
 
-  // Chạy các task ngầm bất đồng bộ không làm chậm response của người dùng
-  if (backgroundTasks.length > 0) {
-    Promise.all(backgroundTasks).catch(() => {});
-  }
-
-  return NextResponse.json({ success: true, data: orders });
+  return NextResponse.json(
+    { success: true, data: sanitized },
+    {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0',
+      },
+    }
+  );
 }
 
 export async function POST(req: NextRequest) {
@@ -67,16 +51,17 @@ export async function POST(req: NextRequest) {
 
     const newOrder = await db.orders.create(body);
 
-    // Gửi thông báo về Telegram ngầm (Bất đồng bộ không chặn đơn của khách)
-    // Giúp tốc độ đặt hàng cực nhanh < 0.1s thay vì phải đợi máy chủ Telegram phản hồi
+    // Gửi thông báo về Telegram hoàn toàn ngầm (Bất đồng bộ không chặn phản hồi của khách)
+    // Giúp tốc độ đặt hàng cực nhanh < 0.15s thay vì phải đợi máy chủ Telegram & Settings
     const protocol = req.headers.get('x-forwarded-proto') || (req.url.startsWith('https') ? 'https' : 'http');
     const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || req.nextUrl.host;
     const requestOrigin = host ? `${protocol}://${host}` : req.nextUrl.origin;
 
-    const settings = await db.settings.get();
-    sendOrderNotification(newOrder, settings, 'NEW_ORDER', requestOrigin).catch((err) => {
-      console.error('[ASYNC ORDER TELEGRAM NOTIFICATION ERROR]:', err);
-    });
+    db.settings.get().then((settings) => {
+      sendOrderNotification(newOrder, settings, 'NEW_ORDER', requestOrigin).catch((err) => {
+        console.error('[ASYNC ORDER TELEGRAM NOTIFICATION ERROR]:', err);
+      });
+    }).catch(() => {});
 
     return NextResponse.json({ success: true, data: newOrder });
   } catch (error) {

@@ -859,52 +859,69 @@ export default function CheckoutPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
-  const [isCheckingPayment, setIsCheckingPayment] = useState(false);
-  const [checkPaymentNotice, setCheckPaymentNotice] = useState('');
 
-  const handleCheckPaymentNow = async () => {
+  // Kích hoạt pháo hoa rực rỡ khi vào màn hình Đặt Hàng Thành Công (cả đơn COD và đơn VietQR khi nhận diện xong)
+  useEffect(() => {
     if (!createdOrder) return;
-    setIsCheckingPayment(true);
-    setCheckPaymentNotice('');
-    try {
-      const res = await fetch('/api/orders/check-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId: createdOrder.id, code: createdOrder.code }),
-      });
-      const data = await res.json();
-      if (data.success && data.isPaid && data.order) {
-        setCreatedOrder(data.order);
-        try {
-          const custOrders = JSON.parse(localStorage.getItem('omachi_customer_orders') || '[]');
-          localStorage.setItem(
-            'omachi_customer_orders',
-            JSON.stringify([data.order, ...custOrders.filter((o: any) => o.id !== data.order.id)])
-          );
-          const adminOrders = JSON.parse(localStorage.getItem('omachi_admin_orders_v2') || '[]');
-          localStorage.setItem(
-            'omachi_admin_orders_v2',
-            JSON.stringify([data.order, ...adminOrders.filter((o: any) => o.id !== data.order.id)])
-          );
-        } catch (e) {}
-        confetti({
-          particleCount: 120,
-          spread: 80,
-          origin: { y: 0.5 },
-        });
-      } else {
-        setCheckPaymentNotice(data.message || 'Hệ thống đã gửi thông báo đến shop! Shop sẽ duyệt đơn cho bạn ngay nhé 💕');
-        setTimeout(() => setCheckPaymentNotice(''), 7000);
-      }
-    } catch (e) {
-      setCheckPaymentNotice('Đã gửi thông báo xác nhận đến shop! Shop sẽ duyệt đơn cho bạn ngay nhé 💕');
-      setTimeout(() => setCheckPaymentNotice(''), 7000);
-    } finally {
-      setIsCheckingPayment(false);
-    }
-  };
+    const isPrepaidOrder = createdOrder.paymentMethod === 'BANK';
+    const isAwaitingPayment = isPrepaidOrder && createdOrder.paymentStatus !== 'PAID';
 
-  // Polling tự động kiểm tra trạng thái thanh toán VietQR từ SePay
+    if (!isAwaitingPayment) {
+      const shoot = (particleRatio: number, opts: confetti.Options) => {
+        try {
+          confetti({
+            ...opts,
+            origin: { y: 0.6 },
+            zIndex: 99999,
+            particleCount: Math.floor(100 * particleRatio),
+          });
+        } catch (e) {}
+      };
+
+      shoot(0.25, { spread: 30, startVelocity: 60 });
+      shoot(0.2, { spread: 60 });
+      shoot(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+      shoot(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+      shoot(0.1, { spread: 120, startVelocity: 45 });
+
+      const timer = setTimeout(() => {
+        try {
+          confetti({
+            particleCount: 90,
+            angle: 60,
+            spread: 60,
+            origin: { x: 0.1, y: 0.65 },
+            zIndex: 99999,
+          });
+          confetti({
+            particleCount: 90,
+            angle: 120,
+            spread: 60,
+            origin: { x: 0.9, y: 0.65 },
+            zIndex: 99999,
+          });
+        } catch (e) {}
+      }, 350);
+
+      const timer2 = setTimeout(() => {
+        try {
+          confetti({
+            particleCount: 120,
+            spread: 110,
+            origin: { y: 0.5 },
+            zIndex: 99999,
+          });
+        } catch (e) {}
+      }, 750);
+
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(timer2);
+      };
+    }
+  }, [createdOrder?.id, createdOrder?.paymentStatus, createdOrder?.paymentMethod]);
+
+  // Polling tự động kiểm tra trạng thái thanh toán VietQR từ SePay (Tần suất 1.8s cực nhạy)
   useEffect(() => {
     if (!createdOrder) return;
     if (createdOrder.paymentMethod !== 'BANK') return;
@@ -936,13 +953,6 @@ export default function CheckoutPage() {
                   JSON.stringify([freshOrder, ...adminOrders.filter((o: any) => o.id !== freshOrder.id)])
                 );
               } catch (e) {}
-
-              // Chỉ bung pháo hoa khi thanh toán thành công
-              confetti({
-                particleCount: 120,
-                spread: 80,
-                origin: { y: 0.5 },
-              });
             }
           }
         }
@@ -951,8 +961,8 @@ export default function CheckoutPage() {
       }
     };
 
-    const firstTimer = setTimeout(checkOrderPayment, 1200);
-    const intervalId = setInterval(checkOrderPayment, 2500);
+    const firstTimer = setTimeout(checkOrderPayment, 800);
+    const intervalId = setInterval(checkOrderPayment, 1800);
 
     return () => {
       isMounted = false;
@@ -1108,16 +1118,6 @@ export default function CheckoutPage() {
           const adminOrders = JSON.parse(localStorage.getItem('omachi_admin_orders_v2') || '[]');
           localStorage.setItem('omachi_admin_orders_v2', JSON.stringify([orderWithCustomer, ...adminOrders.filter((o: any) => o.id !== data.data.id)]));
         } catch (e) {}
-
-        // CHỈ BUNG PHÁO HOA KHI LÀ ĐƠN COD (ĐẶT XONG LÀ THÀNH CÔNG NGAY)
-        // NẾU LÀ ĐƠN CHUYỂN KHOẢN VIETQR: CHỈ BUNG HOA KHI TIỀN VÀO TÀI KHOẢN THÀNH CÔNG
-        if (paymentMethod === 'COD') {
-          confetti({
-            particleCount: 80,
-            spread: 70,
-            origin: { y: 0.6 },
-          });
-        }
 
         if (loggedInCustomer && updateProfile) {
           updateProfile({
@@ -1284,31 +1284,12 @@ export default function CheckoutPage() {
                       </div>
                     </div>
 
-                    {/* Nút kiểm tra thanh toán ngay */}
+                    {/* Trạng thái tự động nhận diện giao dịch: 100% tự động, tuyệt đối không để nút thủ công */}
                     <div className="w-full pt-1">
-                      <button
-                        type="button"
-                        disabled={isCheckingPayment}
-                        onClick={handleCheckPaymentNow}
-                        className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer disabled:opacity-50"
-                      >
-                        {isCheckingPayment ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>Đang kiểm tra giao dịch SePay...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Check className="w-4 h-4" />
-                            <span>Tôi đã chuyển khoản xong • Kiểm tra ngay</span>
-                          </>
-                        )}
-                      </button>
-                      {checkPaymentNotice && (
-                        <p className="mt-2 text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-2.5 font-medium text-center">
-                          {checkPaymentNotice}
-                        </p>
-                      )}
+                      <div className="w-full py-2.5 px-3.5 bg-blue-50/90 border border-blue-200/80 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-blue-800 shadow-2xs">
+                        <Loader2 className="w-4 h-4 animate-spin text-blue-600 shrink-0" />
+                        <span>Hệ thống đang tự động nhận diện thanh toán... Bạn không cần bấm gì cả 💕</span>
+                      </div>
                     </div>
                   </div>
                 );

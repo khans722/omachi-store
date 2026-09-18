@@ -121,6 +121,7 @@ export default function AdminPage() {
   const [feedbacks, setFeedbacks] = useState<CustomerFeedback[]>([]);
   const [settings, setSettings] = useState<ShopSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
+  const [isFetchingOrders, setIsFetchingOrders] = useState(false);
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('ALL');
   const [isStatusComboboxOpen, setIsStatusComboboxOpen] = useState(false);
   const statusComboboxRef = useRef<HTMLDivElement>(null);
@@ -826,7 +827,7 @@ export default function AdminPage() {
 
   const fetchOrders = async () => {
     try {
-      setLoading(true);
+      setIsFetchingOrders(true);
       let localOrders: Order[] = [];
       try {
         const cached = localStorage.getItem('omachi_admin_orders_v2');
@@ -846,7 +847,10 @@ export default function AdminPage() {
         }
       } catch (e) {}
 
-      const res = await fetch('/api/orders');
+      const res = await fetch('/api/orders', {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         const serverOrders: Order[] = data.data;
@@ -874,6 +878,7 @@ export default function AdminPage() {
         if (cached) setOrders(JSON.parse(cached));
       } catch (e) {}
     } finally {
+      setIsFetchingOrders(false);
       setLoading(false);
     }
   };
@@ -1868,10 +1873,11 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={() => fetchOrders()}
-                className="p-2 rounded-xl border border-gray-200 text-gray-600 bg-gray-50 hover:bg-gray-100 transition shrink-0 cursor-pointer"
+                disabled={isFetchingOrders}
+                className="p-2 rounded-xl border border-gray-200 text-gray-600 bg-gray-50 hover:bg-gray-100 transition shrink-0 cursor-pointer disabled:opacity-50"
                 title="Tải lại danh sách đơn hàng"
               >
-                <RefreshCw className="w-3.5 h-3.5" />
+                <RefreshCw className={`w-3.5 h-3.5 ${isFetchingOrders ? 'animate-spin text-rose-500' : ''}`} />
               </button>
 
               <button
@@ -2025,144 +2031,91 @@ export default function AdminPage() {
                     {(() => {
                       const groupedOrderItems = groupOrderItems(order.items);
                       return (
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 text-xs">
-                          {/* CỘT TRÁI (lg:col-span-5): Thông tin người nhận, Phí ship SPX, Bảng tính tiền & Nút Zalo */}
-                          <div className="lg:col-span-5 space-y-3">
-                            {/* 1. Thông tin khách hàng */}
-                            <div className="space-y-2 bg-pink-50/40 p-3.5 rounded-2xl border border-pink-100">
-                              <div className="flex items-center justify-between">
-                                <p className="font-extrabold text-gray-800 text-xs sm:text-sm flex items-center gap-1.5">
-                                  <span>👤</span> {order.customer.fullName}
-                                </p>
+                        <div className="space-y-3.5 text-xs">
+                          {/* 1. THÔNG TIN KHÁCH HÀNG & GIAO HÀNG */}
+                          <div className="space-y-2 bg-pink-50/40 p-3.5 sm:p-4 rounded-2xl border border-pink-100">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-base">👤</span>
+                                <strong className="text-gray-900 text-xs sm:text-sm font-black">{order.customer.fullName}</strong>
+                              </div>
+                              <div className="flex items-center gap-2">
                                 <a
                                   href={zaloChatUrl}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="text-rose-600 font-bold hover:underline inline-flex items-center gap-1 bg-white px-2 py-0.5 rounded-lg border border-pink-200"
+                                  className="text-rose-600 font-bold hover:underline inline-flex items-center gap-1 bg-white px-2.5 py-1 rounded-xl border border-pink-200 text-xs shadow-2xs"
                                 >
-                                  <span>{order.customer.phone}</span>
+                                  <span>📞 {order.customer.phone}</span>
                                   <ExternalLink className="w-3 h-3" />
                                 </a>
+                                <a
+                                  href={`https://zalo.me/${order.customer.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                                    calculatedShippingFee > 0
+                                      ? `Chào bạn ${order.customer.fullName}, Shop Omachi đã gói xong đơn #${order.code} của bạn. Sau khi cân thực tế, cước ship SPX là ${formatVND(calculatedShippingFee)}. Tổng tiền thanh toán COD khi nhận là ${formatVND(calculatedFinalTotal)}. Shop gửi hàng cho bạn nhé! 💕`
+                                      : `Chào bạn ${order.customer.fullName}, Shop Omachi đã nhận đơn #${order.code} của bạn. Shop đang soạn hàng và cân xong sẽ báo phí ship cho bạn ngay nhé! 💕`
+                                  )}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="py-1 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-2xs transition"
+                                >
+                                  <MessageCircle className="w-3.5 h-3.5" />
+                                  <span>Nhắn Zalo</span>
+                                </a>
                               </div>
-                              <p className="text-gray-700 leading-relaxed">
-                                <strong>📍 Địa chỉ:</strong> {order.customer.address}
+                            </div>
+                            <p className="text-gray-700 leading-relaxed text-xs">
+                              <strong>📍 Địa chỉ nhận hàng:</strong> {order.customer.address}
+                            </p>
+                            {order.customer.note && (
+                              <p className="text-rose-700 font-medium bg-white p-2.5 rounded-xl border border-rose-200 text-xs">
+                                📝 <strong>Ghi chú của khách:</strong> {order.customer.note}
                               </p>
-                              {order.customer.note && (
-                                <p className="text-rose-700 font-medium bg-white p-2.5 rounded-xl border border-rose-200">
-                                  📝 <strong>Ghi chú:</strong> {order.customer.note}
-                                </p>
-                              )}
-                            </div>
-
-                            {/* 2. Bảng Chi Tiết Tính Tiền (Gộp tiền hàng và cước ship gần nhau, tinh gọn) */}
-                            <div className="p-3.5 rounded-2xl bg-amber-50/50 border border-amber-200/80 space-y-2 text-xs">
-                              <h4 className="font-extrabold text-gray-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                                <span>💰</span> Chi Tiết Tiền Hàng &amp; Cước Ship
-                              </h4>
-
-                              <div className="space-y-1.5 pt-0.5">
-                                {/* Dòng 1: Tiền hàng */}
-                                <div className="flex justify-between text-gray-700 font-medium">
-                                  <span>Tiền hàng ({totalItemCount} món):</span>
-                                  <div className="text-right">
-                                    <strong className="text-gray-800">{formatVND(calculatedItemsTotal)}</strong>
-                                    {calculatedDiscount > 0 && (
-                                      <span className="ml-1 text-[10px] text-emerald-700 font-bold">
-                                        (-{formatVND(calculatedDiscount)})
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* Dòng 2: Cước vận chuyển liền kề */}
-                                <div className="flex justify-between text-gray-700 font-medium">
-                                  <span className="flex items-center gap-1">
-                                    <Truck className="w-3.5 h-3.5 text-orange-600 shrink-0" />
-                                    <span>Cước ship ({order.carrierName || 'SPX Express'}):</span>
-                                  </span>
-                                  <strong className={calculatedShippingFee === 0 ? 'text-emerald-700 font-bold' : 'text-gray-800 font-black'}>
-                                    {calculatedShippingFee === 0 ? '0đ (Miễn phí / Freeship)' : `+${formatVND(calculatedShippingFee)}`}
-                                  </strong>
-                                </div>
-                              </div>
-
-                              {/* Dòng 3: Tổng thanh toán */}
-                              <div className="flex justify-between items-baseline pt-2 border-t border-amber-200/80">
-                                <div>
-                                  <strong className="text-gray-800 text-xs font-black block">
-                                    {order.paymentStatus === 'PAID' ? 'TỔNG ĐÃ THANH TOÁN:' : 'TỔNG CẦN THANH TOÁN:'}
-                                  </strong>
-                                  <span className="text-[10px] text-gray-500 font-medium">
-                                    {order.paymentStatus === 'PAID'
-                                      ? 'Đã nhận đủ tiền qua ngân hàng'
-                                      : order.paymentMethod === 'BANK'
-                                      ? 'Chờ chuyển khoản VietQR'
-                                      : 'Thu tiền mặt khi giao hàng (COD)'}
-                                  </span>
-                                </div>
-                                <span className="text-base font-black text-rose-600">
-                                  {formatVND(calculatedFinalTotal)}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* 3. Nút Nhắn Zalo Khách Hàng */}
-                            <a
-                              href={`https://zalo.me/${order.customer.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                                calculatedShippingFee > 0
-                                  ? `Chào bạn ${order.customer.fullName}, Shop Omachi đã gói xong đơn #${order.code} của bạn. Sau khi cân thực tế, cước ship SPX là ${formatVND(calculatedShippingFee)}. Tổng tiền thanh toán COD khi nhận là ${formatVND(calculatedFinalTotal)}. Shop gửi hàng cho bạn nhé! 💕`
-                                  : `Chào bạn ${order.customer.fullName}, Shop Omachi đã nhận đơn #${order.code} của bạn. Shop đang soạn hàng và cân xong sẽ báo phí ship cho bạn ngay nhé! 💕`
-                              )}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition"
-                            >
-                              <MessageCircle className="w-4 h-4" />
-                              <span>Nhắn Zalo</span>
-                            </a>
+                            )}
                           </div>
 
-                          {/* CỘT PHẢI (lg:col-span-7): Danh sách hàng phân theo từng loại sản phẩm cho chủ shop dễ làm đơn */}
-                          <div className="lg:col-span-7 space-y-2.5">
-                            <div className="flex items-center justify-between pb-1 border-b border-pink-50">
+                          {/* 2. KHỐI CHI TIẾT ĐƠN HÀNG: Danh Sách Hàng Cần Đóng ➔ Tiền Hàng ➔ Cước Ship ➔ Tổng Thanh Toán */}
+                          <div className="rounded-2xl border border-amber-200/90 overflow-hidden bg-white shadow-2xs">
+                            {/* Header Danh Sách Hàng Cần Soạn */}
+                            <div className="flex items-center justify-between p-3 sm:p-3.5 bg-amber-50/70 border-b border-amber-200/80">
                               <div>
-                                <p className="font-extrabold text-gray-800 flex items-center gap-1.5">
+                                <p className="font-extrabold text-gray-800 text-xs sm:text-sm flex items-center gap-1.5">
                                   <span>🛍️</span>
                                   <span>Danh Sách Sản Phẩm Cần Soạn &amp; Đóng Gói ({totalItemCount} món):</span>
                                 </p>
-                                <span className="text-[10px] text-gray-400">Phân theo từng sản phẩm &amp; tích chọn khi đã chuẩn bị xong</span>
+                                <span className="text-[10px] text-gray-500">Tích chọn từng món khi bạn đã lấy hàng và đóng gói</span>
                               </div>
-                              <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-lg border border-purple-200">
-                                {groupedOrderItems.length} loại
+                              <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200 shadow-2xs">
+                                {groupedOrderItems.length} loại sản phẩm
                               </span>
                             </div>
 
-                            {/* Product Groups */}
-                            <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
+                            {/* Danh Sách Hàng Cần Đóng */}
+                            <div className="p-3 sm:p-4 space-y-3 max-h-[460px] overflow-y-auto">
                               {groupedOrderItems.map((group) => (
-                                <div key={group.productId} className="p-3 bg-gray-50/90 rounded-2xl border border-gray-200 space-y-2">
+                                <div key={group.productId} className="p-3 bg-stone-50/70 rounded-2xl border border-stone-200 shadow-2xs space-y-2">
                                   {/* Product Header */}
-                                  <div className="flex items-center justify-between gap-2 pb-2 border-b border-gray-200/70">
+                                  <div className="flex items-center justify-between gap-2 pb-2 border-b border-stone-200/70">
                                     <div className="flex items-center gap-2.5 min-w-0">
                                       <img
                                         src={group.image}
                                         alt={group.productName}
-                                        className="w-9 h-9 object-cover rounded-xl border border-gray-200 shrink-0"
+                                        className="w-10 h-10 object-cover rounded-xl border border-gray-200 shrink-0"
                                       />
                                       <div className="min-w-0">
                                         <p className="font-black text-gray-800 text-xs truncate">{group.productName}</p>
                                         <p className="text-[10px] text-gray-500">
-                                          Đơn giá: {formatVND(group.basePrice)}/cái
+                                          Đơn giá lẻ: {formatVND(group.basePrice)}/con
                                         </p>
                                       </div>
                                     </div>
-                                    <span className="text-[11px] font-black text-rose-600 bg-white px-2 py-0.5 rounded-lg border border-pink-200 shrink-0 shadow-2xs">
-                                      Tổng: {group.totalQty} gói
+                                    <span className="text-[11px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-lg border border-pink-200 shrink-0">
+                                      Tổng: {group.totalQty} con
                                     </span>
                                   </div>
 
-                                   {/* Variations Checklist */}
-                                  <div className="space-y-1.5 pl-1 sm:pl-2">
+                                  {/* Variations Checklist */}
+                                  <div className="space-y-1.5">
                                     {group.items.map((it: any, subIdx: number) => {
                                       const itemKey = `${order.id}-${it.productId || it.product?.id}-${it.selectedVariant?.id || it.variantId || subIdx}`;
                                       const isChecked = checkedPackingItems[itemKey] || false;
@@ -2173,7 +2126,7 @@ export default function AdminPage() {
                                       const itemDiscount = Math.max(0, origLine - actualLine);
                                       const itemDiscountPercent = it.discountPercent || (origLine > 0 ? Math.round((itemDiscount / origLine) * 100) : 0);
 
-                                      // Tìm thông tin biến thể & màu sắc từ item hoặc product catalog
+                                      // Tìm thông tin biến thể & màu sắc từ item hoặc catalog
                                       const pId = it.productId || it.product?.id;
                                       const matchedProd = products.find((p) => p.id === pId);
                                       const vId = it.variantId || it.selectedVariant?.id;
@@ -2190,7 +2143,7 @@ export default function AdminPage() {
                                           className={`p-2.5 rounded-xl border transition cursor-pointer flex items-center justify-between gap-2 text-xs select-none ${
                                             isChecked
                                               ? 'bg-emerald-50/70 border-emerald-300'
-                                              : 'bg-white hover:bg-pink-50/40 border-gray-200'
+                                              : 'bg-white hover:bg-pink-50/40 border-stone-200'
                                           }`}
                                         >
                                           <div className="flex items-center gap-2.5 min-w-0">
@@ -2247,6 +2200,52 @@ export default function AdminPage() {
                                   </div>
                                 </div>
                               ))}
+                            </div>
+
+                            {/* BẢNG QUYẾT TOÁN TIỀN HÀNG, CƯỚC SHIP & TỔNG THANH TOÁN (Liền kề trực quan ngay dưới danh sách hàng) */}
+                            <div className="p-3.5 sm:p-4 bg-amber-50/60 border-t border-amber-200 space-y-2">
+                              {/* 1. Tiền hàng */}
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-gray-700 font-medium">
+                                <span className="text-xs">Tiền hàng ({totalItemCount} món):</span>
+                                <div className="text-right">
+                                  <strong className="text-gray-800 text-xs sm:text-sm">{formatVND(calculatedItemsTotal)}</strong>
+                                  {calculatedDiscount > 0 && (
+                                    <span className="ml-1.5 text-[10px] text-emerald-700 font-bold">
+                                      (Đã giảm combo -{formatVND(calculatedDiscount)})
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* 2. Cước vận chuyển */}
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-gray-700 font-medium">
+                                <span className="text-xs flex items-center gap-1">
+                                  <Truck className="w-3.5 h-3.5 text-orange-600 shrink-0" />
+                                  <span>Cước vận chuyển ({order.carrierName || 'SPX Express'}):</span>
+                                </span>
+                                <strong className={calculatedShippingFee === 0 ? 'text-emerald-700 font-bold text-xs sm:text-sm' : 'text-gray-800 font-black text-xs sm:text-sm'}>
+                                  {calculatedShippingFee === 0 ? '0đ (Miễn phí / Freeship)' : `+${formatVND(calculatedShippingFee)}`}
+                                </strong>
+                              </div>
+
+                              {/* 3. TỔNG THANH TOÁN */}
+                              <div className="flex items-center justify-between pt-2.5 border-t border-amber-200">
+                                <div>
+                                  <strong className="text-gray-900 text-xs sm:text-sm font-black block">
+                                    {order.paymentStatus === 'PAID' ? 'TỔNG ĐÃ THANH TOÁN:' : 'TỔNG CẦN THANH TOÁN:'}
+                                  </strong>
+                                  <span className="text-[10px] text-gray-500 font-medium">
+                                    {order.paymentStatus === 'PAID'
+                                      ? 'Đã nhận đủ tiền qua ngân hàng'
+                                      : order.paymentMethod === 'BANK'
+                                      ? 'Chờ chuyển khoản VietQR'
+                                      : 'Thu tiền mặt khi giao hàng (COD)'}
+                                  </span>
+                                </div>
+                                <span className="text-base sm:text-lg font-black text-rose-600">
+                                  {formatVND(calculatedFinalTotal)}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>

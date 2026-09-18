@@ -2958,25 +2958,7 @@ export const db = {
           dbData.customers.unshift(targetCust);
         }
 
-        try {
-          await supabase.from('customers').upsert({
-            id: targetCust.id,
-            full_name: targetCust.fullName,
-            phone: targetCust.phone,
-            email: targetCust.email || '',
-            password: targetCust.password || '',
-            has_account: targetCust.hasAccount ?? Boolean(linkedCustomerId),
-            address: targetCust.address || '',
-            district: targetCust.district || '',
-            city: targetCust.city || '',
-            saved_addresses: targetCust.savedAddresses || [],
-            customer_type: targetCust.customerType || 'NEW',
-            total_orders_count: targetCust.totalOrdersCount || 1,
-            total_spent: targetCust.totalSpent || finalTotal,
-            last_order_at: targetCust.lastOrderAt,
-            updated_at: targetCust.updatedAt,
-          });
-        } catch (e) {}
+        // Chuẩn bị lưu khách hàng
       } else if (cleanPhone || linkedCustomerId) {
         const newCustId = linkedCustomerId || `cust-${Date.now()}`;
         const newCustRecord: Customer = {
@@ -3011,30 +2993,9 @@ export const db = {
 
         if (!dbData.customers) dbData.customers = [];
         dbData.customers.unshift(newCustRecord);
-
-        try {
-          await supabase.from('customers').upsert({
-            id: newCustRecord.id,
-            full_name: newCustRecord.fullName,
-            phone: newCustRecord.phone,
-            email: '',
-            password: '',
-            has_account: Boolean(linkedCustomerId),
-            address: newCustRecord.address || '',
-            district: newCustRecord.district || '',
-            city: newCustRecord.city || '',
-            saved_addresses: newCustRecord.savedAddresses || [],
-            customer_type: 'NEW',
-            total_orders_count: 1,
-            total_spent: finalTotal,
-            last_order_at: newCustRecord.lastOrderAt,
-            created_at: newCustRecord.createdAt,
-            updated_at: newCustRecord.updatedAt,
-          });
-        } catch (e) {}
       }
 
-      // Khấu trừ tồn kho sản phẩm khi khách đặt đơn
+      // Khấu trừ tồn kho sản phẩm cục bộ khi khách đặt đơn
       if (dbData.products && Array.isArray(dbData.products)) {
         for (const item of mappedItems) {
           const prodId = item.productId;
@@ -3058,20 +3019,47 @@ export const db = {
       dbData.orders.unshift(newOrder);
       writeDb(dbData);
 
-      // Đồng bộ trừ tồn kho lên Supabase ngầm
-      try {
-        for (const item of mappedItems) {
-          const prodId = item.productId;
-          const prod = dbData.products?.find((p: any) => p.id === prodId);
-          if (prod) {
-            await supabase.from('products').update({
-              stock: prod.stock,
-              sold_count: prod.soldCount,
-              variants: prod.variants,
-            }).eq('id', prodId);
+      // Cập nhật thông tin khách hàng và tồn kho sản phẩm lên Supabase song song trong background (không chặn khách)
+      (async () => {
+        try {
+          if (targetCust) {
+            await supabase.from('customers').upsert({
+              id: targetCust.id,
+              full_name: targetCust.fullName,
+              phone: targetCust.phone,
+              email: targetCust.email || '',
+              password: targetCust.password || '',
+              has_account: targetCust.hasAccount ?? Boolean(linkedCustomerId),
+              address: targetCust.address || '',
+              district: targetCust.district || '',
+              city: targetCust.city || '',
+              saved_addresses: targetCust.savedAddresses || [],
+              customer_type: targetCust.customerType || 'NEW',
+              total_orders_count: targetCust.totalOrdersCount || 1,
+              total_spent: targetCust.totalSpent || finalTotal,
+              last_order_at: targetCust.lastOrderAt,
+              updated_at: targetCust.updatedAt,
+            });
           }
+          
+          // Cập nhật tồn kho sản phẩm song song
+          await Promise.allSettled(
+            mappedItems.map(async (item) => {
+              const prodId = item.productId;
+              const prod = dbData.products?.find((p: any) => p.id === prodId);
+              if (prod) {
+                await supabase.from('products').update({
+                  stock: prod.stock,
+                  sold_count: prod.soldCount,
+                  variants: prod.variants,
+                }).eq('id', prodId);
+              }
+            })
+          );
+        } catch (e) {
+          console.warn('[Background customer/stock sync error]:', e);
         }
-      } catch (e) {}
+      })();
 
       try {
         const itemsSummary = mappedItems.map(i => `${i.productName || 'Sản phẩm'} (x${i.quantity || 1})`).join(', ');
