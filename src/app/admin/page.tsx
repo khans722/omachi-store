@@ -82,8 +82,21 @@ const DEFAULT_SETTINGS: ShopSettings = {
   enableTelegramNotify: true,
   websiteUrl: '',
   autoReplyTemplate: 'Chào bạn, Shop Omachi đã nhận được đơn hàng #{orderCode}. Shop sẽ kiểm tra mẫu và báo lại bạn ngay nhé!',
-  heroImage: '/images/charm_feed_1.jpg',
+  heroImage: '/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg',
+  heroImages: [
+    '/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg',
+    '/uploads/charm_1789442857187_1789435799272_1528911961217344.jpg',
+    '/uploads/charm_1789442857200_1789435799294_1528911961217344.jpg',
+    '/uploads/charm_1789442857210_1789435799313_1528911961217344.jpg',
+    '/uploads/charm_1789442857219_1789435799334_1528911961217344.jpg'
+  ],
   heroBadge: 'Ảnh thật tại tiệm 100% ✨',
+  momoPhone: '0375408256',
+  momoName: 'Duong QUOC KHANH',
+  momoQrImage: '',
+  warehouseProvince: 'Hà Nội',
+  customWholesaleTiers: [],
+  sepayApiKey: '',
   purchasePolicies: [
     {
       icon: '📦',
@@ -3993,6 +4006,39 @@ export default function AdminPage() {
                         placeholder="0988.888.888"
                       />
                     </div>
+
+                    <div>
+                      <label className="font-bold text-gray-700 block mb-1">Địa Chỉ Cửa Hàng / Tiệm:</label>
+                      <input
+                        type="text"
+                        value={settings.shopAddress || ''}
+                        onChange={(e) => setSettings({ ...settings, shopAddress: e.target.value })}
+                        className="w-full px-3.5 py-2 bg-white border border-blue-200 rounded-xl font-medium"
+                        placeholder="VD: Hà Nội, Việt Nam"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-gray-700 block mb-1">Tỉnh / Thành Kho Xuất Hàng (Tính cước SPX):</label>
+                      <input
+                        type="text"
+                        value={settings.warehouseProvince || ''}
+                        onChange={(e) => setSettings({ ...settings, warehouseProvince: e.target.value })}
+                        className="w-full px-3.5 py-2 bg-white border border-blue-200 rounded-xl font-bold text-indigo-700"
+                        placeholder="VD: Hà Nội"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="font-bold text-gray-700 block mb-1">Thời Gian Làm Việc / Mở Cửa:</label>
+                      <input
+                        type="text"
+                        value={settings.workingHours || ''}
+                        onChange={(e) => setSettings({ ...settings, workingHours: e.target.value })}
+                        className="w-full px-3.5 py-2 bg-white border border-blue-200 rounded-xl font-medium"
+                        placeholder="VD: 08:30 - 22:00 Hàng ngày"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -4270,6 +4316,38 @@ export default function AdminPage() {
                           value={settings.bankOwner || ''}
                           onChange={(e) => setSettings({ ...settings, bankOwner: e.target.value })}
                           className="w-full px-3 py-2 bg-white border border-sky-200 rounded-xl font-bold text-gray-800 focus:ring-2 focus:ring-sky-400 focus:outline-none uppercase"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cấu hình Ví Điện Tử MoMo */}
+                  <div className="p-3.5 bg-white rounded-xl border border-pink-200 space-y-2.5">
+                    <div className="flex items-center gap-1.5 font-bold text-pink-700 text-xs">
+                      <span className="w-4 h-4 rounded-full bg-pink-600 text-white flex items-center justify-center text-[10px] font-black">M</span>
+                      <span>Thông Tin Ví MoMo Nhận Tiền</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <label className="font-bold text-gray-700 block mb-1">Số Điện Thoại Ví MoMo:</label>
+                        <input
+                          type="text"
+                          placeholder="VD: 0375408256"
+                          value={settings.momoPhone || ''}
+                          onChange={(e) => setSettings({ ...settings, momoPhone: e.target.value })}
+                          className="w-full px-3 py-2 bg-white border border-pink-200 rounded-xl font-bold text-pink-800 focus:ring-2 focus:ring-pink-400 focus:outline-none font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-gray-700 block mb-1">Tên Chủ Ví MoMo:</label>
+                        <input
+                          type="text"
+                          placeholder="VD: DUONG QUOC KHANH"
+                          value={settings.momoName || ''}
+                          onChange={(e) => setSettings({ ...settings, momoName: e.target.value })}
+                          className="w-full px-3 py-2 bg-white border border-pink-200 rounded-xl font-bold text-gray-800 focus:ring-2 focus:ring-pink-400 focus:outline-none uppercase"
                         />
                       </div>
                     </div>

@@ -62,7 +62,7 @@ export async function PATCH(
       }, { status: 400 });
     }
 
-    // Send notification update non-blocking in background
+    // Gửi thông báo cập nhật đơn hàng trước khi return để tránh bị Vercel đóng kết nối
     let trigger: 'NEW_ORDER' | 'PAYMENT_SUCCESS' | 'CONFIRMED' | 'SHIPPING' | 'CANCELLED' = 'CONFIRMED';
     if (body.orderStatus === 'CANCELLED' || updated.orderStatus === 'CANCELLED') {
       trigger = 'CANCELLED';
@@ -70,11 +70,15 @@ export async function PATCH(
       trigger = 'PAYMENT_SUCCESS';
     }
 
-    db.settings.get().then((settings) => {
-      sendOrderNotification(updated, settings, trigger).catch((err) => {
-        console.error('[ASYNC ORDER UPDATE NOTIFICATION ERROR]:', err);
-      });
-    }).catch(() => {});
+    try {
+      const settings = await db.settings.get();
+      await Promise.race([
+        sendOrderNotification(updated, settings, trigger),
+        new Promise((resolve) => setTimeout(resolve, 4000)),
+      ]);
+    } catch (err) {
+      console.error('[ORDER UPDATE NOTIFICATION ERROR]:', err);
+    }
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error: any) {

@@ -2727,7 +2727,7 @@ export const db = {
       if (localOrders.length > 0) {
         freshList = await Promise.race([
           fetchSupabase(),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 350))
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500))
         ]);
       } else {
         freshList = await fetchSupabase();
@@ -2735,6 +2735,8 @@ export const db = {
 
       if (freshList && freshList.length > 0) {
         serverOrdersCache = { data: freshList, expiresAt: Date.now() + 4000 };
+        const dbData = readDb();
+        dbData.orders = freshList;
         return freshList;
       }
 
@@ -3465,6 +3467,7 @@ export const db = {
 
       try {
         const o = dbData.orders[index];
+        const itemsSummary = (o.items || []).map((i: any) => `${i.productName || 'Sản phẩm'} (x${i.quantity || 1})`).join(', ');
         const upsertPromise = supabase.from('orders').upsert({
           id: o.id,
           code: o.code,
@@ -3473,18 +3476,28 @@ export const db = {
           customer_phone: o.customer?.phone || '',
           customer_address: o.customer?.address || '',
           customer_city: o.customer?.city || '',
-          shipping_fee: o.shippingFee,
-          final_total_amount: o.finalTotalAmount,
-          total_amount: o.totalAmount,
+          items_summary: itemsSummary,
+          subtotal: o.subtotal || 0,
+          subtotal_amount: o.subtotalAmount || 0,
+          combo_discount_amount: o.comboDiscountAmount || 0,
+          discount: o.discount || 0,
+          items_total_amount: o.itemsTotalAmount || 0,
+          shipping_fee: o.shippingFee || 0,
+          total_weight: o.totalWeight || 0,
+          final_total_amount: o.finalTotalAmount || o.totalAmount || 0,
+          total_amount: o.totalAmount || 0,
+          payment_method: o.paymentMethod || 'COD',
           payment_status: o.paymentStatus,
           order_status: o.orderStatus,
           carrier_name: o.carrierName || '',
           tracking_number: o.trackingNumber || '',
+          items: o.items || [],
           customer: { ...(o.customer || {}), cancelReason: o.cancelReason, cancelledBy: o.cancelledBy },
-          logs: o.logs,
+          logs: o.logs || [],
           paid_at: o.paidAt || null,
           shipped_at: o.shippedAt || null,
           completed_at: o.completedAt || null,
+          created_at: o.createdAt || new Date().toISOString(),
           updated_at: o.updatedAt,
         });
         Promise.resolve(upsertPromise).then(({error}: any) => { if(error) console.warn('[Supabase order upsert failed]', error.message); });

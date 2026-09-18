@@ -83,9 +83,37 @@ export async function POST(req: NextRequest) {
         bank_id: s.bankId || '',
         bank_account: s.bankAccount || '',
         bank_owner: s.bankOwner || '',
+        momo_phone: s.momoPhone || '',
+        momo_name: s.momoName || '',
         raw_data: s,
         updated_at: new Date().toISOString(),
       });
+    }
+
+    // 1.5 Đồng bộ khách hàng
+    let custsCount = 0;
+    if (rawData.customers?.length) {
+      const custRows = rawData.customers.map((c) => ({
+        id: c.id,
+        full_name: c.fullName,
+        phone: c.phone,
+        email: c.email || '',
+        password: c.password || '',
+        has_account: Boolean(c.hasAccount),
+        address: c.address || '',
+        district: c.district || '',
+        city: c.city || '',
+        saved_addresses: c.savedAddresses || [],
+        customer_type: c.customerType || 'NEW',
+        total_orders_count: c.totalOrdersCount || 0,
+        total_spent: c.totalSpent || 0,
+        last_order_at: c.lastOrderAt || null,
+        internal_notes: c.internalNotes || null,
+        created_at: c.createdAt || new Date().toISOString(),
+        updated_at: c.updatedAt || new Date().toISOString(),
+      }));
+      const { error } = await supabase.from('customers').upsert(custRows);
+      if (!error) custsCount = custRows.length;
     }
 
     // 2. Đồng bộ danh mục
@@ -216,11 +244,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Đồng bộ thành công: ${catsCount} danh mục, ${prodsCount} sản phẩm, ${feedbacksCount} đánh giá, ${ordersCount} đơn hàng lên Supabase!`,
+      message: `Đồng bộ thành công: ${catsCount} danh mục, ${prodsCount} sản phẩm, ${feedbacksCount} đánh giá, ${custsCount} khách hàng, ${ordersCount} đơn hàng lên Supabase!`,
       synced: {
         categories: catsCount,
         products: prodsCount,
         feedbacks: feedbacksCount,
+        customers: custsCount,
         orders: ordersCount,
       },
     });
