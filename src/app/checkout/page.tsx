@@ -1140,9 +1140,11 @@ export default function CheckoutPage() {
                 <div className="relative p-2 bg-white rounded-lg border border-blue-100 shadow-2xs">
                   {(() => {
                     const rawBank = (settings?.bankId || '').toUpperCase().trim();
-                    const qrBank = rawBank.includes('VIETCOM') ? 'VCB' : rawBank.includes('MB') ? 'MB' : rawBank;
+                    const isVietin = rawBank.includes('VIETIN') || rawBank.includes('CTG') || rawBank.includes('ICB') || (settings?.bankAccount || '').trim() === '106873248315';
+                    const qrBank = rawBank.includes('VIETCOM') ? 'VCB' : rawBank.includes('MB') ? 'MB' : isVietin ? 'ICB' : rawBank;
                     const bankAccount = (settings?.bankAccount || '').trim();
                     const bankOwner = (settings?.bankOwner || '').trim();
+                    const transferContent = isVietin ? `SEVQR DH ${createdOrder.code}` : `DH ${createdOrder.code}`;
 
                     if (!bankAccount || !qrBank) {
                       return (
@@ -1155,7 +1157,7 @@ export default function CheckoutPage() {
 
                     const qrUrl = `https://img.vietqr.io/image/${qrBank}-${bankAccount}-compact2.png?amount=${
                       createdOrder.finalTotalAmount || createdOrder.totalAmount
-                    }&addInfo=${encodeURIComponent(`DH ${createdOrder.code}`)}&accountName=${encodeURIComponent(
+                    }&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(
                       bankOwner
                     )}`;
                     return (

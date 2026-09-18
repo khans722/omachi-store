@@ -46,10 +46,11 @@ export default function PaymentModal({
 
   const amount = Number(order.finalTotalAmount || order.totalAmount || 0);
   const orderCode = order.code || order.id;
-  const transferContent = `DH ${orderCode}`;
 
   const rawBank = (settings?.bankId || '').toUpperCase().trim();
-  const bankId = rawBank.includes('VIETCOM') ? 'VCB' : rawBank.includes('MB') ? 'MB' : rawBank;
+  const isVietin = rawBank.includes('VIETIN') || rawBank.includes('CTG') || rawBank.includes('ICB') || (settings?.bankAccount || '').trim() === '106873248315';
+  const bankId = rawBank.includes('VIETCOM') ? 'VCB' : rawBank.includes('MB') ? 'MB' : isVietin ? 'ICB' : rawBank;
+  const transferContent = isVietin ? `SEVQR DH ${orderCode}` : `DH ${orderCode}`;
   const bankAccount = (settings?.bankAccount || '').trim();
   const bankOwner = (settings?.bankOwner || '').trim();
   const hotline = (settings?.hotline || settings?.zaloPhone || '').trim();
