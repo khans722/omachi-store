@@ -154,11 +154,7 @@ export default function AdminPage() {
     return () => document.removeEventListener('mousedown', handleOutside);
   }, []);
 
-  // Packing checklist state for admin orders
-  const [checkedPackingItems, setCheckedPackingItems] = useState<{ [key: string]: boolean }>({});
-  const toggleCheckPackingItem = (key: string) => {
-    setCheckedPackingItems((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
+
 
   const groupOrderItems = (items: any[]) => {
     const groups: {
@@ -2083,7 +2079,7 @@ export default function AdminPage() {
                                   <span>🛍️</span>
                                   <span>Danh Sách Sản Phẩm Cần Soạn &amp; Đóng Gói ({totalItemCount} món):</span>
                                 </p>
-                                <span className="text-[10px] text-gray-500">Tích chọn từng món khi bạn đã lấy hàng và đóng gói</span>
+                                <span className="text-[10px] text-gray-500">Chi tiết phân loại màu sắc, số lượng &amp; thành tiền từng món</span>
                               </div>
                               <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200 shadow-2xs">
                                 {groupedOrderItems.length} loại sản phẩm
@@ -2114,11 +2110,9 @@ export default function AdminPage() {
                                     </span>
                                   </div>
 
-                                  {/* Variations Checklist */}
+                                  {/* Variations List */}
                                   <div className="space-y-1.5">
                                     {group.items.map((it: any, subIdx: number) => {
-                                      const itemKey = `${order.id}-${it.productId || it.product?.id}-${it.selectedVariant?.id || it.variantId || subIdx}`;
-                                      const isChecked = checkedPackingItems[itemKey] || false;
                                       const origUnit = Number(it.originalUnitPrice || it.product?.basePrice || it.appliedUnitPrice || (it.totalPrice / (it.quantity || 1)) || 0);
                                       const qty = Number(it.quantity || 1);
                                       const origLine = origUnit * qty;
@@ -2139,39 +2133,32 @@ export default function AdminPage() {
                                       return (
                                         <div
                                           key={subIdx}
-                                          onClick={() => toggleCheckPackingItem(itemKey)}
-                                          className={`p-2.5 rounded-xl border transition cursor-pointer flex items-center justify-between gap-2 text-xs select-none ${
-                                            isChecked
-                                              ? 'bg-emerald-50/70 border-emerald-300'
-                                              : 'bg-white hover:bg-pink-50/40 border-stone-200'
-                                          }`}
+                                          className="p-2.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-50/80 transition flex items-center justify-between gap-2 text-xs"
                                         >
                                           <div className="flex items-center gap-2.5 min-w-0">
-                                            <input
-                                              type="checkbox"
-                                              checked={isChecked}
-                                              onChange={() => {}}
-                                              className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-400 cursor-pointer shrink-0"
-                                            />
-                                            {displayColor && (
+                                            {/* Chấm tròn hiển thị màu thực tế */}
+                                            {displayColor ? (
                                               <span
-                                                className="w-3.5 h-3.5 rounded-full border border-gray-300 shrink-0 shadow-2xs"
+                                                className="w-4 h-4 rounded-full border border-gray-300 shrink-0 shadow-2xs"
                                                 style={{ backgroundColor: displayColor }}
                                                 title={`Mã màu: ${displayColor}`}
                                               />
+                                            ) : (
+                                              <span className="w-2 h-2 rounded-full bg-stone-300 shrink-0" />
                                             )}
+
                                             <div className="min-w-0">
                                               <div className="flex items-center gap-1.5 flex-wrap">
                                                 {displayVariantName ? (
-                                                  <span className={`font-black ${isChecked ? 'line-through text-gray-400' : 'text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md border border-purple-200'}`}>
+                                                  <span className="font-black text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md border border-purple-200">
                                                     {displayVariantName}
                                                   </span>
                                                 ) : it.customHandmadeNote ? (
-                                                  <span className={`font-semibold text-rose-700 italic ${isChecked ? 'line-through text-gray-400' : ''}`}>
+                                                  <span className="font-semibold text-rose-700 italic">
                                                     &quot;{it.customHandmadeNote}&quot;
                                                   </span>
                                                 ) : (
-                                                  <span className={`font-medium ${isChecked ? 'line-through text-gray-400' : 'text-gray-500'}`}>
+                                                  <span className="font-medium text-gray-600">
                                                     Mẫu chuẩn
                                                   </span>
                                                 )}
@@ -2190,7 +2177,7 @@ export default function AdminPage() {
                                           </div>
 
                                           <div className="text-right shrink-0">
-                                            <span className={`font-black text-xs ${isChecked ? 'text-gray-400' : 'text-gray-800'}`}>
+                                            <span className="font-black text-xs text-gray-800">
                                               {formatVND(actualLine)}
                                             </span>
                                           </div>
