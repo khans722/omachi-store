@@ -1600,23 +1600,6 @@ export default function AdminPage() {
 
         {/* NHÓM 3: KHÁCH HÀNG & CỬA HÀNG */}
         <div className="flex items-center p-1 bg-stone-100/90 rounded-2xl border border-stone-200/70 shadow-2xs">
-          <button
-            type="button"
-            onClick={() => setActiveTab('feedbacks')}
-            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
-              activeTab === 'feedbacks'
-                ? 'bg-rose-500 text-white shadow-xs'
-                : 'text-stone-600 hover:text-stone-900 hover:bg-white/70'
-            }`}
-          >
-            <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span>Feedback</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-              activeTab === 'feedbacks' ? 'bg-white/20 text-white' : 'bg-stone-200 text-stone-700'
-            }`}>
-              {feedbacks.length}
-            </span>
-          </button>
 
           <button
             type="button"
