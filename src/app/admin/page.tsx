@@ -1232,7 +1232,7 @@ export default function AdminPage() {
         orderStatus: 'CANCELLED',
         cancelReason: finalReason,
         cancelledBy: 'SHOP',
-        restock: restockOnCancel,
+        restock: true, // Luôn luôn hoàn lại số lượng tồn kho khi hủy đơn
       };
       const res = await fetch('/api/orders', {
         method: 'PATCH',
@@ -5357,21 +5357,18 @@ export default function AdminPage() {
                 />
               </div>
 
-              {/* Auto restock checkbox */}
-              <label className="flex items-center gap-2.5 p-3 rounded-2xl bg-emerald-50/70 border border-emerald-200 text-xs cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={restockOnCancel}
-                  onChange={(e) => setRestockOnCancel(e.target.checked)}
-                  className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-400 cursor-pointer"
-                />
+              {/* Auto restock badge (Mặc định 100% hoàn kho khi hủy đơn) */}
+              <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs">
+                <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-black shrink-0">
+                  ✓
+                </div>
                 <div>
                   <strong className="text-emerald-800 block">Tự động hoàn lại số lượng tồn kho (+Kho)</strong>
-                  <span className="text-[10px] text-emerald-600">
-                    Cộng lại số lượng các sản phẩm/phân loại trong đơn hàng này vào kho sản phẩm.
+                  <span className="text-[11px] text-emerald-600">
+                    Toàn bộ số lượng sản phẩm và phân loại trong đơn này sẽ được tự động cộng trả về kho ngay sau khi hủy.
                   </span>
                 </div>
-              </label>
+              </div>
             </div>
 
             {/* Actions */}
