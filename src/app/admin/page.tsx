@@ -39,6 +39,7 @@ import {
   ArrowRight,
   Clock,
   ChevronDown,
+  ChevronUp,
   TrendingUp,
   BarChart3,
   Calendar,
@@ -183,6 +184,8 @@ export default function AdminPage() {
   // Inventory & Product Filters
   const [inventoryFilter, setInventoryFilter] = useState<'ALL' | 'LOW' | 'OUT'>('ALL');
   const [inventorySearch, setInventorySearch] = useState<string>('');
+  const [inventoryCategoryFilter, setInventoryCategoryFilter] = useState<string>('ALL');
+  const [expandedVariants, setExpandedVariants] = useState<{ [productId: string]: boolean }>({});
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>('ALL');
   const [productSearch, setProductSearch] = useState<string>('');
 
@@ -2746,15 +2749,16 @@ export default function AdminPage() {
           </div>
 
           {/* Search & Filter Controls */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 bg-emerald-50/30 p-3 rounded-2xl border border-emerald-100">
-            <div className="relative flex-1 w-full">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5 bg-emerald-50/30 p-3 rounded-2xl border border-emerald-100">
+            {/* Search input */}
+            <div className="relative flex-1 min-w-[200px]">
               <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={inventorySearch}
                 onChange={(e) => setInventorySearch(e.target.value)}
                 placeholder="Tìm nhanh theo tên mẫu, mã SKU hoặc tên màu..."
-                className="w-full pl-9 pr-4 py-2 bg-white border border-emerald-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                className="w-full pl-9 pr-8 py-2 bg-white border border-emerald-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-400"
               />
               {inventorySearch && (
                 <button
@@ -2767,11 +2771,34 @@ export default function AdminPage() {
               )}
             </div>
 
-            <div className="flex items-center gap-1.5 shrink-0">
+            {/* Category filter dropdown */}
+            <div className="relative shrink-0">
+              <select
+                value={inventoryCategoryFilter}
+                onChange={(e) => setInventoryCategoryFilter(e.target.value)}
+                className="w-full md:w-auto appearance-none bg-white border border-emerald-200 text-gray-800 text-xs font-bold py-2 pl-3 pr-8 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer shadow-2xs"
+              >
+                <option value="ALL">✨ Tất cả danh mục ({products.length})</option>
+                {categories.map((c) => {
+                  const count = products.filter((p) => p.categoryId === c.id || p.category === c.slug || p.categoryName === c.name).length;
+                  return (
+                    <option key={c.id} value={c.id}>
+                      {c.icon ? c.icon + ' ' : ''}{c.name} ({count})
+                    </option>
+                  );
+                })}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-gray-400 text-xs">
+                ▼
+              </div>
+            </div>
+
+            {/* Stock status filters */}
+            <div className="flex items-center gap-1.5 shrink-0 overflow-x-auto pb-1 md:pb-0">
               <button
                 type="button"
                 onClick={() => setInventoryFilter('ALL')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
                   inventoryFilter === 'ALL'
                     ? 'bg-emerald-600 text-white shadow-xs'
                     : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
@@ -2782,7 +2809,7 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={() => setInventoryFilter('LOW')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 whitespace-nowrap ${
                   inventoryFilter === 'LOW'
                     ? 'bg-amber-500 text-white shadow-xs'
                     : 'bg-white text-amber-700 border border-amber-200 hover:bg-amber-50'
@@ -2794,7 +2821,7 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={() => setInventoryFilter('OUT')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 whitespace-nowrap ${
                   inventoryFilter === 'OUT'
                     ? 'bg-rose-500 text-white shadow-xs'
                     : 'bg-white text-rose-700 border border-rose-200 hover:bg-rose-50'
@@ -2816,12 +2843,19 @@ export default function AdminPage() {
                   inventoryFilter === 'LOW' ? (stock > 0 && stock <= 10) :
                   inventoryFilter === 'OUT' ? (stock === 0) : true;
 
+                const matchesCategory =
+                  inventoryCategoryFilter === 'ALL' ? true :
+                  (prod.categoryId === inventoryCategoryFilter ||
+                   prod.category === inventoryCategoryFilter ||
+                   categories.find(c => c.id === inventoryCategoryFilter)?.slug === prod.category ||
+                   categories.find(c => c.id === inventoryCategoryFilter)?.name === prod.categoryName);
+
                 const matchesSearch = !inventorySearch ||
                   prod.name.toLowerCase().includes(inventorySearch.toLowerCase()) ||
                   (prod.sku && prod.sku.toLowerCase().includes(inventorySearch.toLowerCase())) ||
                   (prod.variants && prod.variants.some(v => v.name.toLowerCase().includes(inventorySearch.toLowerCase())));
 
-                return matchesFilter && matchesSearch;
+                return matchesFilter && matchesCategory && matchesSearch;
               });
 
               if (displayList.length === 0) {
@@ -2830,10 +2864,10 @@ export default function AdminPage() {
                     <p className="text-gray-500 text-xs">Không có sản phẩm nào khớp với bộ lọc tồn kho hiện tại.</p>
                     <button
                       type="button"
-                      onClick={() => { setInventoryFilter('ALL'); setInventorySearch(''); }}
-                      className="px-3 py-1.5 rounded-xl bg-white border border-gray-300 text-xs font-bold text-gray-700 hover:bg-gray-100"
+                      onClick={() => { setInventoryFilter('ALL'); setInventoryCategoryFilter('ALL'); setInventorySearch(''); }}
+                      className="px-3 py-1.5 rounded-xl bg-white border border-gray-300 text-xs font-bold text-gray-700 hover:bg-gray-100 cursor-pointer"
                     >
-                      Bỏ lọc
+                      Xóa bộ lọc
                     </button>
                   </div>
                 );
@@ -2916,53 +2950,69 @@ export default function AdminPage() {
 
                     </div>
 
-                    {/* Variant Breakdown Table */}
+                    {/* Variant Breakdown Accordion */}
                     {prod.variants && prod.variants.length > 0 && (
-                      <div className="mt-3.5 pt-3 border-t border-gray-100">
-                        <p className="text-[11px] font-bold text-gray-700 mb-2 flex items-center gap-1">
-                          <Palette className="w-3.5 h-3.5 text-pink-500" />
-                          <span>Chi tiết tồn kho từng màu ({prod.variants.length} phân loại):</span>
-                        </p>
+                      <div className="mt-3 pt-2 border-t border-gray-100">
+                        <button
+                          type="button"
+                          onClick={() => setExpandedVariants(prev => ({ ...prev, [prod.id]: !prev[prod.id] }))}
+                          className="w-full flex items-center justify-between py-1.5 px-2.5 rounded-xl hover:bg-emerald-50/50 transition cursor-pointer text-left group"
+                        >
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-gray-700">
+                            <Palette className="w-3.5 h-3.5 text-pink-500" />
+                            <span>Chi tiết tồn kho từng màu ({prod.variants.length} phân loại)</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 group-hover:text-emerald-700">
+                            <span>{expandedVariants[prod.id] ? 'Thu gọn' : 'Xem chi tiết'}</span>
+                            {expandedVariants[prod.id] ? (
+                              <ChevronUp className="w-4 h-4 transition-transform" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 transition-transform" />
+                            )}
+                          </div>
+                        </button>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                          {prod.variants.map((v, vIdx) => {
-                            const vStock = v.stock ?? 0;
-                            const isVLow = vStock <= 5;
-                            const isVOut = vStock === 0;
+                        {expandedVariants[prod.id] && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 pt-2.5">
+                            {prod.variants.map((v, vIdx) => {
+                              const vStock = v.stock ?? 0;
+                              const isVLow = vStock <= 5;
+                              const isVOut = vStock === 0;
 
-                            return (
-                              <div
-                                key={vIdx}
-                                className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 text-xs ${
-                                  isVOut
-                                    ? 'bg-rose-50/60 border-rose-200 text-rose-800'
-                                    : isVLow
-                                    ? 'bg-amber-50/60 border-amber-200 text-amber-800'
-                                    : 'bg-gray-50/60 border-gray-200 text-gray-700'
-                                }`}
-                              >
-                                <div className="flex items-center gap-2 min-w-0">
-                                  {v.colorHex ? (
-                                    <span
-                                      className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0 shadow-2xs"
-                                      style={{ backgroundColor: v.colorHex }}
-                                    />
-                                  ) : (
-                                    <span className="w-3.5 h-3.5 rounded-full bg-pink-300 shrink-0" />
-                                  )}
-                                  <div className="truncate">
-                                    <p className="font-bold truncate text-xs text-gray-800">{v.name}</p>
-                                    <p className="text-[11px] mt-0.5">
-                                      Tồn kho: <strong className={`text-xs ${isVOut ? 'text-rose-600 font-black' : isVLow ? 'text-amber-700 font-black' : 'text-emerald-700 font-black'}`}>
-                                        {vStock.toLocaleString('vi-VN')}
-                                      </strong> cái
-                                    </p>
+                              return (
+                                <div
+                                  key={vIdx}
+                                  className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 text-xs ${
+                                    isVOut
+                                      ? 'bg-rose-50/60 border-rose-200 text-rose-800'
+                                      : isVLow
+                                      ? 'bg-amber-50/60 border-amber-200 text-amber-800'
+                                      : 'bg-gray-50/60 border-gray-200 text-gray-700'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    {v.colorHex ? (
+                                      <span
+                                        className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0 shadow-2xs"
+                                        style={{ backgroundColor: v.colorHex }}
+                                      />
+                                    ) : (
+                                      <span className="w-3.5 h-3.5 rounded-full bg-pink-300 shrink-0" />
+                                    )}
+                                    <div className="truncate">
+                                      <p className="font-bold truncate text-xs text-gray-800">{v.name}</p>
+                                      <p className="text-[11px] mt-0.5">
+                                        Tồn kho: <strong className={`text-xs ${isVOut ? 'text-rose-600 font-black' : isVLow ? 'text-amber-700 font-black' : 'text-emerald-700 font-black'}`}>
+                                          {vStock.toLocaleString('vi-VN')}
+                                        </strong> cái
+                                      </p>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            );
-                          })}
-                        </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
 
