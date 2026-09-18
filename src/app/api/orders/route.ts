@@ -51,17 +51,22 @@ export async function POST(req: NextRequest) {
 
     const newOrder = await db.orders.create(body);
 
-    // Gửi thông báo về Telegram hoàn toàn ngầm (Bất đồng bộ không chặn phản hồi của khách)
-    // Giúp tốc độ đặt hàng cực nhanh < 0.15s thay vì phải đợi máy chủ Telegram & Settings
+    // Gửi thông báo Telegram TRƯỚC KHI return để tránh bị Vercel kill function
+    // (Vercel serverless đóng function ngay sau khi response trả về)
     const protocol = req.headers.get('x-forwarded-proto') || (req.url.startsWith('https') ? 'https' : 'http');
     const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || req.nextUrl.host;
     const requestOrigin = host ? `${protocol}://${host}` : req.nextUrl.origin;
 
-    db.settings.get().then((settings) => {
-      sendOrderNotification(newOrder, settings, 'NEW_ORDER', requestOrigin).catch((err) => {
-        console.error('[ASYNC ORDER TELEGRAM NOTIFICATION ERROR]:', err);
-      });
-    }).catch(() => {});
+    try {
+      const settings = await db.settings.get();
+      // Race với timeout 4s: đủ để Telegram API respond, không block quá lâu
+      await Promise.race([
+        sendOrderNotification(newOrder, settings, 'NEW_ORDER', requestOrigin),
+        new Promise((resolve) => setTimeout(resolve, 4000)),
+      ]);
+    } catch (notifyErr) {
+      console.error('[ORDER TELEGRAM NOTIFICATION ERROR]:', notifyErr);
+    }
 
     return NextResponse.json({ success: true, data: newOrder });
   } catch (error) {
