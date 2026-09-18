@@ -131,17 +131,27 @@ export async function POST(req: NextRequest) {
         sold_count: p.soldCount ?? 0,
         rating_avg: p.ratingAvg ?? 5,
         rating_count: p.ratingCount ?? 0,
-        variants: p.variants || [],
+        variants: (p.variants || []).map((v: any) => ({ ...v, weight: Number(p.weight) > 0 ? Number(p.weight) : 50 })),
         combo_tiers: p.comboTiers || [],
-        package_options: p.packageOptions || [],
+        package_options: (p.packageOptions || []).map((pkg: any) => ({ ...pkg, _weight: Number(p.weight) > 0 ? Number(p.weight) : 50 })),
         min_order_quantity: p.minOrderQuantity || 1,
         step_quantity: p.stepQuantity || 1,
         is_active: p.isActive !== false,
         created_at: p.createdAt || new Date().toISOString(),
         updated_at: p.updatedAt || new Date().toISOString(),
       }));
-      const { error } = await supabase.from('products').upsert(prodRows);
-      if (!error) prodsCount = prodRows.length;
+      const { error: syncErr } = await supabase.from('products').upsert(prodRows);
+      if (syncErr) {
+        const prodRowsNoWeight = prodRows.map((r: any) => {
+          const copy = { ...r };
+          delete copy.weight;
+          return copy;
+        });
+        const { error: retryErr } = await supabase.from('products').upsert(prodRowsNoWeight);
+        if (!retryErr) prodsCount = prodRowsNoWeight.length;
+      } else {
+        prodsCount = prodRows.length;
+      }
     }
 
     // 4. Đồng bộ đánh giá

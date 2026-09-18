@@ -207,8 +207,7 @@ function OrderCard({
             </div>
 
             <div className="flex items-center gap-2 flex-wrap self-end sm:self-center">
-              {/* Nút Hủy đơn nếu còn PENDING_CONFIRM */}
-              {order.orderStatus === 'PENDING_CONFIRM' && onCancelOrder && (
+              {(order.orderStatus === 'PENDING_CONFIRM' || (order.paymentStatus !== 'PAID' && order.orderStatus !== 'CANCELLED' && order.orderStatus !== 'SHIPPING' && order.orderStatus !== 'COMPLETED')) && onCancelOrder && (
                 <button
                   type="button"
                   onClick={() => onCancelOrder(order)}
@@ -436,8 +435,7 @@ function OrderCard({
             </button>
 
             <div className="flex items-center gap-2 flex-wrap self-end sm:self-center">
-              {/* Nút Hủy đơn nếu còn PENDING_CONFIRM */}
-              {order.orderStatus === 'PENDING_CONFIRM' && onCancelOrder && (
+              {(order.orderStatus === 'PENDING_CONFIRM' || (order.paymentStatus !== 'PAID' && order.orderStatus !== 'CANCELLED' && order.orderStatus !== 'SHIPPING' && order.orderStatus !== 'COMPLETED')) && onCancelOrder && (
                 <button
                   type="button"
                   onClick={() => onCancelOrder(order)}

@@ -1766,7 +1766,12 @@ export default function AdminPage() {
                           <select
                             value={order.orderStatus}
                             onChange={(e) => {
-                              handleUpdateStatus(order.id, e.target.value as OrderStatus);
+                              const val = e.target.value as OrderStatus;
+                              if (val === 'CANCELLED') {
+                                setCancellingOrder(order);
+                                return;
+                              }
+                              handleUpdateStatus(order.id, val);
                             }}
                             className={`text-xs font-black px-2.5 py-1 rounded-xl border cursor-pointer transition focus:outline-none focus:ring-2 focus:ring-pink-300 ${
                               order.orderStatus === 'PENDING_CONFIRM'

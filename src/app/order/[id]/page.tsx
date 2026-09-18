@@ -199,7 +199,7 @@ export default function OrderTrackingPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {order.orderStatus === 'PENDING_CONFIRM' && (
+          {(order.orderStatus === 'PENDING_CONFIRM' || (order.paymentStatus !== 'PAID' && order.orderStatus !== 'CANCELLED' && order.orderStatus !== 'SHIPPING' && order.orderStatus !== 'COMPLETED')) && (
             <button
               type="button"
               onClick={() => setIsCancelModalOpen(true)}

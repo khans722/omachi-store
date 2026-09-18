@@ -1796,7 +1796,15 @@ function mapProductFromSupabase(row: any): Product {
     costPrice: row.cost_price ? Number(row.cost_price) : undefined,
     material: row.material || '',
     dimensions: row.dimensions || '',
-    weight: Number(row.weight ?? 50),
+    weight: Number(
+      (row.weight !== undefined && row.weight !== null && Number(row.weight) > 0)
+        ? row.weight
+        : (Array.isArray(row.variants) && row.variants[0]?.weight)
+        ? row.variants[0].weight
+        : (Array.isArray(row.package_options) && row.package_options[0]?._weight)
+        ? row.package_options[0]._weight
+        : 50
+    ),
     images: Array.isArray(row.images) ? row.images : [],
     description: row.description || '',
     isHot: Boolean(row.is_hot),
@@ -2132,7 +2140,10 @@ export const db = {
       writeDb(dbData);
 
       try {
-        await supabase.from('products').upsert({
+        const weightVal = Number(newProduct.weight) > 0 ? Number(newProduct.weight) : 50;
+        const variantsWithWeight = (newProduct.variants || []).map((v: any) => ({ ...v, weight: weightVal }));
+        const pkgWithWeight = (newProduct.packageOptions || []).map((pkg: any) => ({ ...pkg, _weight: weightVal }));
+        const baseRow = {
           id: newProduct.id,
           sku: newProduct.sku,
           name: newProduct.name,
@@ -2144,7 +2155,6 @@ export const db = {
           cost_price: newProduct.costPrice || null,
           material: newProduct.material || '',
           dimensions: newProduct.dimensions || '',
-          weight: Number(newProduct.weight) > 0 ? Number(newProduct.weight) : 50,
           images: newProduct.images || [],
           description: newProduct.description || '',
           is_hot: newProduct.isHot,
@@ -2154,17 +2164,23 @@ export const db = {
           sold_count: newProduct.soldCount,
           rating_avg: newProduct.ratingAvg,
           rating_count: newProduct.ratingCount,
-          variants: newProduct.variants || [],
+          variants: variantsWithWeight,
           combo_tiers: newProduct.comboTiers || [],
-          package_options: newProduct.packageOptions || [],
+          package_options: pkgWithWeight,
           min_order_quantity: newProduct.minOrderQuantity || 1,
           step_quantity: newProduct.stepQuantity || 1,
           is_active: newProduct.isActive,
           created_at: newProduct.createdAt,
           updated_at: newProduct.updatedAt,
-        });
+        };
+
+        const { error: err1 } = await supabase.from('products').upsert({ ...baseRow, weight: weightVal });
+        if (err1) {
+          const { error: err2 } = await supabase.from('products').upsert(baseRow);
+          if (err2) console.warn('[Supabase products.create error]:', err2.message);
+        }
       } catch (err) {
-        console.warn('[Supabase products.create error]:', err);
+        console.warn('[Supabase products.create exception]:', err);
       }
       return newProduct;
     },
@@ -2182,7 +2198,10 @@ export const db = {
 
       try {
         const p = dbData.products[index];
-        await supabase.from('products').upsert({
+        const weightVal = Number(p.weight) > 0 ? Number(p.weight) : 50;
+        const variantsWithWeight = (p.variants || []).map((v: any) => ({ ...v, weight: weightVal }));
+        const pkgWithWeight = (p.packageOptions || []).map((pkg: any) => ({ ...pkg, _weight: weightVal }));
+        const baseRow = {
           id: p.id,
           sku: p.sku,
           name: p.name,
@@ -2194,7 +2213,6 @@ export const db = {
           cost_price: p.costPrice || null,
           material: p.material || '',
           dimensions: p.dimensions || '',
-          weight: Number(p.weight) > 0 ? Number(p.weight) : 50,
           images: p.images || [],
           description: p.description || '',
           is_hot: p.isHot,
@@ -2204,17 +2222,23 @@ export const db = {
           sold_count: p.soldCount,
           rating_avg: p.ratingAvg,
           rating_count: p.ratingCount,
-          variants: p.variants || [],
+          variants: variantsWithWeight,
           combo_tiers: p.comboTiers || [],
-          package_options: p.packageOptions || [],
+          package_options: pkgWithWeight,
           min_order_quantity: p.minOrderQuantity || 1,
           step_quantity: p.stepQuantity || 1,
           is_active: p.isActive,
           created_at: p.createdAt,
           updated_at: p.updatedAt,
-        });
+        };
+
+        const { error: err1 } = await supabase.from('products').upsert({ ...baseRow, weight: weightVal });
+        if (err1) {
+          const { error: err2 } = await supabase.from('products').upsert(baseRow);
+          if (err2) console.warn('[Supabase products.update error]:', err2.message);
+        }
       } catch (err) {
-        console.warn('[Supabase products.update error]:', err);
+        console.warn('[Supabase products.update exception]:', err);
       }
       return dbData.products[index];
     },
