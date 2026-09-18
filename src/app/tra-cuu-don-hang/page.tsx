@@ -244,14 +244,6 @@ function OrderCard({
                 </button>
               )}
 
-              <button
-                type="button"
-                onClick={() => setIsExpanded(true)}
-                className="px-3 py-1.5 rounded-xl bg-pink-50 hover:bg-pink-100 text-rose-600 border border-pink-200 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
-              >
-                <span>Xem chi tiết</span>
-                <ChevronDown className="w-3.5 h-3.5" />
-              </button>
 
               <a
                 href={`${zaloUrl}?text=${encodeURIComponent(`Chào Omachi, mình muốn hỏi về đơn hàng #${cleanCode}`)}`}
