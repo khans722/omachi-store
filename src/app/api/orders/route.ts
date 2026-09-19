@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { sendOrderNotification } from '@/lib/zalo';
+import { verifyAdminAuth } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -134,7 +135,11 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(req: NextRequest) {
+  if (!verifyAdminAuth(req)) {
+    return NextResponse.json({ success: false, message: 'Yêu cầu quyền Quản trị viên để xóa toàn bộ đơn hàng!' }, { status: 401 });
+  }
+
   try {
     await db.orders.clearAll();
     return NextResponse.json({ 

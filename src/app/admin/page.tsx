@@ -16,6 +16,10 @@ import {
   Lock,
   LogOut,
   KeyRound,
+  Shield,
+  Eye,
+  EyeOff,
+  User,
   Plus,
   Trash2,
   Edit3,
@@ -48,10 +52,6 @@ import {
   Copy
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-
-const ADMIN_PIN = '123456';
-const PIN_CODE = '123456';
-const PIN_CODE_ALT = 'omachi888';
 
 const DEFAULT_SETTINGS: ShopSettings = {
   shopName: 'Omachi 🌸 Phụ Kiện Handmade & Charm',
@@ -123,8 +123,25 @@ const DEFAULT_SETTINGS: ShopSettings = {
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [pinInput, setPinInput] = useState('');
-  const [pinError, setPinError] = useState('');
+  const [authChecking, setAuthChecking] = useState(true);
+  const [usernameInput, setUsernameInput] = useState('admin');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+
+  // Change Password State
+  const [currentPasswordInput, setCurrentPasswordInput] = useState('');
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
+  const [showChangePassModal, setShowChangePassModal] = useState(false);
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [isSavingNewPassword, setIsSavingNewPassword] = useState(false);
+  const [changePassError, setChangePassError] = useState('');
+  const [changePassSuccess, setChangePassSuccess] = useState('');
 
   const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'inventory' | 'revenue' | 'categories' | 'settings'>('orders');
   const [orders, setOrders] = useState<Order[]>(() => {
@@ -816,27 +833,128 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    const isAuth = sessionStorage.getItem('omachii_admin_auth');
-    if (isAuth === 'true') {
-      setIsAuthenticated(true);
-    }
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/admin/auth/verify');
+        const data = await res.json();
+        if (res.ok && data.authenticated) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch (err) {
+        console.error('Lỗi kiểm tra phiên đăng nhập:', err);
+        setIsAuthenticated(false);
+      } finally {
+        setAuthChecking(false);
+      }
+    };
+    checkAuth();
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pinInput === ADMIN_PIN || pinInput === 'omachi888') {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('omachii_admin_auth', 'true');
-      setPinError('');
-    } else {
-      setPinError('Mã PIN không chính xác! Vui lòng thử lại.');
+    if (lockedUntil && Date.now() < lockedUntil) {
+      const remainingSecs = Math.ceil((lockedUntil - Date.now()) / 1000);
+      setLoginError(`Tài khoản tạm thời bị khóa do nhập sai nhiều lần. Vui lòng thử lại sau ${remainingSecs}s!`);
+      return;
+    }
+
+    if (!passwordInput.trim()) {
+      setLoginError('Vui lòng nhập mật khẩu quản trị!');
+      return;
+    }
+
+    setIsLoggingIn(true);
+    setLoginError('');
+
+    try {
+      const res = await fetch('/api/admin/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: usernameInput.trim(),
+          password: passwordInput,
+        }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setIsAuthenticated(true);
+        setFailedAttempts(0);
+        setPasswordInput('');
+        setLoginError('');
+      } else {
+        const nextAttempts = failedAttempts + 1;
+        setFailedAttempts(nextAttempts);
+        if (nextAttempts >= 5) {
+          setLockedUntil(Date.now() + 60000);
+          setLoginError('Bạn đã nhập sai 5 lần! Hệ thống tạm thời khóa đăng nhập trong 60 giây để chống brute-force.');
+        } else {
+          setLoginError(data.error || `Mật khẩu hoặc tên đăng nhập không đúng! (Còn ${5 - nextAttempts} lần thử)`);
+        }
+      }
+    } catch (err) {
+      setLoginError('Không thể kết nối máy chủ xác thực. Vui lòng thử lại!');
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/auth/logout', { method: 'POST' });
+    } catch (err) {
+      console.error(err);
+    }
     setIsAuthenticated(false);
-    sessionStorage.removeItem('omachii_admin_auth');
-    setPinInput('');
+    setPasswordInput('');
+    setLoginError('');
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setChangePassError('');
+    setChangePassSuccess('');
+
+    if (!currentPasswordInput) {
+      setChangePassError('Vui lòng nhập mật khẩu hiện tại!');
+      return;
+    }
+    if (!newPasswordInput || newPasswordInput.length < 6) {
+      setChangePassError('Mật khẩu mới phải có ít nhất 6 ký tự!');
+      return;
+    }
+    if (newPasswordInput !== confirmPasswordInput) {
+      setChangePassError('Mật khẩu xác nhận không khớp với mật khẩu mới!');
+      return;
+    }
+
+    setIsSavingNewPassword(true);
+    try {
+      const res = await fetch('/api/admin/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: currentPasswordInput,
+          newPassword: newPasswordInput,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setChangePassSuccess('✅ Đổi mật khẩu quản trị thành công! Mật khẩu mới đã được kích hoạt.');
+        setCurrentPasswordInput('');
+        setNewPasswordInput('');
+        setConfirmPasswordInput('');
+        setTimeout(() => setChangePassSuccess(''), 6000);
+      } else {
+        setChangePassError(data.error || 'Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu hiện tại.');
+      }
+    } catch (err: any) {
+      setChangePassError(err.message || 'Lỗi kết nối máy chủ.');
+    } finally {
+      setIsSavingNewPassword(false);
+    }
   };
 
   const fetchSettings = async () => {
@@ -1534,50 +1652,123 @@ export default function AdminPage() {
 
 
 
-  // IF NOT AUTHENTICATED -> PIN LOGIN
+  // IF CHECKING AUTH STATUS
+  if (authChecking) {
+    return (
+      <div className="py-28 flex items-center justify-center">
+        <div className="bg-white rounded-3xl border border-pink-100 shadow-xl p-8 max-w-sm w-full flex flex-col items-center gap-3 animate-pulse text-center">
+          <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200 text-rose-500 flex items-center justify-center">
+            <Shield className="w-6 h-6 animate-spin" />
+          </div>
+          <h3 className="text-sm font-bold text-gray-800">Đang kiểm tra quyền quản trị...</h3>
+          <p className="text-xs text-gray-400">Hệ thống đang xác thực phiên làm việc an toàn</p>
+        </div>
+      </div>
+    );
+  }
+
+  // IF NOT AUTHENTICATED -> HIGH SECURITY LOGIN FORM
   if (!isAuthenticated) {
     return (
-      <div className="py-20 flex items-center justify-center">
-        <div className="bg-white rounded-3xl border border-pink-200 shadow-2xl p-8 max-w-sm w-full space-y-6 text-center animate-fade-in">
-          <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-rose-500 to-pink-400 text-white flex items-center justify-center text-2xl shadow-md shadow-rose-200">
-            <Lock className="w-7 h-7" />
+      <div className="py-12 sm:py-20 flex items-center justify-center px-4">
+        <div className="bg-white rounded-3xl border border-rose-200 shadow-2xl p-6 sm:p-8 max-w-md w-full space-y-6 animate-fade-in relative overflow-hidden">
+          {/* Top Decorative Banner */}
+          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-rose-500 via-pink-500 to-amber-400" />
+
+          <div className="text-center space-y-2">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-rose-600 to-pink-500 text-white flex items-center justify-center text-3xl shadow-lg shadow-rose-200">
+              <Shield className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-black text-gray-800 tracking-tight">Đăng Nhập Quản Trị</h2>
+            <p className="text-xs text-gray-500">
+              Bảo mật hệ thống Omachi Handmade Store
+            </p>
           </div>
 
-          <div>
-            <h2 className="text-xl font-black text-gray-800">Đăng Nhập Quản Trị</h2>
-            <p className="text-xs text-gray-500 mt-1">Dành riêng cho chủ shop Omachi</p>
-          </div>
-
-          {pinError && (
-            <div className="bg-rose-50 text-rose-600 text-xs font-bold p-2.5 rounded-xl border border-rose-200">
-              ⚠️ {pinError}
+          {loginError && (
+            <div className="bg-rose-50 text-rose-700 text-xs font-bold p-3.5 rounded-2xl border border-rose-200 flex items-start gap-2 animate-shake">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
+              <span>{loginError}</span>
             </div>
           )}
 
           <form onSubmit={handleLogin} className="space-y-4">
-            <div className="relative">
-              <input
-                type="password"
-                placeholder="Nhập mã PIN (Mặc định: 123456)"
-                value={pinInput}
-                onChange={(e) => setPinInput(e.target.value)}
-                autoFocus
-                className="w-full pl-10 pr-4 py-3 text-center text-sm font-black tracking-widest bg-pink-50/50 border border-pink-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-rose-400 focus:bg-white text-gray-800 transition"
-              />
-              <KeyRound className="w-4 h-4 text-rose-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                Tài khoản quản trị
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="admin"
+                  value={usernameInput}
+                  onChange={(e) => setUsernameInput(e.target.value)}
+                  disabled={isLoggingIn}
+                  className="w-full pl-10 pr-4 py-3 text-sm font-semibold bg-stone-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-rose-400 focus:bg-white text-gray-800 transition disabled:opacity-50"
+                  autoComplete="username"
+                  required
+                />
+                <User className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1.5 flex items-center justify-between">
+                <span>Mật khẩu</span>
+                <span className="text-[10px] text-gray-400 font-normal">Tự động khóa sau 5 lần sai</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Nhập mật khẩu..."
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  disabled={isLoggingIn}
+                  autoFocus
+                  className="w-full pl-10 pr-11 py-3 text-sm font-medium bg-stone-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-rose-400 focus:bg-white text-gray-800 transition disabled:opacity-50"
+                  autoComplete="current-password"
+                  required
+                />
+                <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 cursor-pointer"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <button
               type="submit"
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-red-500 via-rose-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-extrabold text-sm shadow-md shadow-rose-200 transition transform active:scale-98"
+              disabled={isLoggingIn || (lockedUntil !== null && Date.now() < lockedUntil)}
+              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-red-500 via-rose-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-extrabold text-sm shadow-md shadow-rose-200 transition transform active:scale-98 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
             >
-              Mở Khóa Quản Trị ✨
+              {isLoggingIn ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Đang Xác Thực...</span>
+                </>
+              ) : (
+                <>
+                  <KeyRound className="w-4 h-4" />
+                  <span>Đăng Nhập An Toàn</span>
+                </>
+              )}
             </button>
           </form>
 
-          <p className="text-[10px] text-gray-400">
-            🔒 Khu vực bảo mật ngăn khách hàng truy cập trái phép.
-          </p>
+          <div className="pt-3 border-t border-gray-100 text-center space-y-1">
+            <p className="text-[11px] text-gray-500 font-medium flex items-center justify-center gap-1">
+              <Shield className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>Bảo vệ phiên bằng HTTP-Only Cookie &amp; HMAC Token</span>
+            </p>
+            <p className="text-[10px] text-gray-400">
+              Chỉ chủ sở hữu được phân quyền mới có thể truy cập khu vực này.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -4344,6 +4535,127 @@ export default function AdminPage() {
                         <span>📊 Mở Supabase (Xem Dữ Liệu Như Excel)</span>
                         <ExternalLink className="w-3.5 h-3.5 text-stone-400" />
                       </a>
+                    </div>
+                  </div>
+
+                  {/* 9. BẢO MẬT & ĐỔI MẬT KHẨU QUẢN TRỊ (ADMIN SECURITY) */}
+                  <div className="p-4 sm:p-5 bg-gradient-to-br from-rose-50/60 via-pink-50/40 to-white rounded-2xl border-2 border-rose-200 shadow-xs space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-lg bg-rose-600 text-white flex items-center justify-center text-xs font-black shadow-xs">
+                          <Shield className="w-3.5 h-3.5" />
+                        </span>
+                        <div>
+                          <h4 className="font-black text-gray-900 text-xs sm:text-sm flex items-center gap-1.5">
+                            <span>Bảo Mật &amp; Đổi Mật Khẩu Quản Trị</span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
+                              HTTP-Only &amp; Server Encrypted
+                            </span>
+                          </h4>
+                          <p className="text-[11px] text-gray-600 font-medium mt-0.5">
+                            Tài khoản quản trị mặc định: <strong className="text-rose-700">admin</strong>. Bạn có thể đổi mật khẩu bất kỳ lúc nào để đảm bảo an toàn tuyệt đối cho cửa hàng.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {changePassSuccess && (
+                      <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2 animate-fade-in">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>{changePassSuccess}</span>
+                      </div>
+                    )}
+
+                    {changePassError && (
+                      <div className="p-3 bg-rose-50 border border-rose-300 text-rose-800 rounded-xl text-xs font-bold flex items-center gap-2 animate-shake">
+                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                        <span>{changePassError}</span>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                      {/* Current Password */}
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-gray-700 block">
+                          Mật khẩu hiện tại:
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showCurrentPass ? 'text' : 'password'}
+                            placeholder="Mật khẩu đang dùng..."
+                            value={currentPasswordInput}
+                            onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                            className="w-full px-3 py-2 pr-8 bg-white border border-rose-200 rounded-xl text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowCurrentPass(!showCurrentPass)}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                            tabIndex={-1}
+                          >
+                            {showCurrentPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* New Password */}
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-gray-700 block">
+                          Mật khẩu mới (tối thiểu 6 ký tự):
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showNewPass ? 'text' : 'password'}
+                            placeholder="Mật khẩu mới..."
+                            value={newPasswordInput}
+                            onChange={(e) => setNewPasswordInput(e.target.value)}
+                            className="w-full px-3 py-2 pr-8 bg-white border border-rose-200 rounded-xl text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPass(!showNewPass)}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                            tabIndex={-1}
+                          >
+                            {showNewPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Confirm New Password */}
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-gray-700 block">
+                          Nhập lại mật khẩu mới:
+                        </label>
+                        <input
+                          type={showNewPass ? 'text' : 'password'}
+                          placeholder="Nhập lại chính xác..."
+                          value={confirmPasswordInput}
+                          onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-rose-200 rounded-xl text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-1">
+                      <button
+                        type="button"
+                        onClick={handleChangePassword}
+                        disabled={isSavingNewPassword || !currentPasswordInput || !newPasswordInput}
+                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 active:scale-95 text-white font-bold text-xs shadow-xs transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                      >
+                        {isSavingNewPassword ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>Đang Cập Nhật...</span>
+                          </>
+                        ) : (
+                          <>
+                            <KeyRound className="w-3.5 h-3.5" />
+                            <span>Cập Nhật Mật Khẩu Quản Trị</span>
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
 

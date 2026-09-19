@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { verifyAdminAuth } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -21,6 +22,10 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!verifyAdminAuth(req)) {
+    return NextResponse.json({ success: false, error: 'Yêu cầu quyền Quản trị viên để thêm danh mục!' }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
     if (!body.name || !body.name.trim()) {
@@ -43,6 +48,10 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  if (!verifyAdminAuth(req)) {
+    return NextResponse.json({ success: false, error: 'Yêu cầu quyền Quản trị viên để sửa danh mục!' }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
     if (!body.id) {
@@ -69,6 +78,10 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  if (!verifyAdminAuth(req)) {
+    return NextResponse.json({ success: false, error: 'Yêu cầu quyền Quản trị viên để xóa danh mục!' }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');

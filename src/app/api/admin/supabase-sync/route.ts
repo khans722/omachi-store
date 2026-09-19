@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { db } from '@/lib/db';
+import { verifyAdminAuth } from '@/lib/adminAuth';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  if (!verifyAdminAuth(req)) {
+    return NextResponse.json({ success: false, error: 'Yêu cầu quyền Quản trị viên!' }, { status: 401 });
+  }
+
   try {
     // 1. Kiểm tra kết nối tới Supabase
     const { data, error } = await supabase.from('settings').select('id').limit(1);
@@ -52,6 +57,10 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!verifyAdminAuth(req)) {
+    return NextResponse.json({ success: false, error: 'Yêu cầu quyền Quản trị viên!' }, { status: 401 });
+  }
+
   try {
     // Đọc toàn bộ dữ liệu hiện tại từ local
     const rawData = db.raw.get();

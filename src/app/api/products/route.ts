@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { verifyAdminAuth } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -17,6 +18,10 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!verifyAdminAuth(req)) {
+    return NextResponse.json({ success: false, message: 'Yêu cầu quyền Quản trị viên để thêm sản phẩm!' }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
     const newProd = await db.products.create(body);
@@ -27,6 +32,10 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  if (!verifyAdminAuth(req)) {
+    return NextResponse.json({ success: false, message: 'Yêu cầu quyền Quản trị viên để sửa sản phẩm!' }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
     const updated = await db.products.update(body.id, body);
@@ -40,6 +49,10 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  if (!verifyAdminAuth(req)) {
+    return NextResponse.json({ success: false, message: 'Yêu cầu quyền Quản trị viên để xóa sản phẩm!' }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
@@ -52,4 +65,3 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ success: false, message: 'Failed to delete product' }, { status: 500 });
   }
 }
-
