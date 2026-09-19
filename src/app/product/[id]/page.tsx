@@ -453,38 +453,7 @@ export default function ProductDetailPage() {
             {/* 3. BẢNG THUỘC TÍNH NGANG CHUẨN SHOPEE (Label w-20 sm:w-28 text-stone-500 text-sm) */}
             <div className="space-y-4 pt-1 text-sm">
               
-              {/* Row: Vận chuyển */}
-              <div className="flex items-start gap-2.5 sm:gap-4">
-                <span className="w-20 sm:w-28 text-xs sm:text-sm text-stone-500 shrink-0 pt-0.5">Vận Chuyển:</span>
-                <div className="flex-1 space-y-1 text-xs sm:text-sm text-stone-700">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-emerald-700 font-bold flex items-center gap-1">
-                      <span>🚚</span>
-                      <span>Miễn phí vận chuyển</span>
-                    </span>
-                    <span className="text-stone-400 text-xs">(Đơn từ 200k khi CK VietQR)</span>
-                  </div>
-                  <p className="text-stone-500 text-xs">
-                    Vận chuyển tới: <strong className="text-stone-800 font-medium">Toàn quốc (1 - 3 ngày)</strong>
-                  </p>
-                </div>
-              </div>
 
-              {/* Row: Cam kết */}
-              <div className="flex items-start gap-2.5 sm:gap-4">
-                <span className="w-20 sm:w-28 text-xs sm:text-sm text-stone-500 shrink-0 pt-0.5">Cam Kết:</span>
-                <div className="flex-1 flex items-center gap-2 text-xs text-stone-600 flex-wrap">
-                  <span className="inline-flex items-center gap-1 bg-stone-50 border border-stone-200 px-2 py-0.5 rounded text-[11px]">
-                    🛡️ Đồng kiểm khi nhận
-                  </span>
-                  <span className="inline-flex items-center gap-1 bg-stone-50 border border-stone-200 px-2 py-0.5 rounded text-[11px]">
-                    🔄 Đổi trả 48h
-                  </span>
-                  <span className="inline-flex items-center gap-1 bg-stone-50 border border-stone-200 px-2 py-0.5 rounded text-[11px]">
-                    🌸 100% Ảnh chụp thật
-                  </span>
-                </div>
-              </div>
 
               {/* Row: Màu sắc / Phân loại */}
               {product.variants && product.variants.length > 0 && (
