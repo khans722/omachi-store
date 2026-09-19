@@ -285,6 +285,22 @@ export default function AdminPage() {
     setProductsPage(1);
   }, [productSearch, productCategoryFilter]);
 
+  // Products filter calculation (placed at top with other hooks to comply with React Rules of Hooks)
+  const adminFilteredProducts = useMemo(() => {
+    return products.filter((prod) => {
+      const matchesSearch = !productSearch ||
+        prod.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+        (prod.sku && prod.sku.toLowerCase().includes(productSearch.toLowerCase())) ||
+        (prod.categoryName && prod.categoryName.toLowerCase().includes(productSearch.toLowerCase()));
+      const selectedCatObj = categories.find((c) => c.id === productCategoryFilter);
+      const matchesCat = productCategoryFilter === 'ALL' || 
+        prod.categoryId === productCategoryFilter || 
+        prod.category === productCategoryFilter ||
+        (selectedCatObj && (prod.categoryId === selectedCatObj.id || prod.category === selectedCatObj.slug));
+      return matchesSearch && matchesCat;
+    });
+  }, [products, productSearch, productCategoryFilter, categories]);
+
   // Product modal state
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
@@ -1852,21 +1868,7 @@ export default function AdminPage() {
   const orderStartIdx = totalOrdersCount === 0 ? 0 : (currentOrderPage - 1) * ordersPerPage + 1;
   const orderEndIdx = Math.min(currentOrderPage * ordersPerPage, totalOrdersCount);
 
-  // Products filter & pagination calculation
-  const adminFilteredProducts = useMemo(() => {
-    return products.filter((prod) => {
-      const matchesSearch = !productSearch ||
-        prod.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-        (prod.sku && prod.sku.toLowerCase().includes(productSearch.toLowerCase())) ||
-        (prod.categoryName && prod.categoryName.toLowerCase().includes(productSearch.toLowerCase()));
-      const selectedCatObj = categories.find((c) => c.id === productCategoryFilter);
-      const matchesCat = productCategoryFilter === 'ALL' || 
-        prod.categoryId === productCategoryFilter || 
-        prod.category === productCategoryFilter ||
-        (selectedCatObj && (prod.categoryId === selectedCatObj.id || prod.category === selectedCatObj.slug));
-      return matchesSearch && matchesCat;
-    });
-  }, [products, productSearch, productCategoryFilter, categories]);
+  // Products pagination calculation
 
   const totalProductsCount = adminFilteredProducts.length;
   const totalProductPages = Math.max(1, Math.ceil(totalProductsCount / productsPerPage));
