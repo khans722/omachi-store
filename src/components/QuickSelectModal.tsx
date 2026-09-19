@@ -98,55 +98,54 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
   const style = themeStyles[theme] || themeStyles.green;
 
   const handleAddToCart = (e?: React.MouseEvent) => {
-    if (product.variants && product.variants.length > 0 && !selectedVariant) {
-      setErrorMsg('Vui lòng chọn màu sắc/phân loại nhé!');
-      return;
+    let activeVariant = selectedVariant;
+    if (product.variants && product.variants.length > 0 && !activeVariant) {
+      activeVariant = product.variants.find((v) => (v.stock ?? 0) > 0) || product.variants[0];
+      setSelectedVariant(activeVariant);
     }
-    if (availableStock <= 0) {
+
+    if (activeVariant && (activeVariant.stock ?? 0) <= 0 && (product.stock ?? 0) <= 0) {
       setErrorMsg('Mẫu này tạm thời hết hàng!');
       return;
     }
-    if (quantity < minQty) {
-      setErrorMsg(`Sản phẩm này bán tối thiểu từ ${minQty} cái!`);
-      setQuantity(minQty);
-      return;
-    }
-    if (stepQty > 1 && (quantity - minQty) % stepQty !== 0) {
-      const adjusted = Math.max(minQty, Math.round((quantity - minQty) / stepQty) * stepQty + minQty);
-      setQuantity(adjusted);
-      setErrorMsg(`Số lượng mua phải là bội số của ${stepQty} cái!`);
-      return;
+
+    let validQty = Math.max(minQty, quantity);
+    if (stepQty > 1 && (validQty - minQty) % stepQty !== 0) {
+      validQty = Math.max(minQty, Math.round((validQty - minQty) / stepQty) * stepQty + minQty);
+      setQuantity(validQty);
     }
 
     // Hiệu ứng ảnh sản phẩm bay uốn lượn vào giỏ hàng
-    flyToCart(previewImgRef.current || (e?.currentTarget as HTMLElement), displayImage);
+    try {
+      flyToCart(previewImgRef.current || (e?.currentTarget as HTMLElement), displayImage);
+    } catch (err) {
+      console.error(err);
+    }
 
-    addItem(product, quantity, selectedVariant, undefined, undefined, false);
+    addItem(product, validQty, activeVariant, undefined, undefined, false);
     onClose();
   };
 
   const handleBuyNow = () => {
-    if (product.variants && product.variants.length > 0 && !selectedVariant) {
-      setErrorMsg('Vui lòng chọn màu sắc/phân loại nhé!');
-      return;
+    let activeVariant = selectedVariant;
+    if (product.variants && product.variants.length > 0 && !activeVariant) {
+      activeVariant = product.variants.find((v) => (v.stock ?? 0) > 0) || product.variants[0];
+      setSelectedVariant(activeVariant);
     }
-    if (availableStock <= 0) {
+
+    if (activeVariant && (activeVariant.stock ?? 0) <= 0 && (product.stock ?? 0) <= 0) {
       setErrorMsg('Mẫu này tạm thời hết hàng!');
       return;
     }
-    if (quantity < minQty) {
-      setErrorMsg(`Sản phẩm này bán tối thiểu từ ${minQty} cái!`);
-      setQuantity(minQty);
-      return;
+
+    let validQty = Math.max(minQty, quantity);
+    if (stepQty > 1 && (validQty - minQty) % stepQty !== 0) {
+      validQty = Math.max(minQty, Math.round((validQty - minQty) / stepQty) * stepQty + minQty);
+      setQuantity(validQty);
     }
-    if (stepQty > 1 && (quantity - minQty) % stepQty !== 0) {
-      const adjusted = Math.max(minQty, Math.round((quantity - minQty) / stepQty) * stepQty + minQty);
-      setQuantity(adjusted);
-      setErrorMsg(`Số lượng mua phải là bội số của ${stepQty} cái!`);
-      return;
-    }
+
     // Chuẩn Shopee: Bỏ chọn các món khác trong giỏ, chỉ mua đúng món này và đi tới checkout
-    buyNow(product, quantity, selectedVariant, undefined, undefined);
+    buyNow(product, validQty, activeVariant, undefined, undefined);
     onClose();
     router.push('/checkout');
   };

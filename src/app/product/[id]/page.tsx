@@ -21,7 +21,11 @@ export default function ProductDetailPage() {
   const initialFound = INITIAL_PRODUCTS.find((p) => p.id === productId || p.slug === productId);
   const [product, setProduct] = useState<Product | undefined>(initialFound);
 
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(undefined);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(
+    initialFound?.variants && initialFound.variants.length > 0
+      ? initialFound.variants.find((v) => (v.stock ?? 0) > 0) || initialFound.variants[0]
+      : undefined
+  );
 
   const [quantity, setQuantity] = useState<number>(initialFound?.minOrderQuantity || 1);
   const [customNote, setCustomNote] = useState('');
@@ -65,6 +69,9 @@ export default function ProductDetailPage() {
             setProduct(found);
             if (found.minOrderQuantity && found.minOrderQuantity > 1) {
               setQuantity(found.minOrderQuantity);
+            }
+            if (found.variants && found.variants.length > 0) {
+              setSelectedVariant((prev) => prev || found.variants.find((v: any) => (v.stock ?? 0) > 0) || found.variants[0]);
             }
             if (found.images && found.images[0]) {
               setSelectedImage(found.images[0]);
@@ -214,32 +221,25 @@ export default function ProductDetailPage() {
     selectedVariant?.stock !== undefined ? Math.max(0, selectedVariant.stock) : product.stock || 9999;
 
   const validateSelection = (): boolean => {
-    if (product.variants && product.variants.length > 0 && !selectedVariant) {
-      setVariantError(true);
-      setWarningToast('⚠️ Vui lòng chọn Phân loại (Màu sắc / Mẫu) trước nhé!');
-      setTimeout(() => setWarningToast(null), 3000);
-      return false;
+    let activeVariant = selectedVariant;
+    if (product.variants && product.variants.length > 0 && !activeVariant) {
+      activeVariant = product.variants.find((v) => (v.stock ?? 0) > 0) || product.variants[0];
+      setSelectedVariant(activeVariant);
     }
 
-    if (selectedVariant && (selectedVariant.stock ?? 0) <= 0) {
-      setWarningToast(`⚠️ Mẫu "${selectedVariant.name}" hiện đã hết hàng, vui lòng chọn mẫu khác nhé!`);
+    if (activeVariant && (activeVariant.stock ?? 0) <= 0 && (product.stock ?? 0) <= 0) {
+      setWarningToast(`⚠️ Mẫu "${activeVariant.name}" hiện đã hết hàng, vui lòng chọn mẫu khác nhé!`);
       setTimeout(() => setWarningToast(null), 3000);
       return false;
     }
 
     if (quantity < minQty) {
-      setWarningToast(`⚠️ Sản phẩm này bán sỉ tối thiểu từ ${minQty} cái!`);
       setQuantity(minQty);
-      setTimeout(() => setWarningToast(null), 3000);
-      return false;
     }
 
     if (stepQty > 1 && (quantity - minQty) % stepQty !== 0) {
       const adjusted = Math.max(minQty, Math.round((quantity - minQty) / stepQty) * stepQty + minQty);
       setQuantity(adjusted);
-      setWarningToast(`⚠️ Số lượng mua phải là bội số của ${stepQty} cái!`);
-      setTimeout(() => setWarningToast(null), 3000);
-      return false;
     }
 
     return true;

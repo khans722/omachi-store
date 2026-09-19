@@ -47,7 +47,8 @@ export function flyToCart(
   source: Element | HTMLElement | { x: number; y: number } | React.MouseEvent<any> | MouseEvent | any,
   imageUrl: string
 ) {
-  if (typeof window === 'undefined') return;
+  try {
+    if (typeof window === 'undefined') return;
 
   // 1. Xác định toạ độ xuất phát (startX, startY)
   let startX = window.innerWidth / 2;
@@ -176,7 +177,7 @@ export function flyToCart(
   const controlX = (startX + targetX) / 2;
   const controlY = Math.min(startY, targetY) - Math.max(120, Math.abs(targetY - startY) * 0.45);
 
-  function animate(currentTime: number) {
+  const animate = (currentTime: number) => {
     const elapsed = currentTime - startTime;
     const progress = Math.min(1, elapsed / duration);
 
@@ -218,5 +219,8 @@ export function flyToCart(
     }
   }
 
-  requestAnimationFrame(animate);
+    requestAnimationFrame(animate);
+  } catch (err) {
+    console.error('[FLY TO CART ERROR]:', err);
+  }
 }
