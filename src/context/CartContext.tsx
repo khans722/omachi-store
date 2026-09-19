@@ -103,6 +103,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Load from localStorage on client side
   useEffect(() => {
@@ -194,6 +195,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       // Chuẩn sàn 1688: Tự động gom tất cả các màu để tính mốc giá sỉ chung
       return applyWholesalePricing(newItems);
     });
+
+    try {
+      const varName = variant?.name ? ` (${variant.name})` : '';
+      setToastMessage(`Đã thêm "${product.name}${varName}" vào giỏ hàng! ✨`);
+      setTimeout(() => setToastMessage(null), 2500);
+    } catch (_) {}
 
     if (openDrawer) {
       setIsCartOpen(true);
@@ -364,6 +371,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
+
+      {/* Floating Add-to-Cart Toast */}
+      {toastMessage && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-stone-900/95 backdrop-blur-md text-white px-5 py-2.5 rounded-full text-xs font-bold shadow-2xl flex items-center gap-2 animate-bounce-slow border border-white/20 pointer-events-auto">
+          <span>🌸</span>
+          <span>{toastMessage}</span>
+          <a href="/cart" className="ml-1 underline text-pink-300 hover:text-pink-200">Xem giỏ hàng →</a>
+        </div>
+      )}
     </CartContext.Provider>
   );
 }

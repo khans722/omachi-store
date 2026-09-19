@@ -18,7 +18,7 @@ export default function SmartPricingBar({
   comboTiers,
   onQuantityChange,
 }: SmartPricingBarProps) {
-  if (!comboTiers || comboTiers.length === 0) return null;
+  if (!comboTiers || !Array.isArray(comboTiers) || comboTiers.length === 0) return null;
 
   const { unitPrice, appliedTier, nextTier, itemsToNextTier, savings, discountPercent } =
     calculateSmartUnitPrice(basePrice, quantity, comboTiers);

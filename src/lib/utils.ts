@@ -29,35 +29,49 @@ export function calculateSmartUnitPrice(
   savings: number;
   discountPercent: number;
 } {
-  if (!comboTiers || comboTiers.length === 0) {
+  const safeBasePrice = Number(basePrice) || 0;
+  const safeQuantity = Math.max(1, Number(quantity) || 1);
+
+  if (!comboTiers || !Array.isArray(comboTiers) || comboTiers.length === 0) {
     return {
-      unitPrice: basePrice,
+      unitPrice: safeBasePrice,
       itemsToNextTier: 0,
       savings: 0,
       discountPercent: 0,
     };
   }
 
-  // Sort tiers ascending by minQuantity
-  const sorted = [...comboTiers].sort((a, b) => a.minQuantity - b.minQuantity);
+  // Filter valid tiers & Sort tiers ascending by minQuantity
+  const validTiers = comboTiers.filter((t) => t && Number(t.minQuantity) > 0);
+  if (validTiers.length === 0) {
+    return {
+      unitPrice: safeBasePrice,
+      itemsToNextTier: 0,
+      savings: 0,
+      discountPercent: 0,
+    };
+  }
+
+  const sorted = [...validTiers].sort((a, b) => (Number(a.minQuantity) || 0) - (Number(b.minQuantity) || 0));
 
   let appliedTier: ComboTier | undefined;
   let nextTier: ComboTier | undefined;
 
   for (let i = 0; i < sorted.length; i++) {
-    if (quantity >= sorted[i].minQuantity) {
+    const minQ = Number(sorted[i].minQuantity) || 0;
+    if (safeQuantity >= minQ) {
       appliedTier = sorted[i];
     } else if (!nextTier) {
       nextTier = sorted[i];
     }
   }
 
-  const unitPrice = appliedTier ? appliedTier.unitPrice : basePrice;
-  const originalTotal = basePrice * quantity;
-  const actualTotal = unitPrice * quantity;
+  const unitPrice = appliedTier ? (Number(appliedTier.unitPrice) || safeBasePrice) : safeBasePrice;
+  const originalTotal = safeBasePrice * safeQuantity;
+  const actualTotal = unitPrice * safeQuantity;
   const savings = Math.max(0, originalTotal - actualTotal);
   const discountPercent = originalTotal > 0 ? Math.round((savings / originalTotal) * 100) : 0;
-  const itemsToNextTier = nextTier ? nextTier.minQuantity - quantity : 0;
+  const itemsToNextTier = nextTier ? Math.max(0, (Number(nextTier.minQuantity) || 0) - safeQuantity) : 0;
 
   return {
     unitPrice,

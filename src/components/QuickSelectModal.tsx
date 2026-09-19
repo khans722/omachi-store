@@ -214,11 +214,11 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
             </div>
 
             {/* 1688 Wholesale Tiers Hint */}
-            {product.comboTiers && product.comboTiers.length > 0 && (
+            {Array.isArray(product.comboTiers) && product.comboTiers.length > 0 && (
               <div className="mt-1 flex items-center gap-1 flex-wrap text-[10px]">
                 <span className="font-bold text-stone-600">Giá sỉ:</span>
                 {product.comboTiers.map((t) => {
-                  const isCurrent = quantity >= t.minQuantity;
+                  const isCurrent = quantity >= Number(t.minQuantity);
                   return (
                     <span
                       key={t.minQuantity}
@@ -228,7 +228,7 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
                           : 'bg-stone-100 text-stone-600'
                       }`}
                     >
-                      ≥{t.minQuantity}c: {formatVND(t.unitPrice)}
+                      ≥{t.minQuantity}c: {formatVND(Number(t.unitPrice) || 0)}
                     </span>
                   );
                 })}
@@ -263,7 +263,7 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
           )}
 
           {/* 1. Color / Variant selection */}
-          {product.variants && product.variants.length > 0 && (
+          {Array.isArray(product.variants) && product.variants.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-stone-700 uppercase tracking-wider">
