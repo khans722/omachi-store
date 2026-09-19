@@ -25,6 +25,7 @@ import {
   Copy,
   Clock,
   Zap,
+  Heart,
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -1834,9 +1835,10 @@ export default function CheckoutPage() {
         <div className="bg-white rounded-lg shadow-2xs p-3.5 space-y-3 border border-gray-100">
           {/* Shop Name Header */}
           <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-            <div className="flex items-center gap-1.5">
-              <span className={`${curr.badgeBg} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-xs`}>
-                Yêu thích
+            <div className="flex items-center gap-2">
+              <span className={`inline-flex items-center gap-1 text-[10px] font-extrabold text-white px-2 py-0.5 rounded-md shadow-xs border border-white/40 ring-1 ring-black/10 uppercase tracking-wide ${curr.badgeBg}`}>
+                <Heart className="w-2.5 h-2.5 fill-white text-white shrink-0" />
+                <span>Yêu thích</span>
               </span>
               <span className="text-xs font-bold text-gray-900">🌸 Omachi Handmade Studio</span>
             </div>

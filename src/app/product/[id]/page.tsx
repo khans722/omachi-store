@@ -8,7 +8,7 @@ import { formatVND, calculateSmartUnitPrice } from '@/lib/utils';
 import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
 import { flyToCart } from '@/lib/flyToCart';
-import { ShoppingBag, Star, ArrowLeft, Plus, Minus, MessageCircle, Check, AlertCircle, ChevronRight, ChevronDown, Zap } from 'lucide-react';
+import { ShoppingBag, Star, ArrowLeft, Plus, Minus, MessageCircle, Check, AlertCircle, ChevronRight, ChevronDown, Zap, Heart } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ProductDetailPage() {
@@ -56,7 +56,6 @@ export default function ProductDetailPage() {
     initialFound?.images?.[0] || product?.images?.[0] || ''
   );
   const hasValidMainImage = Boolean(selectedImage) && !mainImgError;
-  const [isAddedToast, setIsAddedToast] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   // Shopee Mobile Sheet Modal State
@@ -298,8 +297,6 @@ export default function ProductDetailPage() {
 
     addItem(product, quantity, activeVariant, customNote, undefined, false);
     setIsMobileSheetOpen(false);
-    setIsAddedToast(true);
-    setTimeout(() => setIsAddedToast(false), 2500);
   };
 
   const handleBuyNow = () => {
@@ -313,13 +310,6 @@ export default function ProductDetailPage() {
 
   return (
     <div className="py-3 sm:py-6 space-y-5 max-w-5xl mx-auto pb-24 md:pb-12">
-      {/* Toast feedback (Success) */}
-      {isAddedToast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-5 py-2.5 rounded-full text-xs font-bold shadow-xl flex items-center gap-2 animate-bounce-slow">
-          <Check className="w-4 h-4" />
-          <span>Đã thêm vào giỏ hàng thành công! ✨</span>
-        </div>
-      )}
 
       {/* Toast feedback (Warning / Validation) */}
       {warningToast && (
@@ -403,42 +393,15 @@ export default function ProductDetailPage() {
           {/* CỘT PHẢI: Bảng thuộc tính Shopee (md:col-span-7) */}
           <div className="md:col-span-7 space-y-4">
             
-            {/* 1. Header: Badge Yêu Thích + Tên sản phẩm */}
-            <div className="space-y-1.5">
-              <h1 className="text-lg sm:text-xl md:text-2xl font-semibold text-stone-900 leading-snug">
-                <span className={`inline-block text-[11px] font-bold text-white px-2 py-0.5 rounded-xs mr-2 align-middle shadow-2xs ${curr.stickyCartBadge || 'bg-rose-500'}`}>
-                  Yêu thích
+            {/* 1. Header: Badge Yêu Thích đóng khung đẹp + Tên sản phẩm */}
+            <div className="space-y-1.5 pb-1">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-stone-900 leading-snug">
+                <span className={`inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-extrabold text-white px-2.5 py-0.5 rounded-md shadow-xs border border-white/40 ring-1 ring-black/10 mr-2 align-middle uppercase tracking-wide ${curr.stickyCartBadge || 'bg-[#78B159]'}`}>
+                  <Heart className="w-2.5 h-2.5 fill-white text-white shrink-0" />
+                  <span>Yêu thích</span>
                 </span>
                 <span className="align-middle">{product.name}</span>
               </h1>
-
-              {/* Stats row: Rating, Đánh giá, Đã bán */}
-              <div className="flex items-center flex-wrap gap-2.5 sm:gap-3 text-xs text-stone-500 pt-0.5">
-                <div className="flex items-center gap-1">
-                  <span className={`font-extrabold underline text-sm ${curr.highlightText}`}>{product.rating || 5.0}</span>
-                  <div className="flex items-center text-amber-400 text-xs">
-                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                  </div>
-                </div>
-
-                <span className="text-stone-300">|</span>
-
-                <div className="flex items-center gap-1">
-                  <span className="font-bold text-stone-800 underline">{product.reviewCount || 12}</span>
-                  <span>Đánh Giá</span>
-                </div>
-
-                <span className="text-stone-300">|</span>
-
-                <div className="flex items-center gap-1">
-                  <span className="font-bold text-stone-800">{product.soldCount || 0}</span>
-                  <span>Đã Bán</span>
-                </div>
-              </div>
             </div>
 
             {/* 2. Banner Giá (Khung nền nhạt Shopee) */}
