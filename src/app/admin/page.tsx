@@ -181,6 +181,8 @@ export default function AdminPage() {
   const [revenuePaymentFilter, setRevenuePaymentFilter] = useState<'all' | 'PAID' | 'UNPAID'>('all');
   const [orderSearch, setOrderSearch] = useState<string>('');
   const [testZaloStatus, setTestZaloStatus] = useState<string>('');
+  const [isTestingTelegram, setIsTestingTelegram] = useState(false);
+  const [telegramTestStatus, setTelegramTestStatus] = useState<{ success?: boolean; message?: string } | null>(null);
   const [showTelegramGuide, setShowTelegramGuide] = useState(false);
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string>('');
   const [actionErrorMsg, setActionErrorMsg] = useState<string>('');
@@ -1482,6 +1484,52 @@ export default function AdminPage() {
     } catch (err) {}
     
     setTimeout(() => setTestZaloStatus(''), 6000);
+  };
+
+  const handleTestTelegram = async () => {
+    if (!settings.telegramBotToken || !settings.telegramChatId) {
+      setTelegramTestStatus({
+        success: false,
+        message: '⚠️ Vui lòng điền Telegram Bot Token và Chat ID trước khi bấm kiểm tra!',
+      });
+      setTimeout(() => setTelegramTestStatus(null), 5000);
+      return;
+    }
+
+    setIsTestingTelegram(true);
+    setTelegramTestStatus(null);
+    try {
+      const res = await fetch('/api/notify-zalo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          telegramBotToken: settings.telegramBotToken,
+          telegramChatId: settings.telegramChatId,
+          websiteUrl: settings.websiteUrl,
+          enableTelegramNotify: true,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTelegramTestStatus({
+          success: true,
+          message: '🎉 Đã gửi tin nhắn thử nghiệm thành công về Telegram! Hãy kiểm tra ứng dụng Telegram trên điện thoại của bạn.',
+        });
+      } else {
+        setTelegramTestStatus({
+          success: false,
+          message: `❌ Telegram phản hồi lỗi: ${data.error || 'Không thể gửi tin nhắn'}`,
+        });
+      }
+    } catch (e: any) {
+      setTelegramTestStatus({
+        success: false,
+        message: `❌ Lỗi kết nối: ${e.message || 'Không thể gửi tin nhắn'}`,
+      });
+    } finally {
+      setIsTestingTelegram(false);
+      setTimeout(() => setTelegramTestStatus(null), 8000);
+    }
   };
 
 
@@ -3993,7 +4041,7 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  <div className="pt-1">
+                  <div className="pt-1 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <label className="flex items-center gap-2 cursor-pointer font-bold text-sky-900 text-xs">
                       <input
                         type="checkbox"
@@ -4001,9 +4049,40 @@ export default function AdminPage() {
                         onChange={(e) => setSettings({ ...settings, enableTelegramNotify: e.target.checked })}
                         className="w-4 h-4 text-sky-600 rounded-md focus:ring-sky-400"
                       />
-                      <span>Kích hoạt tính năng tự động nổ thông báo về điện thoại</span>
+                      <span>Kích hoạt tự động nổ thông báo về điện thoại</span>
                     </label>
+
+                    <button
+                      type="button"
+                      disabled={isTestingTelegram}
+                      onClick={handleTestTelegram}
+                      className="px-4 py-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center gap-1.5 disabled:opacity-50 shrink-0"
+                    >
+                      {isTestingTelegram ? (
+                        <>
+                          <span className="animate-spin">⏳</span>
+                          <span>Đang gửi thử...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>⚡</span>
+                          <span>Gửi Tin Nhắn Thử Về Telegram</span>
+                        </>
+                      )}
+                    </button>
                   </div>
+
+                  {telegramTestStatus && (
+                    <div
+                      className={`p-3 rounded-xl text-xs font-bold border transition ${
+                        telegramTestStatus.success
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                          : 'bg-rose-50 text-rose-800 border-rose-200'
+                      }`}
+                    >
+                      {telegramTestStatus.message}
+                    </div>
+                  )}
                 </div>
 
               </div>

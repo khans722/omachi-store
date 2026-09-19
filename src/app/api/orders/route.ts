@@ -59,10 +59,10 @@ export async function POST(req: NextRequest) {
 
     try {
       const settings = await db.settings.get();
-      // Race với timeout 4s: đủ để Telegram API respond, không block quá lâu
+      // Race với timeout 7.5s: đảm bảo Telegram API nhận và gửi xong trước khi đóng response
       await Promise.race([
         sendOrderNotification(newOrder, settings, 'NEW_ORDER', requestOrigin),
-        new Promise((resolve) => setTimeout(resolve, 4000)),
+        new Promise((resolve) => setTimeout(resolve, 7500)),
       ]);
     } catch (notifyErr) {
       console.error('[ORDER TELEGRAM NOTIFICATION ERROR]:', notifyErr);
