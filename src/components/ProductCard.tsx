@@ -178,11 +178,13 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
       </div>
 
       {/* Shopee-style Quick Select Modal */}
-      <QuickSelectModal
-        product={product}
-        isOpen={isQuickSelectOpen}
-        onClose={() => setIsQuickSelectOpen(false)}
-      />
+      {isQuickSelectOpen && (
+        <QuickSelectModal
+          product={product}
+          isOpen={isQuickSelectOpen}
+          onClose={() => setIsQuickSelectOpen(false)}
+        />
+      )}
     </>
   );
 });

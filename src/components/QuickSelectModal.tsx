@@ -34,6 +34,12 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
 
   const [quantity, setQuantity] = useState(minQty);
   const [errorMsg, setErrorMsg] = useState('');
+  const [imgError, setImgError] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Reset when product changes or modal opens
   useEffect(() => {
@@ -52,12 +58,6 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
       setImgError(false);
     }
   }, [isOpen, product]);
-
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -83,8 +83,6 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
     selectedVariant?.stock !== undefined
       ? Number(selectedVariant.stock) || 0
       : Number(product?.stock) || 999;
-
-  const [imgError, setImgError] = useState(false);
 
   // Display Image (Variant image if available, else product image)
   const displayImage =
