@@ -1834,15 +1834,15 @@ export default function CheckoutPage() {
         {/* 3. SHOPEE SHOP ITEMS CARD */}
         <div className="bg-white rounded-lg shadow-2xs p-3.5 space-y-3 border border-gray-100">
           {/* Shop Name Header */}
-          <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-            <div className="flex items-center gap-2">
-              <span className={`inline-flex items-center gap-1 text-[10px] font-extrabold text-white px-2 py-0.5 rounded-md shadow-xs border border-white/40 ring-1 ring-black/10 uppercase tracking-wide ${curr.badgeBg}`}>
+          <div className="flex items-center justify-between pb-2 border-b border-gray-100 gap-2">
+            <div className="flex items-center gap-2 min-w-0 flex-nowrap">
+              <span className={`inline-flex items-center gap-1 text-[10px] font-extrabold text-white px-2 py-0.5 rounded-md shadow-xs border border-white/40 ring-1 ring-black/10 uppercase tracking-wide whitespace-nowrap shrink-0 ${curr.badgeBg}`}>
                 <Heart className="w-2.5 h-2.5 fill-white text-white shrink-0" />
                 <span>Yêu thích</span>
               </span>
-              <span className="text-xs font-bold text-gray-900">🌸 Omachi Handmade Studio</span>
+              <span className="text-xs font-bold text-gray-900 whitespace-nowrap shrink truncate">🌸 Omachi Handmade</span>
             </div>
-            <span className="text-[11px] text-gray-400">{checkoutTotalItems} sản phẩm</span>
+            <span className="text-[11px] text-gray-400 whitespace-nowrap shrink-0">{checkoutTotalItems} sản phẩm</span>
           </div>
 
           {/* Items list */}

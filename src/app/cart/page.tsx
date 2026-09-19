@@ -235,8 +235,8 @@ export default function CartPage() {
         <div className="bg-white rounded-xl shadow-2xs border border-stone-100 overflow-hidden">
           
           {/* Shop Header Bar (Chuẩn Shopee) */}
-          <div className="p-3 sm:p-3.5 bg-white border-b border-stone-100 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
+          <div className="p-3 sm:p-3.5 bg-white border-b border-stone-100 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-nowrap">
               <button
                 type="button"
                 onClick={() => toggleSelectAll(!isAllSelected)}
@@ -249,16 +249,16 @@ export default function CartPage() {
               >
                 {isAllSelected && <Check className="w-3.5 h-3.5 stroke-[3.5]" />}
               </button>
-              <span className={`inline-flex items-center gap-1 text-[10px] font-extrabold text-white px-2 py-0.5 rounded-md shadow-xs border border-white/40 ring-1 ring-black/10 uppercase tracking-wide ${curr.badgeBg}`}>
+              <span className={`inline-flex items-center gap-1 text-[10px] font-extrabold text-white px-2 py-0.5 rounded-md shadow-xs border border-white/40 ring-1 ring-black/10 uppercase tracking-wide whitespace-nowrap shrink-0 ${curr.badgeBg}`}>
                 <Heart className="w-2.5 h-2.5 fill-white text-white shrink-0" />
                 <span>Yêu thích</span>
               </span>
-              <span className="text-xs sm:text-sm font-bold text-stone-900 flex items-center gap-0.5">
-                🌸 Omachi Handmade Studio
-                <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
+              <span className="text-xs sm:text-sm font-bold text-stone-900 flex items-center gap-0.5 whitespace-nowrap shrink truncate">
+                🌸 Omachi Handmade
+                <ChevronRight className="w-3.5 h-3.5 text-stone-400 shrink-0" />
               </span>
             </div>
-            <span className="text-[11px] text-stone-400 font-medium">
+            <span className="text-[11px] text-stone-400 font-medium whitespace-nowrap shrink-0">
               {totalItems} sản phẩm
             </span>
           </div>
