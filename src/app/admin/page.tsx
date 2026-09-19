@@ -142,6 +142,7 @@ export default function AdminPage() {
   const [isSavingNewPassword, setIsSavingNewPassword] = useState(false);
   const [changePassError, setChangePassError] = useState('');
   const [changePassSuccess, setChangePassSuccess] = useState('');
+  const [settingsCategory, setSettingsCategory] = useState<'appearance' | 'contact' | 'policies' | 'payment' | 'telegram' | 'security' | 'all'>('appearance');
 
   const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'inventory' | 'revenue' | 'categories' | 'settings'>('orders');
   const [orders, setOrders] = useState<Order[]>(() => {
@@ -3648,11 +3649,90 @@ export default function AdminPage() {
             <div>
               <h3 className="text-lg sm:text-xl font-black text-gray-800 flex items-center gap-2">
                 <Settings className="w-5 h-5 text-rose-500" />
-                <span>Cấu Hình Toàn Diện Cửa Hàng (Dynamic Config)</span>
+                <span>Cấu Hình Toàn Diện Cửa Hàng (Shop Settings)</span>
               </h3>
               <p className="text-xs text-gray-500 mt-1">
-                Tùy chỉnh mọi nội dung cửa hàng: Ảnh Lookbook Banner, Chính sách mua hàng, Slogan, Mạng xã hội, Hotline &amp; Telegram!
+                Tùy chỉnh phân nhóm khoa học: Ảnh Lookbook Banner, Chính sách mua hàng, Slogan, Mạng xã hội, Hotline &amp; Telegram!
               </p>
+            </div>
+
+            <button
+              type="submit"
+              form="shop-settings-form"
+              className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-red-500 via-rose-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-extrabold text-xs shadow-md shadow-rose-200 transition transform active:scale-95 flex items-center gap-1.5 shrink-0 cursor-pointer w-full sm:w-auto justify-center"
+            >
+              <span>💾 Lưu Cài Đặt Shop ✨</span>
+            </button>
+          </div>
+
+          {/* THANH MENU CHỌN NHÓM CẤU HÌNH (SETTINGS CATEGORY TABS) */}
+          <div className="space-y-3">
+            <div className="bg-stone-50/90 p-2 rounded-2xl border border-stone-200/80 shadow-2xs">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                {[
+                  { id: 'appearance', label: 'Giao Diện & Banner', icon: '🎨', badge: 'Mục 1 & 2' },
+                  { id: 'contact', label: 'Liên Hệ & Mạng XH', icon: '📞', badge: 'Mục 3 & 4' },
+                  { id: 'policies', label: 'Chính Sách & Cam Kết', icon: '📜', badge: 'Mục 5' },
+                  { id: 'payment', label: 'Thanh Toán & Freeship', icon: '💳', badge: 'Mục 7' },
+                  { id: 'telegram', label: 'Bot Telegram', icon: '🤖', badge: 'Mục 6' },
+                  { id: 'security', label: 'Bảo Mật & Supabase', icon: '🛡️', badge: 'Mục 8 & 9' },
+                  { id: 'all', label: 'Xem Tất Cả', icon: '🌟', badge: 'Mục 1 - 9' },
+                ].map((cat) => {
+                  const isActive = settingsCategory === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setSettingsCategory(cat.id as any)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 border cursor-pointer ${
+                        isActive
+                          ? 'bg-rose-500 text-white border-rose-500 shadow-sm shadow-rose-200 font-extrabold'
+                          : 'bg-white hover:bg-rose-50/70 text-stone-700 border-stone-200/70 hover:border-rose-200'
+                      }`}
+                    >
+                      <span>{cat.icon}</span>
+                      <span>{cat.label}</span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                          isActive
+                            ? 'bg-white/25 text-white'
+                            : 'bg-stone-100 text-stone-500'
+                        }`}
+                      >
+                        {cat.badge}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* BANNER THÔNG TIN NHÓM ĐANG CHỌN */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-2.5 bg-pink-50/50 rounded-xl border border-pink-100 text-xs text-stone-600">
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-rose-600 shrink-0">
+                  {settingsCategory === 'appearance' && '🎨 Nhóm 1: Giao Diện & Banner'}
+                  {settingsCategory === 'contact' && '📞 Nhóm 2: Liên Hệ & Mạng Xã Hội'}
+                  {settingsCategory === 'policies' && '📜 Nhóm 3: Chính Sách & Cam Kết'}
+                  {settingsCategory === 'payment' && '💳 Nhóm 4: Thanh Toán & Freeship'}
+                  {settingsCategory === 'telegram' && '🤖 Nhóm 5: Thông Báo Telegram'}
+                  {settingsCategory === 'security' && '🛡️ Nhóm 6: Bảo Mật & Cơ Sở Dữ Liệu'}
+                  {settingsCategory === 'all' && '🌟 Toàn Bộ 9 Nhóm Cấu Hình Cửa Hàng'}
+                </span>
+                <span className="hidden sm:inline text-stone-300">|</span>
+                <span className="text-[11px] text-stone-500">
+                  {settingsCategory === 'appearance' && 'Tải ảnh slideshow lookbook, sửa slogan và tiêu đề giới thiệu tiệm.'}
+                  {settingsCategory === 'contact' && 'Hotline bán hàng, Zalo nhận đơn, địa chỉ xưởng, kho xuất hàng & tài khoản TikTok, Instagram.'}
+                  {settingsCategory === 'policies' && 'Thiết lập 4 cam kết uy tín: Đồng kiểm hàng, Đổi trả 1-1, 100% ảnh thật, Hộp pastel.'}
+                  {settingsCategory === 'payment' && 'Tài khoản ngân hàng VietQR, cổng quét biến động số dư SePay tự động và điều kiện miễn phí ship.'}
+                  {settingsCategory === 'telegram' && 'Cài đặt Telegram Bot Token & Chat ID để điện thoại ting ting ngay khi có đơn mới.'}
+                  {settingsCategory === 'security' && 'Đổi mật khẩu tài khoản quản trị Admin (mã hóa server) và kiểm tra kết nối Supabase Cloud.'}
+                  {settingsCategory === 'all' && 'Hiển thị đầy đủ tất cả cấu hình trên cùng một trang để đối chiếu.'}
+                </span>
+              </div>
+              <span className="text-[10px] text-rose-500 font-semibold shrink-0">
+                ✨ Mọi thay đổi đều được lưu khi bấm Lưu Cài Đặt
+              </span>
             </div>
           </div>
 
@@ -3686,12 +3766,17 @@ export default function AdminPage() {
             }}
             className="space-y-6 text-xs"
           >
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-              
-              {/* ===== CỘT TRÁI (LEFT COLUMN) ===== */}
-              <div className="space-y-6">
-                
-                {/* 1. HERO LOOKBOOK IMAGE CONFIG */}
+            {/* NHÓM 1: GIAO DIỆN & BANNER (MỤC 1 & 2) */}
+            {(settingsCategory === 'appearance' || settingsCategory === 'all') && (
+              <div className="space-y-4">
+                {settingsCategory === 'all' && (
+                  <div className="flex items-center gap-2 pb-2 border-b-2 border-pink-200">
+                    <span className="text-lg">🎨</span>
+                    <h4 className="text-sm font-black text-rose-700 uppercase tracking-wide">Nhóm 1: Giao Diện &amp; Banner Trang Chủ</h4>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+                  {/* 1. HERO LOOKBOOK IMAGE CONFIG */}
                 <div className="space-y-4 p-5 rounded-2xl bg-gradient-to-br from-pink-50/60 to-rose-50/30 border border-pink-200 shadow-2xs">
                   <div className="flex items-center justify-between">
                     <h4 className="font-extrabold text-sm text-gray-800 flex items-center gap-2">
@@ -3949,7 +4034,21 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {/* 3. LIÊN KẾT MẠNG XÃ HỘI */}
+              </div>
+            </div>
+          )}
+
+            {/* NHÓM 2: LIÊN HỆ & MẠNG XÃ HỘI (MỤC 3 & 4) */}
+            {(settingsCategory === 'contact' || settingsCategory === 'all') && (
+              <div className="space-y-4">
+                {settingsCategory === 'all' && (
+                  <div className="flex items-center gap-2 pb-2 border-b-2 border-blue-200">
+                    <span className="text-lg">📞</span>
+                    <h4 className="text-sm font-black text-blue-700 uppercase tracking-wide">Nhóm 2: Thông Tin Liên Hệ &amp; Mạng Xã Hội</h4>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+                  {/* 3. LIÊN KẾT MẠNG XÃ HỘI */}
                 <div className="space-y-4 p-5 rounded-2xl bg-gradient-to-r from-pink-50/50 to-purple-50/50 border border-pink-200 shadow-2xs">
                   <h4 className="font-extrabold text-sm text-gray-800 flex items-center gap-2">
                     <Share2 className="w-4 h-4 text-purple-600" />
@@ -4082,10 +4181,18 @@ export default function AdminPage() {
                 </div>
 
               </div>
+            </div>
+          )}
 
-              {/* ===== CỘT PHẢI (RIGHT COLUMN) ===== */}
-              <div className="space-y-6">
-                
+            {/* NHÓM 3: CHÍNH SÁCH & CAM KẾT (MỤC 5) */}
+            {(settingsCategory === 'policies' || settingsCategory === 'all') && (
+              <div className="space-y-4">
+                {settingsCategory === 'all' && (
+                  <div className="flex items-center gap-2 pb-2 border-b-2 border-amber-200">
+                    <span className="text-lg">📜</span>
+                    <h4 className="text-sm font-black text-amber-700 uppercase tracking-wide">Nhóm 3: Cam Kết &amp; Chính Sách Mua Hàng</h4>
+                  </div>
+                )}
                 {/* 5. PURCHASE POLICIES CONFIG */}
                 <div className="space-y-4 p-5 rounded-2xl bg-gradient-to-br from-amber-50/50 to-pink-50/40 border border-amber-200 shadow-2xs">
                   <div className="flex items-center justify-between">
@@ -4175,6 +4282,18 @@ export default function AdminPage() {
                   </div>
                 </div>
 
+              </div>
+            )}
+
+            {/* NHÓM 5: THÔNG BÁO TELEGRAM (MỤC 6) */}
+            {(settingsCategory === 'telegram' || settingsCategory === 'all') && (
+              <div className="space-y-4">
+                {settingsCategory === 'all' && (
+                  <div className="flex items-center gap-2 pb-2 border-b-2 border-sky-200">
+                    <span className="text-lg">🤖</span>
+                    <h4 className="text-sm font-black text-sky-700 uppercase tracking-wide">Nhóm 5: Thông Báo Đơn Hàng Tự Động Qua Telegram</h4>
+                  </div>
+                )}
                 {/* 6. TELEGRAM BOT NOTIFICATIONS */}
                 <div className="bg-gradient-to-r from-sky-50 via-blue-50 to-indigo-50/40 p-5 rounded-2xl border border-sky-200 shadow-2xs space-y-4">
                   <div className="flex items-center gap-2.5 pb-3 border-b border-sky-100">
@@ -4275,12 +4394,19 @@ export default function AdminPage() {
                     </div>
                   )}
                 </div>
-
               </div>
+            )}
 
-            </div>
-
-            {/* 7. CẤU HÌNH THANH TOÁN (NGÂN HÀNG VIETQR) & FREESHIP */}
+            {/* NHÓM 4: THANH TOÁN & FREESHIP (MỤC 7) */}
+            {(settingsCategory === 'payment' || settingsCategory === 'all') && (
+              <div className="space-y-4">
+                {settingsCategory === 'all' && (
+                  <div className="flex items-center gap-2 pb-2 border-b-2 border-purple-200">
+                    <span className="text-lg">💳</span>
+                    <h4 className="text-sm font-black text-purple-700 uppercase tracking-wide">Nhóm 4: Cấu Hình Thanh Toán VietQR, Freeship &amp; SePay</h4>
+                  </div>
+                )}
+                {/* 7. CẤU HÌNH THANH TOÁN (NGÂN HÀNG VIETQR) & FREESHIP */}
                 <div className="bg-gradient-to-r from-purple-50 via-pink-50 to-rose-50/40 p-5 rounded-2xl border border-purple-200 shadow-2xs space-y-4">
                   <div className="flex items-center gap-2.5 pb-3 border-b border-purple-100">
                     <span className="text-2xl">💳</span>
@@ -4466,14 +4592,22 @@ export default function AdminPage() {
                         onChange={(e) => setSettings({ ...settings, sepayApiKey: e.target.value })}
                         className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-xl font-mono text-xs text-gray-800 font-medium focus:ring-2 focus:ring-emerald-400 focus:outline-none"
                       />
-                      <p className="text-[10px] text-gray-500">
-                        💡 Khi có API Token này, website sẽ tự động quét đối soát ngầm mỗi 2.5s. Ngay khi tiền vào tài khoản ngân hàng, hệ thống tự động đổi sang ĐÃ THANH TOÁN và nổ pháo hoa mà khách không cần ấn gì!
-                      </p>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
 
-
-
+            {/* NHÓM 6: BẢO MẬT & SUPABASE (MỤC 8 & 9) */}
+            {(settingsCategory === 'security' || settingsCategory === 'all') && (
+              <div className="space-y-4">
+                {settingsCategory === 'all' && (
+                  <div className="flex items-center gap-2 pb-2 border-b-2 border-emerald-200">
+                    <span className="text-lg">🛡️</span>
+                    <h4 className="text-sm font-black text-emerald-700 uppercase tracking-wide">Nhóm 6: Bảo Mật Quản Trị &amp; Cơ Sở Dữ Liệu</h4>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
                   {/* 8. CƠ SỞ DỮ LIỆU ĐÁM MÂY SUPABASE (CLOUD DATABASE) */}
                   <div className="p-4 bg-gradient-to-br from-emerald-50/50 via-teal-50/30 to-white rounded-2xl border-2 border-emerald-300 shadow-xs space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -4658,8 +4792,9 @@ export default function AdminPage() {
                       </button>
                     </div>
                   </div>
-
                 </div>
+              </div>
+            )}
 
                 {/* BIG SAVE BUTTON AT BOTTOM */}
             <div className="pt-4 border-t border-pink-100 flex items-center justify-end">
