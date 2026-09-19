@@ -3161,8 +3161,12 @@ export default function AdminPage() {
                       {/* Left: Product Info */}
                       <div className="flex items-start sm:items-center gap-3.5">
                         <img
-                          src={prod.images?.[0] || '/uploads/charm_1789432914386_1789371730804_1528911961217344.jpg'}
+                          src={prod.images?.[0] || '/images/charm_feed_1.jpg'}
                           alt={prod.name}
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = '/images/charm_feed_1.jpg';
+                          }}
                           className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl object-cover border border-pink-200 bg-white shrink-0"
                         />
                         <div className="space-y-1">

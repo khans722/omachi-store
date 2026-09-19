@@ -59,7 +59,7 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
     selectedVariant?.imageUrl ||
     selectedVariant?.image ||
     product.images?.[0] ||
-    '/uploads/charm_1789432914386_1789371730804_1528911961217344.jpg';
+    '/images/charm_feed_1.jpg';
 
   const themeStyles = {
     green: {
@@ -171,7 +171,7 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
               className="w-full h-full object-cover"
               onError={(e) => {
                 e.currentTarget.onerror = null;
-                e.currentTarget.src = '/uploads/charm_1789432914386_1789371730804_1528911961217344.jpg';
+                e.currentTarget.src = '/images/charm_feed_1.jpg';
               }}
             />
           </div>

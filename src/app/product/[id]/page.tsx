@@ -30,7 +30,7 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState<number>(initialFound?.minOrderQuantity || 1);
   const [customNote, setCustomNote] = useState<string>('');
   const [selectedImage, setSelectedImage] = useState<string>(
-    initialFound?.images?.[0] || '/uploads/charm_1789432914386_1789371730804_1528911961217344.jpg'
+    initialFound?.images?.[0] || '/images/charm_feed_1.jpg'
   );
   const [isAddedToast, setIsAddedToast] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);

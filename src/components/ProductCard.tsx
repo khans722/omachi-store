@@ -42,8 +42,8 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
   };
 
   const style = themeConfig[theme] || themeConfig.green;
-  const primaryImage = product.images[0] || '/uploads/charm_1789432914386_1789371730804_1528911961217344.jpg';
-  const secondaryImage = product.images[1] || primaryImage;
+  const primaryImage = product.images?.[0] || '/images/charm_feed_1.jpg';
+  const secondaryImage = product.images?.[1] || primaryImage;
 
   return (
     <>
@@ -59,7 +59,7 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
             decoding="async"
             onError={(e) => {
               e.currentTarget.onerror = null;
-              e.currentTarget.src = '/uploads/charm_1789432914386_1789371730804_1528911961217344.jpg';
+              e.currentTarget.src = '/images/charm_feed_1.jpg';
             }}
             className="w-full h-full object-cover object-center transition-all duration-500 group-hover:scale-105"
           />
