@@ -127,7 +127,7 @@ export default function AdminPage() {
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
 
-  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'inventory' | 'revenue' | 'categories' | 'feedbacks' | 'settings'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'inventory' | 'revenue' | 'categories' | 'settings'>('orders');
   const [orders, setOrders] = useState<Order[]>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -1766,26 +1766,8 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* NHÓM 3: KHÁCH HÀNG & CỬA HÀNG */}
+        {/* NHÓM 3: HỆ THỐNG & CỬA HÀNG */}
         <div className="flex items-center p-1 bg-stone-100/90 rounded-2xl border border-stone-200/70 shadow-2xs shrink-0">
-          <button
-            type="button"
-            onClick={() => handleSwitchTab('feedbacks')}
-            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
-              activeTab === 'feedbacks'
-                ? 'bg-rose-500 text-white shadow-xs'
-                : 'text-stone-600 hover:text-stone-900 hover:bg-white/70'
-            }`}
-          >
-            <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" />
-            <span>Đánh Giá</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-              activeTab === 'feedbacks' ? 'bg-white/20 text-white' : 'bg-stone-200 text-stone-700'
-            }`}>
-              {feedbacks.length}
-            </span>
-          </button>
-
           <button
             type="button"
             onClick={() => handleSwitchTab('settings')}
@@ -3389,93 +3371,6 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* TAB: FEEDBACKS / REVIEWS MANAGEMENT */}
-      {activeTab === 'feedbacks' && (
-        <div className="bg-white p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl border border-pink-100 shadow-xs space-y-4 sm:space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-base font-extrabold text-gray-800 flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-rose-500" />
-                <span>Quản Lý Đánh Giá Khách Hàng (#OmachiFeedback)</span>
-              </h3>
-              <p className="text-xs text-gray-500">
-                Toàn bộ feedback hiển thị trên trang chủ được lấy trực tiếp từ Database tại đây. Bạn có thể tự thêm, sửa lời khen hoặc xóa feedback.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleOpenAddFeedback}
-              className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-extrabold text-xs shadow-md transition flex items-center justify-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              <span>+ Thêm Feedback Khách Hàng</span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {feedbacks.map((fb) => (
-              <div key={fb.id} className="p-4 rounded-2xl border border-pink-100 bg-pink-50/20 space-y-3 flex flex-col justify-between">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 text-amber-400 text-xs">
-                      {Array.from({ length: fb.rating || 5 }).map((_, i) => (
-                        <span key={i}>★</span>
-                      ))}
-                    </div>
-                    <span className="text-[10px] text-gray-400">{new Date(fb.createdAt).toLocaleDateString('vi-VN')}</span>
-                  </div>
-
-                  <p className="text-xs text-gray-700 italic leading-relaxed bg-white p-3 rounded-xl border border-pink-100">
-                    &quot;{fb.comment}&quot;
-                  </p>
-                </div>
-
-                <div className="pt-2 border-t border-pink-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-rose-100 text-rose-700 font-bold text-[10px] flex items-center justify-center">
-                      {fb.avatarText || fb.customerName.slice(0, 2).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-gray-800">{fb.customerName} {fb.customerLocation ? `(${fb.customerLocation})` : ''}</p>
-                      <p className="text-[10px] text-gray-400">Đã mua: {fb.purchasedProduct || 'Phụ kiện charm'}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEditFeedback(fb)}
-                      className="p-1.5 rounded-lg text-pink-600 hover:bg-pink-100 transition"
-                      title="Sửa"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCustomMessageBox({
-                          isOpen: true,
-                          type: 'danger',
-                          title: 'Xóa Đánh Giá Này?',
-                          message: `Bạn có chắc chắn muốn xóa phản hồi của khách "${fb.customerName}" không?`,
-                          confirmText: 'Xác Nhận Xóa',
-                          cancelText: 'Giữ Lại',
-                          onConfirm: () => handleDeleteFeedback(fb.id, fb.customerName),
-                        });
-                      }}
-                      className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-100 transition cursor-pointer"
-                      title="Xóa"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* TAB 4: SETTINGS */}
       {activeTab === 'settings' && (
         <div className="bg-white p-6 sm:p-8 rounded-3xl border border-pink-100 shadow-xs space-y-8 w-full">
@@ -4196,37 +4091,6 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {/* Cấu hình Ví Điện Tử MoMo */}
-                  <div className="p-3.5 bg-white rounded-xl border border-pink-200 space-y-2.5">
-                    <div className="flex items-center gap-1.5 font-bold text-pink-700 text-xs">
-                      <span className="w-4 h-4 rounded-full bg-pink-600 text-white flex items-center justify-center text-[10px] font-black">M</span>
-                      <span>Thông Tin Ví MoMo Nhận Tiền</span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                      <div>
-                        <label className="font-bold text-gray-700 block mb-1">Số Điện Thoại Ví MoMo:</label>
-                        <input
-                          type="text"
-                          placeholder="VD: 0375408256"
-                          value={settings.momoPhone || ''}
-                          onChange={(e) => setSettings({ ...settings, momoPhone: e.target.value })}
-                          className="w-full px-3 py-2 bg-white border border-pink-200 rounded-xl font-bold text-pink-800 focus:ring-2 focus:ring-pink-400 focus:outline-none font-mono"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="font-bold text-gray-700 block mb-1">Tên Chủ Ví MoMo:</label>
-                        <input
-                          type="text"
-                          placeholder="VD: DUONG QUOC KHANH"
-                          value={settings.momoName || ''}
-                          onChange={(e) => setSettings({ ...settings, momoName: e.target.value })}
-                          className="w-full px-3 py-2 bg-white border border-pink-200 rounded-xl font-bold text-gray-800 focus:ring-2 focus:ring-pink-400 focus:outline-none uppercase"
-                        />
-                      </div>
-                    </div>
-                  </div>
 
                   {/* Tự động xác nhận qua SePay */}
                   <div className="p-3.5 bg-white rounded-xl border border-emerald-300 shadow-2xs space-y-3">
