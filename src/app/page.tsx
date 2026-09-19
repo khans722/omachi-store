@@ -71,6 +71,13 @@ export default function HomePage() {
   }, []);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const PRODUCTS_PER_PAGE = 12;
+  const [visibleCount, setVisibleCount] = useState(PRODUCTS_PER_PAGE);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  useEffect(() => {
+    setVisibleCount(PRODUCTS_PER_PAGE);
+  }, [selectedCategory, searchQuery]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -123,6 +130,18 @@ export default function HomePage() {
       return false;
     });
   }, [indexedProducts, searchQuery, selectedCategory, categories]);
+
+  const displayedProducts = useMemo(() => {
+    return filteredProducts.slice(0, visibleCount);
+  }, [filteredProducts, visibleCount]);
+
+  const handleLoadMore = () => {
+    setIsLoadingMore(true);
+    setTimeout(() => {
+      setVisibleCount(prev => prev + PRODUCTS_PER_PAGE);
+      setIsLoadingMore(false);
+    }, 200);
+  };
 
   const themeConfig = {
     green: {
@@ -270,10 +289,59 @@ export default function HomePage() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-6">
-            {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-6">
+              {displayedProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+
+            {/* Phân trang / Nút xem thêm sản phẩm */}
+            {filteredProducts.length > displayedProducts.length && (
+              <div className="flex flex-col items-center justify-center pt-6 sm:pt-8 pb-2 space-y-3">
+                <div className="flex items-center gap-2 text-xs text-stone-500 font-medium">
+                  <span>Đang hiển thị <strong>{displayedProducts.length}</strong> / <strong>{filteredProducts.length}</strong> sản phẩm</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-stone-300" />
+                  <span>Còn {filteredProducts.length - displayedProducts.length} mẫu khác</span>
+                </div>
+
+                {/* Thanh tiến trình xem sản phẩm */}
+                <div className="w-48 sm:w-64 h-1.5 bg-stone-100 rounded-full overflow-hidden border border-stone-200">
+                  <div 
+                    className="h-full bg-gradient-to-r from-rose-400 to-pink-500 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.round((displayedProducts.length / filteredProducts.length) * 100)}%` }}
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleLoadMore}
+                  disabled={isLoadingMore}
+                  className="mt-2 px-7 py-3 rounded-full bg-white hover:bg-rose-50 border-2 border-rose-300 text-rose-600 hover:text-rose-700 font-extrabold text-xs sm:text-sm shadow-sm hover:shadow-md transition transform active:scale-95 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {isLoadingMore ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Đang tải thêm...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>✨ Xem thêm {Math.min(PRODUCTS_PER_PAGE, filteredProducts.length - displayedProducts.length)} sản phẩm khác</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {/* Khi đã tải hết toàn bộ sản phẩm */}
+            {filteredProducts.length > PRODUCTS_PER_PAGE && displayedProducts.length >= filteredProducts.length && (
+              <div className="text-center pt-6 pb-2">
+                <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-stone-50 border border-stone-200 text-stone-500 text-xs font-semibold">
+                  <span>🎉</span>
+                  <span>Bạn đã xem hết toàn bộ {filteredProducts.length} sản phẩm của Omachi!</span>
+                </span>
+              </div>
+            )}
           </div>
         )}
       </section>

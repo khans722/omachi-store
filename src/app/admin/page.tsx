@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Order, OrderStatus, ShopSettings, Product, CustomerFeedback, ProductVariant, ComboTier, Category } from '@/types';
 import { formatVND } from '@/lib/utils';
 import { compressImage } from '@/lib/imageCompress';
@@ -268,6 +268,22 @@ export default function AdminPage() {
   const [expandedVariants, setExpandedVariants] = useState<{ [productId: string]: boolean }>({});
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>('ALL');
   const [productSearch, setProductSearch] = useState<string>('');
+
+  // Orders Pagination State
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [ordersPerPage, setOrdersPerPage] = useState(15);
+
+  // Products Pagination State
+  const [productsPage, setProductsPage] = useState(1);
+  const [productsPerPage, setProductsPerPage] = useState(12);
+
+  useEffect(() => {
+    setOrdersPage(1);
+  }, [selectedStatusFilter, orderSearch]);
+
+  useEffect(() => {
+    setProductsPage(1);
+  }, [productSearch, productCategoryFilter]);
 
   // Product modal state
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -1827,6 +1843,37 @@ export default function AdminPage() {
   ];
   const currentStatusOption = statusFilterOptions.find((o) => o.value === selectedStatusFilter) || statusFilterOptions[0];
 
+  // Orders pagination calculation
+  const totalOrdersCount = filteredOrders.length;
+  const totalOrderPages = Math.max(1, Math.ceil(totalOrdersCount / ordersPerPage));
+  const currentOrderPage = Math.min(Math.max(1, ordersPage), totalOrderPages);
+  const paginatedOrders = filteredOrders.slice((currentOrderPage - 1) * ordersPerPage, currentOrderPage * ordersPerPage);
+  const orderStartIdx = totalOrdersCount === 0 ? 0 : (currentOrderPage - 1) * ordersPerPage + 1;
+  const orderEndIdx = Math.min(currentOrderPage * ordersPerPage, totalOrdersCount);
+
+  // Products filter & pagination calculation
+  const adminFilteredProducts = useMemo(() => {
+    return products.filter((prod) => {
+      const matchesSearch = !productSearch ||
+        prod.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+        (prod.sku && prod.sku.toLowerCase().includes(productSearch.toLowerCase())) ||
+        (prod.categoryName && prod.categoryName.toLowerCase().includes(productSearch.toLowerCase()));
+      const selectedCatObj = categories.find((c) => c.id === productCategoryFilter);
+      const matchesCat = productCategoryFilter === 'ALL' || 
+        prod.categoryId === productCategoryFilter || 
+        prod.category === productCategoryFilter ||
+        (selectedCatObj && (prod.categoryId === selectedCatObj.id || prod.category === selectedCatObj.slug));
+      return matchesSearch && matchesCat;
+    });
+  }, [products, productSearch, productCategoryFilter, categories]);
+
+  const totalProductsCount = adminFilteredProducts.length;
+  const totalProductPages = Math.max(1, Math.ceil(totalProductsCount / productsPerPage));
+  const currentProductPage = Math.min(Math.max(1, productsPage), totalProductPages);
+  const paginatedProducts = adminFilteredProducts.slice((currentProductPage - 1) * productsPerPage, currentProductPage * productsPerPage);
+  const productStartIdx = totalProductsCount === 0 ? 0 : (currentProductPage - 1) * productsPerPage + 1;
+  const productEndIdx = Math.min(currentProductPage * productsPerPage, totalProductsCount);
+
   return (
     <div className="py-3 sm:py-6 space-y-3.5 sm:space-y-6">
       
@@ -2163,7 +2210,7 @@ export default function AdminPage() {
                 <p className="text-gray-400 text-xs">Không có đơn hàng nào trong mục này.</p>
               </div>
             ) : (
-              filteredOrders.map((order) => {
+              paginatedOrders.map((order) => {
                 const zaloChatUrl = `https://zalo.me/${order.customer.phone.replace(/[^0-9]/g, '')}`;
 
                 // Tính toán tài chính đơn hàng chuẩn xác theo giá lẻ từng con & chiết khấu sỉ
@@ -2607,6 +2654,109 @@ export default function AdminPage() {
             )}
           </div>
 
+          {/* Orders Pagination Bar */}
+          {totalOrdersCount > 0 && (
+            <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-pink-100 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-stone-500 font-medium flex-wrap">
+                <span>
+                  Hiển thị <strong>{orderStartIdx}</strong> - <strong>{orderEndIdx}</strong> trên tổng số <strong>{totalOrdersCount}</strong> đơn
+                </span>
+                <span className="hidden sm:inline text-stone-300">|</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-stone-400">Mỗi trang:</span>
+                  <select
+                    value={ordersPerPage}
+                    onChange={(e) => {
+                      setOrdersPerPage(Number(e.target.value));
+                      setOrdersPage(1);
+                    }}
+                    className="px-2 py-1 bg-stone-50 border border-stone-200 rounded-lg text-xs font-bold text-stone-800 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  >
+                    <option value={10}>10 đơn</option>
+                    <option value={15}>15 đơn</option>
+                    <option value={25}>25 đơn</option>
+                    <option value={50}>50 đơn</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Navigation buttons */}
+              {totalOrderPages > 1 && (
+                <div className="flex items-center gap-1 flex-wrap justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setOrdersPage(1)}
+                    disabled={currentOrderPage === 1}
+                    className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 disabled:opacity-40 disabled:hover:bg-white text-xs font-bold transition cursor-pointer"
+                    title="Trang đầu"
+                  >
+                    « Đầu
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOrdersPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentOrderPage === 1}
+                    className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 disabled:opacity-40 disabled:hover:bg-white text-xs font-bold transition cursor-pointer"
+                    title="Trang trước"
+                  >
+                    ‹ Trước
+                  </button>
+
+                  {/* Page numbers */}
+                  {Array.from({ length: totalOrderPages }, (_, i) => i + 1)
+                    .filter(p => p === 1 || p === totalOrderPages || Math.abs(p - currentOrderPage) <= 1)
+                    .reduce((acc: (number | string)[], p, idx, arr) => {
+                      if (idx > 0 && p - (arr[idx - 1] as number) > 1) {
+                        acc.push('...');
+                      }
+                      acc.push(p);
+                      return acc;
+                    }, [])
+                    .map((item, iIdx) => {
+                      if (item === '...') {
+                        return <span key={`dots-${iIdx}`} className="px-1 text-stone-400">...</span>;
+                      }
+                      const pageNum = Number(item);
+                      const isCurr = pageNum === currentOrderPage;
+                      return (
+                        <button
+                          key={pageNum}
+                          type="button"
+                          onClick={() => setOrdersPage(pageNum)}
+                          className={`w-8 h-8 rounded-lg text-xs font-black transition flex items-center justify-center cursor-pointer ${
+                            isCurr
+                              ? 'bg-rose-500 text-white shadow-xs'
+                              : 'bg-white border border-stone-200 text-stone-700 hover:bg-rose-50 hover:border-pink-200'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+
+                  <button
+                    type="button"
+                    onClick={() => setOrdersPage(prev => Math.min(totalOrderPages, prev + 1))}
+                    disabled={currentOrderPage === totalOrderPages}
+                    className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 disabled:opacity-40 disabled:hover:bg-white text-xs font-bold transition cursor-pointer"
+                    title="Trang sau"
+                  >
+                    Sau ›
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOrdersPage(totalOrderPages)}
+                    disabled={currentOrderPage === totalOrderPages}
+                    className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 disabled:opacity-40 disabled:hover:bg-white text-xs font-bold transition cursor-pointer"
+                    title="Trang cuối"
+                  >
+                    Cuối »
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
       )}
 
@@ -3036,22 +3186,24 @@ export default function AdminPage() {
                 <span>+ Thêm Mẫu Charm / Phụ Kiện Mới</span>
               </button>
             </div>
+          ) : adminFilteredProducts.length === 0 ? (
+            <div className="p-8 text-center text-stone-400 bg-stone-50/50 rounded-2xl border border-dashed border-stone-200">
+              <p className="text-sm font-semibold">Không tìm thấy mẫu charm/sản phẩm nào phù hợp với tìm kiếm hoặc bộ lọc.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setProductSearch('');
+                  setProductCategoryFilter('ALL');
+                }}
+                className="mt-3 px-3.5 py-1.5 rounded-xl bg-pink-100 text-pink-700 text-xs font-bold hover:bg-pink-200 transition cursor-pointer"
+              >
+                Đặt lại bộ lọc
+              </button>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {products
-                .filter((prod) => {
-                  const matchesSearch = !productSearch ||
-                    prod.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-                    (prod.sku && prod.sku.toLowerCase().includes(productSearch.toLowerCase())) ||
-                    (prod.categoryName && prod.categoryName.toLowerCase().includes(productSearch.toLowerCase()));
-                  const selectedCatObj = categories.find((c) => c.id === productCategoryFilter);
-                  const matchesCat = productCategoryFilter === 'ALL' || 
-                    prod.categoryId === productCategoryFilter || 
-                    prod.category === productCategoryFilter ||
-                    (selectedCatObj && (prod.categoryId === selectedCatObj.id || prod.category === selectedCatObj.slug));
-                  return matchesSearch && matchesCat;
-                })
-                .map((prod) => {
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {paginatedProducts.map((prod) => {
                   const estimatedProfit = prod.costPrice ? prod.basePrice - prod.costPrice : null;
 
                   return (
@@ -3183,6 +3335,109 @@ export default function AdminPage() {
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Products Pagination Bar */}
+              {totalProductsCount > 0 && (
+                <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-pink-100 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2 text-stone-500 font-medium flex-wrap">
+                    <span>
+                      Hiển thị <strong>{productStartIdx}</strong> - <strong>{productEndIdx}</strong> trên tổng số <strong>{totalProductsCount}</strong> mẫu
+                    </span>
+                    <span className="hidden sm:inline text-stone-300">|</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-stone-400">Mỗi trang:</span>
+                      <select
+                        value={productsPerPage}
+                        onChange={(e) => {
+                          setProductsPerPage(Number(e.target.value));
+                          setProductsPage(1);
+                        }}
+                        className="px-2 py-1 bg-stone-50 border border-stone-200 rounded-lg text-xs font-bold text-stone-800 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                      >
+                        <option value={12}>12 mẫu</option>
+                        <option value={24}>24 mẫu</option>
+                        <option value={48}>48 mẫu</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Navigation buttons */}
+                  {totalProductPages > 1 && (
+                    <div className="flex items-center gap-1 flex-wrap justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setProductsPage(1)}
+                        disabled={currentProductPage === 1}
+                        className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 disabled:opacity-40 disabled:hover:bg-white text-xs font-bold transition cursor-pointer"
+                        title="Trang đầu"
+                      >
+                        « Đầu
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setProductsPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentProductPage === 1}
+                        className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 disabled:opacity-40 disabled:hover:bg-white text-xs font-bold transition cursor-pointer"
+                        title="Trang trước"
+                      >
+                        ‹ Trước
+                      </button>
+
+                      {/* Page numbers with smart ellipsis */}
+                      {Array.from({ length: totalProductPages }, (_, i) => i + 1)
+                        .filter(p => p === 1 || p === totalProductPages || Math.abs(p - currentProductPage) <= 1)
+                        .reduce((acc: (number | string)[], p, idx, arr) => {
+                          if (idx > 0 && p - (arr[idx - 1] as number) > 1) {
+                            acc.push('...');
+                          }
+                          acc.push(p);
+                          return acc;
+                        }, [])
+                        .map((item, iIdx) => {
+                          if (item === '...') {
+                            return <span key={`dots-prod-${iIdx}`} className="px-1 text-stone-400">...</span>;
+                          }
+                          const pageNum = Number(item);
+                          const isCurr = pageNum === currentProductPage;
+                          return (
+                            <button
+                              key={pageNum}
+                              type="button"
+                              onClick={() => setProductsPage(pageNum)}
+                              className={`w-8 h-8 rounded-lg text-xs font-black transition flex items-center justify-center cursor-pointer ${
+                                isCurr
+                                  ? 'bg-rose-500 text-white shadow-xs'
+                                  : 'bg-white border border-stone-200 text-stone-700 hover:bg-rose-50 hover:border-pink-200'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+
+                      <button
+                        type="button"
+                        onClick={() => setProductsPage(prev => Math.min(totalProductPages, prev + 1))}
+                        disabled={currentProductPage === totalProductPages}
+                        className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 disabled:opacity-40 disabled:hover:bg-white text-xs font-bold transition cursor-pointer"
+                        title="Trang sau"
+                      >
+                        Sau ›
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setProductsPage(totalProductPages)}
+                        disabled={currentProductPage === totalProductPages}
+                        className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 disabled:opacity-40 disabled:hover:bg-white text-xs font-bold transition cursor-pointer"
+                        title="Trang cuối"
+                      >
+                        Cuối »
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
