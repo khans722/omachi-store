@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Product, ProductVariant } from '@/types';
 import { formatVND, calculateSmartUnitPrice } from '@/lib/utils';
@@ -52,12 +53,27 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
     }
   }, [isOpen, product]);
 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
+  }, [isOpen]);
+
   const smartPricing = useMemo(() => {
     if (!product) return { unitPrice: 0, itemsToNextTier: 0, savings: 0, discountPercent: 0 };
     return calculateSmartUnitPrice(product.basePrice, quantity, product.comboTiers);
   }, [product?.basePrice, quantity, product?.comboTiers]);
 
-  if (!isOpen || !product) return null;
+  if (!isOpen || !product || !mounted) return null;
 
   const unitPrice = selectedVariant?.price ?? smartPricing.unitPrice;
   const totalPrice = (Number(unitPrice) || 0) * (Number(quantity) || 1);
@@ -164,7 +180,7 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
     router.push('/checkout');
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
       {/* Backdrop */}
       <div 
@@ -431,6 +447,7 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
