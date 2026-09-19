@@ -41,12 +41,14 @@ export interface IndexedProduct {
  * Giúp tìm kiếm diễn ra trong < 1ms mà không phải convert chuỗi lại nhiều lần.
  */
 export function createProductSearchIndex(products: Product[]): IndexedProduct[] {
-  return products.map((p) => {
+  if (!Array.isArray(products)) return [];
+  return products.filter(Boolean).map((p) => {
     const normName = removeVietnameseTones(p.name || '');
     const normCat = removeVietnameseTones(p.categoryName || p.category || '');
     const normDesc = removeVietnameseTones(p.description || '');
-    const normVariants = (p.variants || [])
-      .map((v) => removeVietnameseTones(v.name || ''))
+    const normVariants = (Array.isArray(p.variants) ? p.variants : [])
+      .filter(Boolean)
+      .map((v) => removeVietnameseTones(v?.name || ''))
       .join(' ');
     const normSku = removeVietnameseTones(p.sku || '');
 
@@ -71,9 +73,10 @@ export function smartFilterProducts(
   indexed: IndexedProduct[],
   query: string
 ): Product[] {
-  const trimmed = query.trim();
+  if (!Array.isArray(indexed)) return [];
+  const trimmed = (query || '').trim();
   if (!trimmed) {
-    return indexed.map((item) => item.product);
+    return indexed.filter(Boolean).map((item) => item.product);
   }
 
   const tokens = tokenizeQuery(trimmed);

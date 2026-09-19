@@ -43,9 +43,12 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
 
   const style = themeConfig[theme] || themeConfig.green;
   const [imgError, setImgError] = useState(false);
-  const hasValidImage = Boolean(product.images && product.images.length > 0 && product.images[0]) && !imgError;
-  const primaryImage = product.images?.[0] || '';
-  const secondaryImage = product.images?.[1] || primaryImage;
+  const images = Array.isArray(product?.images) ? product.images : [];
+  const hasValidImage = Boolean(images.length > 0 && images[0]) && !imgError;
+  const primaryImage = images[0] || '';
+  const secondaryImage = images[1] || primaryImage;
+  const variants = Array.isArray(product?.variants) ? product.variants : [];
+  const tiers = Array.isArray(product?.comboTiers) ? product.comboTiers : [];
 
   return (
     <>
@@ -66,7 +69,7 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
               />
 
               {/* Secondary image fade on hover if available */}
-              {product.images.length > 1 && (
+              {images.length > 1 && (
                 <img
                   src={secondaryImage}
                   alt={product.name}
@@ -124,9 +127,9 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
 
             {/* Stock / Variant hint */}
             <div className="mt-1 flex items-center gap-1.5 text-[10px] text-stone-500">
-              {product.variants && product.variants.length > 0 && (
+              {variants.length > 0 && (
                 <span className="bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded font-medium">
-                  {product.variants.length} màu
+                  {variants.length} màu
                 </span>
               )}
               {product.stock !== undefined && product.stock > 0 ? (
@@ -149,9 +152,9 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
                 <span className="text-[10px] text-stone-400 font-normal ml-0.5">/cái</span>
               </div>
               <div className="flex items-center gap-1 min-w-0">
-                {product.comboTiers && product.comboTiers.length > 0 ? (
+                {tiers.length > 0 ? (
                   <span className="text-[9px] sm:text-[10px] text-emerald-700 font-bold truncate">
-                    ⚡ Sỉ từ {formatVND(Math.min(...product.comboTiers.map((t) => t.unitPrice)))}
+                    ⚡ Sỉ từ {formatVND(Math.min(...tiers.map((t) => Number(t?.unitPrice || product.basePrice || 0))))}
                   </span>
                 ) : product.originalPrice && product.originalPrice > product.basePrice ? (
                   <span className="text-[9px] sm:text-[10px] text-stone-400 line-through leading-tight truncate">

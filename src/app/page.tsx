@@ -23,11 +23,20 @@ export default function HomePage() {
   useEffect(() => {
     try {
       const p = localStorage.getItem('omachi_products_cache');
-      if (p) setProducts(JSON.parse(p));
+      if (p) {
+        const parsed = JSON.parse(p);
+        if (Array.isArray(parsed)) setProducts(parsed);
+      }
       const s = localStorage.getItem('omachi_shop_settings');
-      if (s) setSettings(JSON.parse(s));
+      if (s) {
+        const parsed = JSON.parse(s);
+        if (parsed && typeof parsed === 'object') setSettings(parsed);
+      }
       const c = localStorage.getItem('omachi_categories_cache');
-      if (c) setCategories(JSON.parse(c));
+      if (c) {
+        const parsed = JSON.parse(c);
+        if (Array.isArray(parsed)) setCategories(parsed);
+      }
     } catch (e) {}
 
     const loadData = async () => {
@@ -79,25 +88,29 @@ export default function HomePage() {
 
   // 1. Tạo Search Index hiệu năng cao (O(1), chỉ tính toán lại khi mảng products thay đổi)
   const indexedProducts = useMemo(() => {
-    return createProductSearchIndex(products);
+    return createProductSearchIndex(Array.isArray(products) ? products : []);
   }, [products]);
 
   // 2. Lọc thông minh theo từ khóa (hỗ trợ gõ tiếng Việt không dấu, đa từ khóa, tìm kiếm biến thể/danh mục)
   // và kết hợp lọc theo danh mục được chọn
   const filteredProducts = useMemo(() => {
+    if (!Array.isArray(indexedProducts)) return [];
     // A. Lọc tìm kiếm thông minh có tính điểm độ liên quan (Relevance Ranking)
     const searchMatched = smartFilterProducts(indexedProducts, searchQuery);
+    if (!Array.isArray(searchMatched)) return [];
 
     // B. Lọc tiếp theo danh mục (nếu có chọn danh mục cụ thể)
     if (selectedCategory === 'all') {
       return searchMatched;
     }
 
+    const catList = Array.isArray(categories) ? categories : [];
     return searchMatched.filter((p) => {
+      if (!p) return false;
       if (p.categoryId === selectedCategory || p.category === selectedCategory) {
         return true;
       }
-      const matchedCat = categories.find((c) => c.id === selectedCategory || c.slug === selectedCategory);
+      const matchedCat = catList.find((c) => c && (c.id === selectedCategory || c.slug === selectedCategory));
       if (matchedCat) {
         return Boolean(
           p.categoryId === matchedCat.id ||
