@@ -39,23 +39,26 @@ export default function CartDrawer() {
       isAllSelected: boolean;
     }>();
 
-    for (const item of items) {
-      const pId = item.product.id;
-      if (!map.has(pId)) {
-        map.set(pId, {
-          product: item.product,
-          items: [],
-          totalQuantity: 0,
-          totalPrice: 0,
-          isAllSelected: true,
-        });
-      }
-      const group = map.get(pId)!;
-      group.items.push(item);
-      group.totalQuantity += item.quantity;
-      group.totalPrice += item.totalPrice;
-      if (item.selected === false) {
-        group.isAllSelected = false;
+    if (Array.isArray(items)) {
+      for (const item of items) {
+        if (!item || !item.product || !item.product.id) continue;
+        const pId = String(item.product.id);
+        if (!map.has(pId)) {
+          map.set(pId, {
+            product: item.product,
+            items: [],
+            totalQuantity: 0,
+            totalPrice: 0,
+            isAllSelected: true,
+          });
+        }
+        const group = map.get(pId)!;
+        group.items.push(item);
+        group.totalQuantity += Number(item.quantity) || 1;
+        group.totalPrice += Number(item.totalPrice) || 0;
+        if (item.selected === false) {
+          group.isAllSelected = false;
+        }
       }
     }
 
