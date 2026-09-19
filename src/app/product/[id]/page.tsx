@@ -398,29 +398,6 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Dòng Chia sẻ & Thích chuẩn Shopee */}
-            <div className="flex items-center justify-between pt-1 text-xs text-stone-500 border-t border-stone-100">
-              <div className="flex items-center gap-1.5">
-                <span className="text-stone-400 text-[11px]">Chia sẻ:</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-                      navigator.clipboard.writeText(window.location.href);
-                      setWarningToast('Đã sao chép liên kết sản phẩm! 📋');
-                      setTimeout(() => setWarningToast(null), 2000);
-                    }
-                  }}
-                  className="px-2 py-0.5 rounded bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium text-[10px] transition cursor-pointer"
-                >
-                  Sao chép link
-                </button>
-              </div>
-              <div className="flex items-center gap-1 text-rose-500 text-xs">
-                <span>♥</span>
-                <span className="text-stone-600 font-medium">Đã thích ({((product.soldCount || 10) * 3 + 128).toLocaleString('vi-VN')})</span>
-              </div>
-            </div>
           </div>
 
           {/* CỘT PHẢI: Bảng thuộc tính Shopee (md:col-span-7) */}
