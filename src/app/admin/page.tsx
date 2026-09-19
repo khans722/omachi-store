@@ -3910,14 +3910,6 @@ export default function AdminPage() {
                 Tùy chỉnh phân nhóm khoa học: Ảnh Lookbook Banner, Chính sách mua hàng, Slogan, Mạng xã hội, Hotline &amp; Telegram!
               </p>
             </div>
-
-            <button
-              type="submit"
-              form="shop-settings-form"
-              className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-red-500 via-rose-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-extrabold text-xs shadow-md shadow-rose-200 transition transform active:scale-95 flex items-center gap-1.5 shrink-0 cursor-pointer w-full sm:w-auto justify-center"
-            >
-              <span>💾 Lưu Cài Đặt Shop ✨</span>
-            </button>
           </div>
 
           {/* THANH MENU CHỌN NHÓM CẤU HÌNH (SETTINGS CATEGORY TABS) */}
@@ -5051,13 +5043,13 @@ export default function AdminPage() {
               </div>
             )}
 
-                {/* BIG SAVE BUTTON AT BOTTOM */}
+            {/* BIG SAVE BUTTON AT BOTTOM */}
             <div className="pt-4 border-t border-pink-100 flex items-center justify-end">
               <button
                 type="submit"
-                className="w-full sm:w-auto px-10 py-3.5 rounded-2xl bg-gradient-to-r from-red-500 via-rose-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-extrabold text-sm shadow-lg shadow-rose-200 transition transform active:scale-98 flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-10 py-3.5 rounded-2xl bg-gradient-to-r from-red-500 via-rose-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-extrabold text-sm shadow-lg shadow-rose-200 transition transform active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>💾 Lưu Toàn Bộ Cài Đặt Shop ✨</span>
+                <span>💾 Lưu Cài Đặt Shop ✨</span>
               </button>
             </div>
 
