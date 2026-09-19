@@ -39,7 +39,7 @@ export default function HomePage() {
           fetch('/api/feedbacks').then((r) => r.json()).catch(() => null),
         ]);
 
-        if (prodRes && prodRes.success && prodRes.data && prodRes.data.length > 0) {
+        if (prodRes && prodRes.success && Array.isArray(prodRes.data)) {
           setProducts(prodRes.data);
           try { localStorage.setItem('omachi_products_cache', JSON.stringify(prodRes.data)); } catch (e) {}
         }
@@ -47,7 +47,7 @@ export default function HomePage() {
           setSettings(setRes.data);
           try { localStorage.setItem('omachi_shop_settings', JSON.stringify(setRes.data)); } catch (e) {}
         }
-        if (catRes && catRes.success && catRes.data) {
+        if (catRes && catRes.success && Array.isArray(catRes.data)) {
           setCategories(catRes.data);
           try { localStorage.setItem('omachi_categories_cache', JSON.stringify(catRes.data)); } catch (e) {}
         }

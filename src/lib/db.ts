@@ -1999,40 +1999,23 @@ export const db = {
       }
       const local = (readDb().categories || []).filter((c) => c.isActive !== false).sort((a, b) => (a.displayOrder || 99) - (b.displayOrder || 99));
 
-      const fetchSupabase = async (): Promise<Category[] | null> => {
-        try {
-          const { data, error } = await supabase
-            .from('categories')
-            .select('*')
-            .eq('is_active', true)
-            .order('display_order', { ascending: true });
-          if (!error && Array.isArray(data) && data.length > 0) {
-            return data.map(mapCategoryFromSupabase);
-          }
-        } catch (err) {
-          console.warn('[Supabase categories.getAll fallback to local]:', err);
+      try {
+        const { data, error } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+        if (!error && Array.isArray(data)) {
+          const mapped = data.map(mapCategoryFromSupabase);
+          serverCategoriesCache = { data: mapped, expiresAt: Date.now() + 5000 };
+          const dbData = readDb();
+          dbData.categories = mapped;
+          return mapped;
         }
-        return null;
-      };
-
-      let freshList: Category[] | null = null;
-      if (local.length > 0) {
-        freshList = await Promise.race([
-          fetchSupabase(),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500))
-        ]);
-      } else {
-        freshList = await fetchSupabase();
+      } catch (err) {
+        console.warn('[Supabase categories.getAll fallback to local]:', err);
       }
 
-      if (freshList && freshList.length > 0) {
-        serverCategoriesCache = { data: freshList, expiresAt: Date.now() + 30000 };
-        const dbData = readDb();
-        dbData.categories = freshList;
-        return freshList;
-      }
-
-      serverCategoriesCache = { data: local, expiresAt: Date.now() + 10000 };
       return local;
     },
 
@@ -2169,9 +2152,10 @@ export const db = {
       const dbData = readDb();
       if (!dbData.categories) return false;
       const index = dbData.categories.findIndex((c) => c.id === id);
-      if (index === -1) return false;
-      dbData.categories[index].isActive = false;
-      writeDb(dbData);
+      if (index !== -1) {
+        dbData.categories[index].isActive = false;
+        writeDb(dbData);
+      }
       invalidateCategoriesCache();
 
       try {
@@ -2192,40 +2176,23 @@ export const db = {
       }
       const local = (readDb().products || []).filter((p) => p.isActive);
 
-      const fetchSupabase = async (): Promise<Product[] | null> => {
-        try {
-          const { data, error } = await supabase
-            .from('products')
-            .select('*')
-            .eq('is_active', true)
-            .order('created_at', { ascending: false });
-          if (!error && Array.isArray(data) && data.length > 0) {
-            return data.map(mapProductFromSupabase);
-          }
-        } catch (err) {
-          console.warn('[Supabase products.getAll fallback]:', err);
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
+        if (!error && Array.isArray(data)) {
+          const mapped = data.map(mapProductFromSupabase);
+          serverProductsCache = { data: mapped, expiresAt: Date.now() + 5000 };
+          const dbData = readDb();
+          dbData.products = mapped;
+          return mapped;
         }
-        return null;
-      };
-
-      let freshList: Product[] | null = null;
-      if (local.length > 0) {
-        freshList = await Promise.race([
-          fetchSupabase(),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500))
-        ]);
-      } else {
-        freshList = await fetchSupabase();
+      } catch (err) {
+        console.warn('[Supabase products.getAll fallback]:', err);
       }
 
-      if (freshList && freshList.length > 0) {
-        serverProductsCache = { data: freshList, expiresAt: Date.now() + 30000 };
-        const dbData = readDb();
-        dbData.products = freshList;
-        return freshList;
-      }
-
-      serverProductsCache = { data: local, expiresAt: Date.now() + 10000 };
       return local;
     },
 
@@ -2793,42 +2760,23 @@ export const db = {
       }
       const localOrders = readDb().orders || [];
 
-      // Tra cứu Supabase nhưng giới hạn thời gian 350ms nếu đã có localOrders
-      // để tránh việc mạng lag/Supabase cold-start làm trang Admin hoặc Checkout bị treo quay vòng
-      const fetchSupabase = async (): Promise<Order[] | null> => {
-        try {
-          const { data, error } = await supabase
-            .from('orders')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(100);
-          if (!error && Array.isArray(data) && data.length > 0) {
-            return data.map(mapOrderFromSupabase);
-          }
-        } catch (err) {
-          console.warn('[Supabase orders.getAll fallback]:', err);
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(300);
+        if (!error && Array.isArray(data)) {
+          const mapped = data.map(mapOrderFromSupabase);
+          serverOrdersCache = { data: mapped, expiresAt: Date.now() + 3000 };
+          const dbData = readDb();
+          dbData.orders = mapped;
+          return mapped;
         }
-        return null;
-      };
-
-      let freshList: Order[] | null = null;
-      if (localOrders.length > 0) {
-        freshList = await Promise.race([
-          fetchSupabase(),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500))
-        ]);
-      } else {
-        freshList = await fetchSupabase();
+      } catch (err) {
+        console.warn('[Supabase orders.getAll fallback]:', err);
       }
 
-      if (freshList && freshList.length > 0) {
-        serverOrdersCache = { data: freshList, expiresAt: Date.now() + 4000 };
-        const dbData = readDb();
-        dbData.orders = freshList;
-        return freshList;
-      }
-
-      serverOrdersCache = { data: localOrders, expiresAt: Date.now() + 2000 };
       return localOrders;
     },
 
@@ -3603,41 +3551,24 @@ export const db = {
       }
       const local = readDb().settings;
 
-      const fetchSupabase = async (): Promise<ShopSettings | null> => {
-        try {
-          const { data, error } = await supabase
-            .from('settings')
-            .select('*')
-            .eq('id', 'default')
-            .maybeSingle();
-          if (!error && data) {
-            const fallback = readDb().settings;
-            return mapSettingsFromSupabase(data, fallback);
-          }
-        } catch (err) {
-          console.warn('[Supabase settings.get fallback]:', err);
+      try {
+        const { data, error } = await supabase
+          .from('settings')
+          .select('*')
+          .eq('id', 'default')
+          .maybeSingle();
+        if (!error && data) {
+          const fallback = readDb().settings;
+          const mapped = mapSettingsFromSupabase(data, fallback);
+          serverSettingsCache = { data: mapped, expiresAt: Date.now() + 5000 };
+          const dbData = readDb();
+          dbData.settings = mapped;
+          return mapped;
         }
-        return null;
-      };
-
-      let fresh: ShopSettings | null = null;
-      if (local) {
-        fresh = await Promise.race([
-          fetchSupabase(),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500))
-        ]);
-      } else {
-        fresh = await fetchSupabase();
+      } catch (err) {
+        console.warn('[Supabase settings.get fallback]:', err);
       }
 
-      if (fresh) {
-        serverSettingsCache = { data: fresh, expiresAt: Date.now() + 60000 };
-        const dbData = readDb();
-        dbData.settings = fresh;
-        return fresh;
-      }
-
-      serverSettingsCache = { data: local, expiresAt: Date.now() + 15000 };
       return local;
     },
 
@@ -3676,6 +3607,8 @@ export const db = {
           bank_id: s.bankId || '',
           bank_account: s.bankAccount || '',
           bank_owner: s.bankOwner || '',
+          momo_phone: s.momoPhone || '',
+          momo_name: s.momoName || '',
           raw_data: s,
           updated_at: new Date().toISOString(),
         });
@@ -3696,40 +3629,23 @@ export const db = {
       }
       const local = (readDb().feedbacks || []).filter((f) => f.isActive);
 
-      const fetchSupabase = async (): Promise<CustomerFeedback[] | null> => {
-        try {
-          const { data, error } = await supabase
-            .from('feedbacks')
-            .select('*')
-            .eq('is_active', true)
-            .order('created_at', { ascending: false });
-          if (!error && Array.isArray(data)) {
-            return data.map(mapFeedbackFromSupabase);
-          }
-        } catch (err) {
-          console.warn('[Supabase feedbacks.getAll fallback]:', err);
+      try {
+        const { data, error } = await supabase
+          .from('feedbacks')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
+        if (!error && Array.isArray(data)) {
+          const mapped = data.map(mapFeedbackFromSupabase);
+          serverFeedbacksCache = { data: mapped, expiresAt: Date.now() + 5000 };
+          const dbData = readDb();
+          dbData.feedbacks = mapped;
+          return mapped;
         }
-        return null;
-      };
-
-      let fresh: CustomerFeedback[] | null = null;
-      if (local.length > 0) {
-        fresh = await Promise.race([
-          fetchSupabase(),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500))
-        ]);
-      } else {
-        fresh = await fetchSupabase();
+      } catch (err) {
+        console.warn('[Supabase feedbacks.getAll fallback]:', err);
       }
 
-      if (fresh && fresh.length > 0) {
-        serverFeedbacksCache = { data: fresh, expiresAt: Date.now() + 60000 };
-        const dbData = readDb();
-        dbData.feedbacks = fresh;
-        return fresh;
-      }
-
-      serverFeedbacksCache = { data: local, expiresAt: Date.now() + 15000 };
       return local;
     },
 
