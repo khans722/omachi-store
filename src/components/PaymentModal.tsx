@@ -195,15 +195,12 @@ export default function PaymentModal({
               <div className="w-16 h-16 mx-auto rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-3xl shadow-xs animate-bounce">
                 ✓
               </div>
-              <div className="space-y-1">
-                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 inline-block">
-                  ✅ ĐÃ THANH TOÁN THÀNH CÔNG (SEPAY)
-                </span>
-                <h4 className="text-lg font-black text-gray-900 pt-1">
+              <div className="space-y-1.5">
+                <h4 className="text-lg font-black text-gray-900">
                   Đơn hàng #{orderCode}
                 </h4>
                 <p className="text-xs text-gray-600 max-w-xs mx-auto">
-                  Hệ thống SePay đã nhận đủ tiền thanh toán. Đơn hàng đang ở trạng thái Chờ Shop xác nhận để chuẩn bị gửi bạn nhé! 💕
+                  Hệ thống đã nhận đủ tiền thanh toán. Đơn hàng đang ở trạng thái Chờ Shop xác nhận để chuẩn bị gửi bạn nhé! 💕
                 </p>
               </div>
             </div>

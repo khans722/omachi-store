@@ -1383,18 +1383,9 @@ export default function CheckoutPage() {
             </div>
 
             <div className="p-5 space-y-4">
-              {/* Badge & Lời cảm ơn */}
-              <div className="py-3 px-4 bg-pink-50/70 rounded-2xl border border-pink-200/80 space-y-1.5">
-                {createdOrder.paymentMethod === 'BANK' && createdOrder.paymentStatus === 'PAID' ? (
-                  <span className="text-xs font-bold text-emerald-800 bg-emerald-100/90 px-3 py-1 rounded-full border border-emerald-300 inline-flex items-center gap-1 shadow-2xs">
-                    ✅ ĐÃ THANH TOÁN THÀNH CÔNG (VIETQR)
-                  </span>
-                ) : (
-                  <span className="text-xs font-bold text-pink-800 bg-white px-3 py-1 rounded-full border border-pink-200 inline-flex items-center gap-1 shadow-2xs">
-                    💵 THANH TOÁN TIỀN MẶT KHI NHẬN HÀNG (COD)
-                  </span>
-                )}
-                <p className="text-xs text-pink-900 leading-relaxed pt-1">
+              {/* Lời cảm ơn */}
+              <div className="py-3.5 px-4 bg-pink-50/70 rounded-2xl border border-pink-200/80">
+                <p className="text-xs text-pink-900 leading-relaxed">
                   Cảm ơn bạn <strong>{createdOrder.customer.fullName}</strong> đã đặt hàng tại Omachi!{' '}
                   {createdOrder.paymentMethod === 'BANK' && createdOrder.paymentStatus === 'PAID'
                     ? 'Hệ thống đã nhận đủ thanh toán. Đơn hàng đang ở trạng thái Chờ Shop xác nhận để chuẩn bị gửi bạn nhé! 💕'
