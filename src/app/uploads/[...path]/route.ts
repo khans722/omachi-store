@@ -30,7 +30,10 @@ export async function GET(
     const filePath = fs.existsSync(tmpPath) ? tmpPath : publicPath;
 
     if (!fs.existsSync(filePath)) {
-      return new NextResponse('File not found', { status: 404 });
+      // Tự động chuyển hướng sang CDN Supabase Storage vĩnh viễn nếu file chưa có trên đĩa cứng local (môi trường serverless Vercel)
+      const filename = safeSegments[safeSegments.length - 1];
+      const supabaseCdnUrl = `https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/${encodeURIComponent(filename)}`;
+      return NextResponse.redirect(supabaseCdnUrl, 307);
     }
 
     const ext = path.extname(filePath).toLowerCase();

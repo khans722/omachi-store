@@ -2308,7 +2308,7 @@ export const db = {
 
       try {
         const s = dbData.settings;
-        const upsertP = supabase.from('settings').upsert({
+        const { error } = await supabase.from('settings').upsert({
           id: 'default',
           shop_name: s.shopName,
           brand_title: s.brandTitle,
@@ -2337,7 +2337,9 @@ export const db = {
           raw_data: s,
           updated_at: new Date().toISOString(),
         });
-        Promise.resolve(upsertP).then(({error}: any) => { if(error) console.warn('[Supabase write failed]', error.message); });
+        if (error) {
+          console.warn('[Supabase settings write failed]:', error.message);
+        }
       } catch (err) {
         console.warn('[Supabase settings.update error]:', err);
       }

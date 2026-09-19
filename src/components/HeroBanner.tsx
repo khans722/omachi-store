@@ -14,15 +14,19 @@ export default function HeroBanner({ settings }: HeroBannerProps) {
 
   // Multi-image list
   const imagesList = React.useMemo(() => {
-    if (settings?.heroImages && settings.heroImages.length > 0) {
-      return settings.heroImages.filter(Boolean);
+    if (settings?.heroImages && Array.isArray(settings.heroImages) && settings.heroImages.length > 0) {
+      const valid = settings.heroImages.filter(Boolean);
+      if (valid.length > 0) return valid;
+    }
+    if (settings?.heroImage && typeof settings.heroImage === 'string' && settings.heroImage.trim()) {
+      return [settings.heroImage];
     }
     return [
-      '/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg',
-      '/uploads/charm_1789442857187_1789435799272_1528911961217344.jpg',
-      '/uploads/charm_1789442857200_1789435799294_1528911961217344.jpg',
-      '/uploads/charm_1789442857210_1789435799313_1528911961217344.jpg',
-      '/uploads/charm_1789442857219_1789435799334_1528911961217344.jpg'
+      'https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg',
+      'https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/charm_1789442857187_1789435799272_1528911961217344.jpg',
+      'https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/charm_1789442857200_1789435799294_1528911961217344.jpg',
+      'https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/charm_1789442857210_1789435799313_1528911961217344.jpg',
+      'https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/charm_1789442857219_1789435799334_1528911961217344.jpg'
     ];
   }, [settings?.heroImages, settings?.heroImage]);
 
@@ -152,12 +156,12 @@ export default function HeroBanner({ settings }: HeroBannerProps) {
             <div className="relative aspect-[16/9] sm:aspect-[4/3] rounded-xl sm:rounded-[24px] overflow-hidden shadow-xs sm:shadow-md border-2 sm:border-4 border-white bg-white group/banner">
               <img
                 key={activeImgIndex}
-                src={imagesList[activeImgIndex] || '/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg'}
+                src={imagesList[activeImgIndex] || 'https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg'}
                 alt="Omachi Handmade Charm"
                 decoding="async"
                 onError={(e) => {
                   e.currentTarget.onerror = null;
-                  e.currentTarget.src = '/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg';
+                  e.currentTarget.src = 'https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg';
                 }}
                 className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover/banner:scale-105"
               />
@@ -237,7 +241,7 @@ export default function HeroBanner({ settings }: HeroBannerProps) {
                       decoding="async"
                       onError={(e) => {
                         e.currentTarget.onerror = null;
-                        e.currentTarget.src = '/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg';
+                        e.currentTarget.src = 'https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg';
                       }}
                       className="w-full h-full object-cover"
                     />

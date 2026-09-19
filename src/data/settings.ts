@@ -19,7 +19,7 @@ export const INITIAL_SETTINGS: ShopSettings = {
   "workingHours": "08:30 - 22:00 Hàng ngày",
   "freeShippingThreshold": 200000,
   "autoReplyTemplate": "Chào bạn, Shop Omachi đã nhận được đơn hàng #{orderCode}. Shop sẽ kiểm tra mẫu và báo lại bạn ngay nhé!",
-  "heroImage": "/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg",
+  "heroImage": "https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg",
   "heroBadge": "Ảnh thật tại tiệm 100% ✨",
   "purchasePolicies": [
     {
@@ -45,11 +45,11 @@ export const INITIAL_SETTINGS: ShopSettings = {
   ],
   "purchasePolicyDetail": "Khách hàng vui lòng quay video khi bóc mở kiện hàng để được hỗ trợ giải quyết nhanh nhất khi có phát sinh lỗi hoặc thiếu mẫu.",
   "heroImages": [
-    "/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg",
-    "/uploads/charm_1789442857187_1789435799272_1528911961217344.jpg",
-    "/uploads/charm_1789442857200_1789435799294_1528911961217344.jpg",
-    "/uploads/charm_1789442857210_1789435799313_1528911961217344.jpg",
-    "/uploads/charm_1789442857219_1789435799334_1528911961217344.jpg"
+    "https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg",
+    "https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/charm_1789442857187_1789435799272_1528911961217344.jpg",
+    "https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/charm_1789442857200_1789435799294_1528911961217344.jpg",
+    "https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/charm_1789442857210_1789435799313_1528911961217344.jpg",
+    "https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/charm_1789442857219_1789435799334_1528911961217344.jpg"
   ],
   "telegramChatId": "8941847464",
   "telegramBotToken": "8643883325:AAFtYvON3zYNH6D8K1Mf8bTtHclR1ha92SQ"

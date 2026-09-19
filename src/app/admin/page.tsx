@@ -81,13 +81,13 @@ const DEFAULT_SETTINGS: ShopSettings = {
   enableTelegramNotify: true,
   websiteUrl: '',
   autoReplyTemplate: 'Chào bạn, Shop Omachi đã nhận được đơn hàng #{orderCode}. Shop sẽ kiểm tra mẫu và báo lại bạn ngay nhé!',
-  heroImage: '/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg',
+  heroImage: 'https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg',
   heroImages: [
-    '/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg',
-    '/uploads/charm_1789442857187_1789435799272_1528911961217344.jpg',
-    '/uploads/charm_1789442857200_1789435799294_1528911961217344.jpg',
-    '/uploads/charm_1789442857210_1789435799313_1528911961217344.jpg',
-    '/uploads/charm_1789442857219_1789435799334_1528911961217344.jpg'
+    'https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg',
+    'https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/charm_1789442857187_1789435799272_1528911961217344.jpg',
+    'https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/charm_1789442857200_1789435799294_1528911961217344.jpg',
+    'https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/charm_1789442857210_1789435799313_1528911961217344.jpg',
+    'https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/charm_1789442857219_1789435799334_1528911961217344.jpg'
   ],
   heroBadge: 'Ảnh thật tại tiệm 100% ✨',
   momoPhone: '0375408256',
@@ -669,15 +669,16 @@ export default function AdminPage() {
           const existing = (prev.heroImages && prev.heroImages.length > 0)
             ? prev.heroImages.filter(Boolean)
             : (prev.heroImage ? [prev.heroImage] : []);
-          const combined = [...existing, ...uploadedUrls];
+          // Đặt ảnh mới tải lên ở đầu danh sách để trở thành banner chính ngay lập tức
+          const combined = [...uploadedUrls, ...existing.filter((u) => !uploadedUrls.includes(u))];
           return {
             ...prev,
             heroImage: combined[0],
             heroImages: combined,
           };
         });
-        setActionSuccessMsg(`Đã tải lên +${uploadedUrls.length} ảnh banner thành công! Hãy bấm Lưu Cài Đặt ✨`);
-        setTimeout(() => setActionSuccessMsg(''), 4000);
+        setActionSuccessMsg(`Đã tải lên +${uploadedUrls.length} ảnh banner thành công! Hãy bấm "Lưu Cài Đặt Shop" bên dưới ✨`);
+        setTimeout(() => setActionSuccessMsg(''), 5000);
       } else {
         setHeroImageUploadError('Lỗi khi tải ảnh banner');
       }
@@ -4113,81 +4114,96 @@ export default function AdminPage() {
 
                     {/* Multi-Image Preview Gallery for Hero Banner */}
                     <div className="pt-2 border-t border-pink-100">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[11px] font-bold text-gray-700">
-                          Danh sách ảnh banner đang có ({((settings.heroImages && settings.heroImages.length > 0) ? settings.heroImages : (settings.heroImage ? [settings.heroImage] : [])).length} ảnh):
-                        </span>
-                        <span className="text-[10px] text-gray-400">Ảnh đầu tiên sẽ hiển thị trước nhất</span>
-                      </div>
-
                       {(() => {
                         const currentHeroList = (settings.heroImages && settings.heroImages.length > 0)
                           ? settings.heroImages.filter(Boolean)
                           : (settings.heroImage ? [settings.heroImage] : []);
 
-                        if (currentHeroList.length === 0) {
-                          return (
-                            <div className="p-3 border-2 border-dashed border-pink-200 rounded-xl text-center text-gray-400 text-xs">
-                              Chưa có ảnh banner nào. Hãy tải ảnh lên từ máy tính.
-                            </div>
-                          );
-                        }
-
                         return (
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                            {currentHeroList.map((imgUrl, hIdx) => (
-                              <div
-                                key={hIdx}
-                                className={`relative group rounded-xl overflow-hidden border-2 aspect-[4/3] bg-pink-50/40 shadow-2xs transition ${
-                                  hIdx === 0 ? 'border-rose-500 ring-2 ring-rose-200' : 'border-pink-100 hover:border-pink-300'
-                                }`}
-                              >
-                                <img
-                                  src={imgUrl}
-                                  alt={`Banner Lookbook ${hIdx}`}
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                  }}
-                                  className="w-full h-full object-cover"
-                                />
-
-                                {hIdx === 0 && (
-                                  <span className="absolute top-1 left-1 bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-xs">
-                                    ⭐ Ảnh đầu
-                                  </span>
-                                )}
-
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-1">
-                                  {hIdx !== 0 && (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const list = [...currentHeroList];
-                                        const [moved] = list.splice(hIdx, 1);
-                                        list.unshift(moved);
-                                        setSettings({ ...settings, heroImage: list[0], heroImages: list });
-                                      }}
-                                      className="p-1 bg-white text-gray-800 rounded-md text-[10px] font-bold shadow-xs hover:bg-rose-50"
-                                      title="Đặt làm ảnh đầu tiên"
-                                    >
-                                      ⭐ Lên đầu
-                                    </button>
-                                  )}
+                          <>
+                            <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                              <span className="text-[11px] font-bold text-gray-700">
+                                Danh sách ảnh banner ({currentHeroList.length} ảnh):
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-gray-400">Ảnh đầu tiên sẽ hiển thị trước nhất</span>
+                                {currentHeroList.length > 0 && (
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      const list = currentHeroList.filter((_, i) => i !== hIdx);
-                                      setSettings({ ...settings, heroImage: list[0] || '', heroImages: list });
+                                      setSettings({ ...settings, heroImage: '', heroImages: [] });
                                     }}
-                                    className="p-1 bg-rose-600 text-white rounded-md text-[10px] font-bold shadow-xs hover:bg-rose-700"
-                                    title="Xóa ảnh này"
+                                    className="text-[10px] font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
                                   >
-                                    <Trash2 className="w-3.5 h-3.5" />
+                                    🗑️ Xóa tất cả ảnh cũ
                                   </button>
-                                </div>
+                                )}
                               </div>
-                            ))}
-                          </div>
+                            </div>
+
+                            {currentHeroList.length === 0 ? (
+                              <div className="p-4 border-2 border-dashed border-pink-200 rounded-xl text-center text-gray-400 text-xs bg-pink-50/20">
+                                <p className="font-semibold text-stone-600">Chưa có ảnh banner nào.</p>
+                                <p className="text-[11px] text-stone-400 mt-1">Hãy bấm nút "📁 Tải ảnh từ máy" ở trên để tải ảnh lên (hệ thống tự động lưu lên Cloud Supabase vĩnh viễn).</p>
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                {currentHeroList.map((imgUrl, hIdx) => (
+                                  <div
+                                    key={hIdx}
+                                    className={`relative group rounded-xl overflow-hidden border-2 aspect-[4/3] bg-pink-50/40 shadow-2xs transition ${
+                                      hIdx === 0 ? 'border-rose-500 ring-2 ring-rose-200' : 'border-pink-100 hover:border-pink-300'
+                                    }`}
+                                  >
+                                    <img
+                                      src={imgUrl}
+                                      alt={`Banner Lookbook ${hIdx}`}
+                                      onError={(e) => {
+                                        e.currentTarget.onerror = null;
+                                        e.currentTarget.src = 'https://idkppwrfxvxffsflibar.supabase.co/storage/v1/object/public/uploads/charm_1789435032381_1789371730991_1528911961217344.jpg';
+                                      }}
+                                      className="w-full h-full object-cover"
+                                    />
+
+                                    {hIdx === 0 && (
+                                      <span className="absolute top-1 left-1 bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-xs">
+                                        ⭐ Ảnh đầu
+                                      </span>
+                                    )}
+
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-1">
+                                      {hIdx !== 0 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const list = [...currentHeroList];
+                                            const [moved] = list.splice(hIdx, 1);
+                                            list.unshift(moved);
+                                            setSettings({ ...settings, heroImage: list[0], heroImages: list });
+                                          }}
+                                          className="p-1 bg-white text-gray-800 rounded-md text-[10px] font-bold shadow-xs hover:bg-rose-50 cursor-pointer"
+                                          title="Đặt làm ảnh đầu tiên"
+                                        >
+                                          ⭐ Lên đầu
+                                        </button>
+                                      )}
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const list = currentHeroList.filter((_, i) => i !== hIdx);
+                                          setSettings({ ...settings, heroImage: list[0] || '', heroImages: list });
+                                        }}
+                                        className="p-1 bg-rose-600 text-white rounded-md text-[10px] font-bold shadow-xs hover:bg-rose-700 cursor-pointer"
+                                        title="Xóa ảnh này"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </>
                         );
                       })()}
                     </div>
