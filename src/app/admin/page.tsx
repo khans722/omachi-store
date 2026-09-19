@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Order, OrderStatus, ShopSettings, Product, CustomerFeedback, ProductVariant, ComboTier, Category } from '@/types';
 import { formatVND } from '@/lib/utils';
-import { INITIAL_PRODUCTS } from '@/data/products';
 import { compressImage } from '@/lib/imageCompress';
 import { 
   Package, 
@@ -2781,148 +2780,166 @@ export default function AdminPage() {
           </div>
 
           {/* Product Catalog Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {(products.length > 0 ? products : INITIAL_PRODUCTS)
-              .filter((prod) => {
-                const matchesSearch = !productSearch ||
-                  prod.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-                  (prod.sku && prod.sku.toLowerCase().includes(productSearch.toLowerCase())) ||
-                  (prod.categoryName && prod.categoryName.toLowerCase().includes(productSearch.toLowerCase()));
-                const selectedCatObj = categories.find((c) => c.id === productCategoryFilter);
-                const matchesCat = productCategoryFilter === 'ALL' || 
-                  prod.categoryId === productCategoryFilter || 
-                  prod.category === productCategoryFilter ||
-                  (selectedCatObj && (prod.categoryId === selectedCatObj.id || prod.category === selectedCatObj.slug));
-                return matchesSearch && matchesCat;
-              })
-              .map((prod) => {
-                const estimatedProfit = prod.costPrice ? prod.basePrice - prod.costPrice : null;
+          {products.length === 0 ? (
+            <div className="text-center py-16 bg-pink-50/20 rounded-3xl border border-dashed border-pink-200 p-8 space-y-3">
+              <div className="text-4xl">🌸</div>
+              <h4 className="font-bold text-gray-800 text-sm">Chưa Có Sản Phẩm Nào Trong Danh Mục</h4>
+              <p className="text-xs text-gray-500 max-w-sm mx-auto">
+                Hiện tại danh mục sản phẩm đang trống. Hãy bấm nút &quot;+ Thêm Mẫu Charm / Phụ Kiện Mới&quot; ở trên để bắt đầu tạo sản phẩm!
+              </p>
+              <button
+                type="button"
+                onClick={handleOpenAddProduct}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-extrabold text-xs shadow-md transition cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ Thêm Mẫu Charm / Phụ Kiện Mới</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {products
+                .filter((prod) => {
+                  const matchesSearch = !productSearch ||
+                    prod.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+                    (prod.sku && prod.sku.toLowerCase().includes(productSearch.toLowerCase())) ||
+                    (prod.categoryName && prod.categoryName.toLowerCase().includes(productSearch.toLowerCase()));
+                  const selectedCatObj = categories.find((c) => c.id === productCategoryFilter);
+                  const matchesCat = productCategoryFilter === 'ALL' || 
+                    prod.categoryId === productCategoryFilter || 
+                    prod.category === productCategoryFilter ||
+                    (selectedCatObj && (prod.categoryId === selectedCatObj.id || prod.category === selectedCatObj.slug));
+                  return matchesSearch && matchesCat;
+                })
+                .map((prod) => {
+                  const estimatedProfit = prod.costPrice ? prod.basePrice - prod.costPrice : null;
 
-                return (
-                  <div key={prod.id} className="p-3 sm:p-4 rounded-2xl border border-pink-100 bg-pink-50/20 space-y-2.5 sm:space-y-3 relative group flex flex-col justify-between hover:border-pink-200 transition">
-                    <div className="space-y-2.5 sm:space-y-3">
-                      <div className="flex items-start gap-3">
-                        <img
-                          src={prod.images?.[0] || '/images/charm_feed_1.jpg'}
-                          alt={prod.name}
-                          onError={(e) => {
-                            e.currentTarget.onerror = null;
-                            e.currentTarget.src = '/images/charm_feed_1.jpg';
-                          }}
-                          className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-xl border border-pink-200 shrink-0 bg-white"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-pink-100 text-pink-700">
-                              {prod.categoryName || prod.category}
-                            </span>
-                            {prod.sku && (
-                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-600 font-bold">
-                                {prod.sku}
+                  return (
+                    <div key={prod.id} className="p-3 sm:p-4 rounded-2xl border border-pink-100 bg-pink-50/20 space-y-2.5 sm:space-y-3 relative group flex flex-col justify-between hover:border-pink-200 transition">
+                      <div className="space-y-2.5 sm:space-y-3">
+                        <div className="flex items-start gap-3">
+                          <img
+                            src={prod.images?.[0] || '/images/charm_feed_1.jpg'}
+                            alt={prod.name}
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = '/images/charm_feed_1.jpg';
+                            }}
+                            className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-xl border border-pink-200 shrink-0 bg-white"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-pink-100 text-pink-700">
+                                {prod.categoryName || prod.category}
                               </span>
-                            )}
-                            {prod.isHot && (
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-red-100 text-red-600">
-                                🔥 Hot
+                              {prod.sku && (
+                                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-600 font-bold">
+                                  {prod.sku}
+                                </span>
+                              )}
+                              {prod.isHot && (
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-red-100 text-red-600">
+                                  🔥 Hot
+                                </span>
+                              )}
+                            </div>
+                            <h4 className="text-xs sm:text-sm font-black text-gray-800 mt-1 line-clamp-1">{prod.name}</h4>
+                            
+                            <div className="flex items-center gap-2.5 flex-wrap mt-1 text-[11px]">
+                              <span className="text-pink-600 font-bold">
+                                Bán lẻ: {formatVND(prod.basePrice)}
                               </span>
-                            )}
-                          </div>
-                          <h4 className="text-xs sm:text-sm font-black text-gray-800 mt-1 line-clamp-1">{prod.name}</h4>
-                          
-                          <div className="flex items-center gap-2.5 flex-wrap mt-1 text-[11px]">
-                            <span className="text-pink-600 font-bold">
-                              Bán lẻ: {formatVND(prod.basePrice)}
-                            </span>
-                            {prod.costPrice ? (
-                              <span className="text-gray-500">
-                                Vốn: <strong>{formatVND(prod.costPrice)}</strong>
-                              </span>
-                            ) : null}
-                            {estimatedProfit !== null && (
-                              <span className="text-emerald-700 font-semibold text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded">
-                                Lãi ~{formatVND(estimatedProfit)}
-                              </span>
-                            )}
-                          </div>
+                              {prod.costPrice ? (
+                                <span className="text-gray-500">
+                                  Vốn: <strong>{formatVND(prod.costPrice)}</strong>
+                                </span>
+                              ) : null}
+                              {estimatedProfit !== null && (
+                                <span className="text-emerald-700 font-semibold text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded">
+                                  Lãi ~{formatVND(estimatedProfit)}
+                                </span>
+                              )}
+                            </div>
 
-                          <div className="flex items-center gap-2 flex-wrap text-[10px] text-gray-500 mt-1">
-                            <span>Chất liệu: <strong>{prod.material || 'Handmade'}</strong></span>
-                            <span>•</span>
-                            <span>Kích thước: <strong>{prod.dimensions || 'Free size'}</strong></span>
+                            <div className="flex items-center gap-2 flex-wrap text-[10px] text-gray-500 mt-1">
+                              <span>Chất liệu: <strong>{prod.material || 'Handmade'}</strong></span>
+                              <span>•</span>
+                              <span>Kích thước: <strong>{prod.dimensions || 'Free size'}</strong></span>
+                            </div>
                           </div>
                         </div>
+
+                        {/* Color Variants Configuration Details */}
+                        {prod.variants && prod.variants.length > 0 && (
+                          <div className="bg-white p-2.5 sm:p-3 rounded-xl border border-pink-100 text-[11px] space-y-1.5">
+                            <div className="flex items-center gap-1.5 font-bold text-gray-700 text-xs">
+                              <Palette className="w-3.5 h-3.5 text-pink-500 shrink-0" />
+                              <span>Phân loại màu sắc ({prod.variants.length}):</span>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {prod.variants.map((v, i) => (
+                                <div
+                                  key={i}
+                                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-stone-50 border border-stone-200 text-stone-700"
+                                >
+                                  {v.colorHex && (
+                                    <span className="w-2.5 h-2.5 rounded-full border border-black/20 shrink-0" style={{ backgroundColor: v.colorHex }} />
+                                  )}
+                                  <span>{v.name}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Combo tiers badge */}
+                        {prod.comboTiers && prod.comboTiers.length > 0 && (
+                          <div className="bg-white p-2 rounded-xl border border-pink-100 text-[10px] space-y-1">
+                            <span className="text-gray-500 font-semibold block">Mốc giá combo sỉ:</span>
+                            <div className="flex flex-wrap gap-1">
+                              {prod.comboTiers.map((t, i) => (
+                                <span key={i} className="bg-gray-50 text-gray-700 border border-gray-200 px-1.5 py-0.5 rounded font-medium">
+                                  ≥{t.minQuantity}c: <strong>{formatVND(t.unitPrice)}</strong>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
-                      {/* Color Variants Configuration Details */}
-                      {prod.variants && prod.variants.length > 0 && (
-                        <div className="bg-white p-2.5 sm:p-3 rounded-xl border border-pink-100 text-[11px] space-y-1.5">
-                          <div className="flex items-center gap-1.5 font-bold text-gray-700 text-xs">
-                            <Palette className="w-3.5 h-3.5 text-pink-500 shrink-0" />
-                            <span>Phân loại màu sắc ({prod.variants.length}):</span>
-                          </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {prod.variants.map((v, i) => (
-                              <div
-                                key={i}
-                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-stone-50 border border-stone-200 text-stone-700"
-                              >
-                                {v.colorHex && (
-                                  <span className="w-2.5 h-2.5 rounded-full border border-black/20 shrink-0" style={{ backgroundColor: v.colorHex }} />
-                                )}
-                                <span>{v.name}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Combo tiers badge */}
-                      {prod.comboTiers && prod.comboTiers.length > 0 && (
-                        <div className="bg-white p-2 rounded-xl border border-pink-100 text-[10px] space-y-1">
-                          <span className="text-gray-500 font-semibold block">Mốc giá combo sỉ:</span>
-                          <div className="flex flex-wrap gap-1">
-                            {prod.comboTiers.map((t, i) => (
-                              <span key={i} className="bg-gray-50 text-gray-700 border border-gray-200 px-1.5 py-0.5 rounded font-medium">
-                                ≥{t.minQuantity}c: <strong>{formatVND(t.unitPrice)}</strong>
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                      <div className="flex items-center justify-end pt-2 border-t border-pink-100/60 mt-2 gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditProduct(prod)}
+                          className="px-3 py-1.5 rounded-xl bg-white border border-pink-200 text-pink-700 hover:bg-pink-100 text-xs font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          <span>Sửa</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCustomMessageBox({
+                              isOpen: true,
+                              type: 'danger',
+                              title: 'Xóa Mẫu Sản Phẩm?',
+                              message: `Bạn có chắc chắn muốn xóa sản phẩm "${prod.name}" không? Thao tác này sẽ gỡ sản phẩm khỏi danh mục hiển thị.`,
+                              confirmText: 'Xác Nhận Xóa',
+                              cancelText: 'Giữ Lại',
+                              onConfirm: () => handleDeleteProduct(prod.id, prod.name),
+                            });
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Xóa</span>
+                        </button>
+                      </div>
                     </div>
-
-                    <div className="flex items-center justify-end pt-2 border-t border-pink-100/60 mt-2 gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenEditProduct(prod)}
-                        className="px-3 py-1.5 rounded-xl bg-white border border-pink-200 text-pink-700 hover:bg-pink-100 text-xs font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                        <span>Sửa</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCustomMessageBox({
-                            isOpen: true,
-                            type: 'danger',
-                            title: 'Xóa Mẫu Sản Phẩm?',
-                            message: `Bạn có chắc chắn muốn xóa sản phẩm "${prod.name}" không? Thao tác này sẽ gỡ sản phẩm khỏi danh mục hiển thị.`,
-                            confirmText: 'Xác Nhận Xóa',
-                            cancelText: 'Giữ Lại',
-                            onConfirm: () => handleDeleteProduct(prod.id, prod.name),
-                          });
-                        }}
-                        className="px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Xóa</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
+                  );
+                })}
+            </div>
+          )}
         </div>
       )}
 
@@ -3086,7 +3103,7 @@ export default function AdminPage() {
           {/* Inventory Items List */}
           <div className="space-y-4">
             {(() => {
-              const displayList = (products.length > 0 ? products : INITIAL_PRODUCTS).filter((prod) => {
+              const displayList = products.filter((prod) => {
                 const stock = Number(prod.stock) || 0;
                 const matchesFilter =
                   inventoryFilter === 'ALL' ? true :
