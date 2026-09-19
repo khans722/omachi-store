@@ -196,6 +196,19 @@ export default function ProductDetailPage() {
 
   const curr = themeConfig[theme] || themeConfig.green;
 
+  // 1688 Auto Tier Pricing Model (Đơn vị tính: 1 chiếc/cái)
+  const smartPricing = useMemo(() => {
+    if (!product) {
+      return { unitPrice: 0, itemsToNextTier: 0, savings: 0, discountPercent: 0 };
+    }
+    return calculateSmartUnitPrice(product.basePrice, quantity, product.comboTiers);
+  }, [product?.basePrice, quantity, product?.comboTiers]);
+
+  const sortedComboTiers = useMemo(() => {
+    if (!product?.comboTiers || !Array.isArray(product.comboTiers) || product.comboTiers.length === 0) return [];
+    return [...product.comboTiers].sort((a, b) => a.minQuantity - b.minQuantity);
+  }, [product?.comboTiers]);
+
   if (isLoading) {
     return (
       <div className="py-24 text-center space-y-4 max-w-5xl mx-auto animate-pulse">
@@ -222,19 +235,6 @@ export default function ProductDetailPage() {
       </div>
     );
   }
-
-  // 1688 Auto Tier Pricing Model (Đơn vị tính: 1 chiếc/cái)
-  const smartPricing = useMemo(() => {
-    if (!product) {
-      return { unitPrice: 0, itemsToNextTier: 0, savings: 0, discountPercent: 0 };
-    }
-    return calculateSmartUnitPrice(product.basePrice, quantity, product.comboTiers);
-  }, [product?.basePrice, quantity, product?.comboTiers]);
-
-  const sortedComboTiers = useMemo(() => {
-    if (!product?.comboTiers || !Array.isArray(product.comboTiers) || product.comboTiers.length === 0) return [];
-    return [...product.comboTiers].sort((a, b) => a.minQuantity - b.minQuantity);
-  }, [product?.comboTiers]);
 
   const unitPrice = smartPricing.unitPrice;
   const totalPrice = unitPrice * quantity;
