@@ -282,11 +282,20 @@ export default function CartPage() {
                     href={`/product/${item.product?.id || ''}`}
                     className="shrink-0 group"
                   >
-                    <img
-                      src={item.product?.images?.[0] || '/images/charm_feed_1.jpg'}
-                      alt={item.product?.name || 'Sản phẩm'}
-                      className="w-20 h-20 sm:w-22 sm:h-22 object-cover rounded-lg border border-stone-100 bg-stone-50 group-hover:opacity-90 transition"
-                    />
+                    {item.product?.images?.[0] ? (
+                      <img
+                        src={item.product.images[0]}
+                        alt={item.product?.name || 'Sản phẩm'}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                        className="w-20 h-20 sm:w-22 sm:h-22 object-cover rounded-lg border border-stone-100 bg-stone-50 group-hover:opacity-90 transition"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-lg border border-stone-100 bg-stone-100 flex items-center justify-center text-xl">
+                        🌸
+                      </div>
+                    )}
                   </Link>
 
                   {/* 3. Info Column: Title + Variant Pill + Price & Stepper */}

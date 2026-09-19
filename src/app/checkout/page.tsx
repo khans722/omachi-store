@@ -1847,11 +1847,20 @@ export default function CheckoutPage() {
           <div className="space-y-3 divide-y divide-gray-50">
             {checkoutItems.map((item) => (
               <div key={item.id} className="pt-2.5 first:pt-0 flex items-start gap-2.5">
-                <img
-                  src={item.product?.images?.[0] || '/images/charm_feed_1.jpg'}
-                  alt={item.product?.name || 'Sản phẩm'}
-                  className="w-14 h-14 object-cover rounded-md border border-gray-100 shrink-0 bg-gray-50"
-                />
+                {item.product?.images?.[0] ? (
+                  <img
+                    src={item.product.images[0]}
+                    alt={item.product?.name || 'Sản phẩm'}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                    className="w-14 h-14 object-cover rounded-md border border-gray-100 shrink-0 bg-gray-50"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-md border border-gray-100 shrink-0 bg-gray-100 flex items-center justify-center text-sm">
+                    🌸
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <h4 className="text-xs font-normal text-gray-900 line-clamp-1 leading-snug">
                     {item.product?.name}

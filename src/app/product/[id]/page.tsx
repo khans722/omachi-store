@@ -23,15 +23,17 @@ export default function ProductDetailPage() {
 
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(undefined);
 
+  const [quantity, setQuantity] = useState<number>(initialFound?.minOrderQuantity || 1);
+  const [customNote, setCustomNote] = useState('');
   const [variantError, setVariantError] = useState(false);
   const [warningToast, setWarningToast] = useState<string | null>(null);
   const variantSectionRef = useRef<HTMLDivElement>(null);
 
-  const [quantity, setQuantity] = useState<number>(initialFound?.minOrderQuantity || 1);
-  const [customNote, setCustomNote] = useState<string>('');
+  const [mainImgError, setMainImgError] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string>(
-    initialFound?.images?.[0] || '/images/charm_feed_1.jpg'
+    initialFound?.images?.[0] || ''
   );
+  const hasValidMainImage = Boolean(selectedImage) && !mainImgError;
   const [isAddedToast, setIsAddedToast] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
@@ -66,6 +68,7 @@ export default function ProductDetailPage() {
             }
             if (found.images && found.images[0]) {
               setSelectedImage(found.images[0]);
+              setMainImgError(false);
             }
           }
         }
@@ -246,7 +249,7 @@ export default function ProductDetailPage() {
     if (!validateSelection()) return;
 
     // Hiệu ứng ảnh sản phẩm bay vào giỏ hàng
-    const currentImg = selectedImage || selectedVariant?.image || selectedVariant?.imageUrl || product.images?.[0] || '/images/charm_feed_1.jpg';
+    const currentImg = selectedImage || selectedVariant?.image || selectedVariant?.imageUrl || product.images?.[0] || '';
     flyToCart(e?.currentTarget, currentImg);
 
     addItem(product, quantity, selectedVariant, customNote, undefined, false);
@@ -295,16 +298,20 @@ export default function ProductDetailPage() {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-8 items-start">
         {/* Left Column: Image Gallery */}
         <div className="md:col-span-6 space-y-3">
-          <div className={`relative aspect-[4/5] rounded-3xl overflow-hidden ${curr.imageBorder} border shadow-md`}>
-            <img
-              src={selectedImage}
-              alt={product.name}
-              onError={(e) => {
-                e.currentTarget.onerror = null;
-                e.currentTarget.src = '/images/charm_feed_1.jpg';
-              }}
-              className="w-full h-full object-cover object-center"
-            />
+          <div className={`relative aspect-[4/5] rounded-3xl overflow-hidden ${curr.imageBorder} border shadow-md flex items-center justify-center bg-stone-100`}>
+            {hasValidMainImage ? (
+              <img
+                src={selectedImage}
+                alt={product.name}
+                onError={() => setMainImgError(true)}
+                className="w-full h-full object-cover object-center"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center text-stone-400 p-6 text-center">
+                <span className="text-4xl mb-2">🌸</span>
+                <span className="text-xs font-bold text-stone-500">Chưa có hình ảnh</span>
+              </div>
+            )}
             {product.isHot && (
               <span className="absolute top-3 left-3 bg-gradient-to-r from-red-600 to-rose-500 text-white text-xs font-black px-3 py-1 rounded-full shadow-sm">
                 🔥 BÁN CHẠY NHẤT
@@ -318,8 +325,11 @@ export default function ProductDetailPage() {
               {product.images.map((img, idx) => (
                 <button
                   key={idx}
-                  onClick={() => setSelectedImage(img)}
-                  className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 flex-shrink-0 transition ${
+                  onClick={() => {
+                    setSelectedImage(img);
+                    setMainImgError(false);
+                  }}
+                  className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 flex-shrink-0 transition flex items-center justify-center bg-stone-50 ${
                     selectedImage === img
                       ? `${curr.thumbActive} shadow-sm scale-105`
                       : 'border-stone-200 opacity-70 hover:opacity-100'
@@ -329,8 +339,7 @@ export default function ProductDetailPage() {
                     src={img}
                     alt="Thumbnail"
                     onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = '/images/charm_feed_1.jpg';
+                      e.currentTarget.style.display = 'none';
                     }}
                     className="w-full h-full object-cover"
                   />
@@ -784,8 +793,17 @@ export default function ProductDetailPage() {
           <div className="relative w-full bg-white rounded-t-2xl max-h-[85vh] flex flex-col z-10 shadow-2xl animate-slide-up pb-safe">
             {/* Header: Product Preview & Close Button */}
             <div className="p-3.5 border-b border-gray-100 flex items-start gap-3 relative">
-              <div className="relative w-20 h-20 sm:w-24 sm:h-24 aspect-square rounded-xl overflow-hidden border border-gray-200 bg-gray-50 shrink-0 shadow-xs">
-                <img src={selectedImage} alt={product.name} className="w-full h-full object-cover object-center" />
+              <div className="relative w-20 h-20 sm:w-24 sm:h-24 aspect-square rounded-xl overflow-hidden border border-gray-200 bg-gray-50 shrink-0 shadow-xs flex items-center justify-center">
+                {hasValidMainImage ? (
+                  <img
+                    src={selectedImage}
+                    alt={product.name}
+                    onError={() => setMainImgError(true)}
+                    className="w-full h-full object-cover object-center"
+                  />
+                ) : (
+                  <span className="text-xl">🌸</span>
+                )}
               </div>
               <div className="flex-1 min-w-0 pr-8 pt-0.5">
                 <div className="flex items-baseline gap-1.5 flex-wrap">

@@ -127,14 +127,26 @@ export function flyToCart(
   flyer.style.willChange = 'transform, opacity';
   flyer.style.transform = `translate3d(${startX - 30}px, ${startY - 30}px, 0) scale(1)`;
 
-  const img = document.createElement('img');
-  img.src = imageUrl || '/images/charm_feed_1.jpg';
-  img.alt = 'Sản phẩm Omachi';
-  img.style.width = '100%';
-  img.style.height = '100%';
-  img.style.objectFit = 'cover';
-  img.style.borderRadius = '16px';
-  flyer.appendChild(img);
+  if (imageUrl) {
+    const img = document.createElement('img');
+    img.src = imageUrl;
+    img.alt = 'Sản phẩm';
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'cover';
+    img.style.borderRadius = '16px';
+    flyer.appendChild(img);
+  } else {
+    const icon = document.createElement('div');
+    icon.innerHTML = '🌸';
+    icon.style.width = '100%';
+    icon.style.height = '100%';
+    icon.style.display = 'flex';
+    icon.style.alignItems = 'center';
+    icon.style.justifyContent = 'center';
+    icon.style.fontSize = '24px';
+    flyer.appendChild(icon);
+  }
 
   // Huy hiệu nhỏ xinh lấp lánh ở góc ảnh bay
   const badge = document.createElement('div');

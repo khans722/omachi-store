@@ -42,7 +42,9 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
   };
 
   const style = themeConfig[theme] || themeConfig.green;
-  const primaryImage = product.images?.[0] || '/images/charm_feed_1.jpg';
+  const [imgError, setImgError] = useState(false);
+  const hasValidImage = Boolean(product.images && product.images.length > 0 && product.images[0]) && !imgError;
+  const primaryImage = product.images?.[0] || '';
   const secondaryImage = product.images?.[1] || primaryImage;
 
   return (
@@ -51,28 +53,36 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
         
         {/* Product Image Box with smooth hover */}
         <Link href={`/product/${product.id}`} className="relative aspect-[4/5] overflow-hidden bg-stone-100 block">
-          {/* Primary image */}
-          <img
-            src={primaryImage}
-            alt={product.name}
-            loading="lazy"
-            decoding="async"
-            onError={(e) => {
-              e.currentTarget.onerror = null;
-              e.currentTarget.src = '/images/charm_feed_1.jpg';
-            }}
-            className="w-full h-full object-cover object-center transition-all duration-500 group-hover:scale-105"
-          />
+          {hasValidImage ? (
+            <>
+              {/* Primary image */}
+              <img
+                src={primaryImage}
+                alt={product.name}
+                loading="lazy"
+                decoding="async"
+                onError={() => setImgError(true)}
+                className="w-full h-full object-cover object-center transition-all duration-500 group-hover:scale-105"
+              />
 
-          {/* Secondary image fade on hover if available */}
-          {product.images.length > 1 && (
-            <img
-              src={secondaryImage}
-              alt={product.name}
-              loading="lazy"
-              decoding="async"
-              className="absolute inset-0 w-full h-full object-cover object-center opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-            />
+              {/* Secondary image fade on hover if available */}
+              {product.images.length > 1 && (
+                <img
+                  src={secondaryImage}
+                  alt={product.name}
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 w-full h-full object-cover object-center opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                />
+              )}
+            </>
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-stone-50 to-pink-50/30 text-stone-400 p-4 select-none">
+              <div className="w-14 h-14 rounded-2xl bg-white/80 border border-pink-100/60 flex items-center justify-center text-2xl mb-1.5 shadow-2xs">
+                🌸
+              </div>
+              <span className="text-[11px] font-medium text-stone-400">Chưa có ảnh</span>
+            </div>
           )}
 
           {/* Minimalist Top Badges */}

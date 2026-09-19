@@ -54,12 +54,15 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
   const availableStock =
     selectedVariant?.stock !== undefined ? selectedVariant.stock : product.stock || 999;
 
+  const [imgError, setImgError] = useState(false);
+
   // Display Image (Variant image if available, else product image)
   const displayImage =
     selectedVariant?.imageUrl ||
     selectedVariant?.image ||
     product.images?.[0] ||
-    '/images/charm_feed_1.jpg';
+    '';
+  const hasValidImage = Boolean(displayImage) && !imgError;
 
   const themeStyles = {
     green: {
@@ -164,16 +167,20 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
         {/* Header: Product Preview like Shopee */}
         <div className="p-4 border-b border-stone-100 flex items-start gap-3.5 bg-stone-50/50">
           <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border border-stone-200 bg-white shrink-0 shadow-xs">
-            <img
-              ref={previewImgRef}
-              src={displayImage}
-              alt={product.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.onerror = null;
-                e.currentTarget.src = '/images/charm_feed_1.jpg';
-              }}
-            />
+            {hasValidImage ? (
+              <img
+                ref={previewImgRef}
+                src={displayImage}
+                alt={product.name}
+                className="w-full h-full object-cover"
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-stone-50 text-stone-400 p-2">
+                <span className="text-xl mb-0.5">🌸</span>
+                <span className="text-[9px] text-stone-400">Chưa có ảnh</span>
+              </div>
+            )}
           </div>
 
           <div className="flex-1 min-w-0 pr-6">

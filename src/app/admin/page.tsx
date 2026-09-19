@@ -226,7 +226,7 @@ export default function AdminPage() {
         groups[pId] = {
           productId: pId,
           productName: it.product?.name || it.productName || 'Sản phẩm',
-          image: it.product?.images?.[0] || it.productImage || '/images/charm_feed_1.jpg',
+          image: it.product?.images?.[0] || it.productImage || '',
           basePrice: Number(it.originalUnitPrice || it.product?.basePrice || it.appliedUnitPrice || 0),
           totalQty: 0,
           totalAmount: 0,
@@ -2818,15 +2818,20 @@ export default function AdminPage() {
                     <div key={prod.id} className="p-3 sm:p-4 rounded-2xl border border-pink-100 bg-pink-50/20 space-y-2.5 sm:space-y-3 relative group flex flex-col justify-between hover:border-pink-200 transition">
                       <div className="space-y-2.5 sm:space-y-3">
                         <div className="flex items-start gap-3">
-                          <img
-                            src={prod.images?.[0] || '/images/charm_feed_1.jpg'}
-                            alt={prod.name}
-                            onError={(e) => {
-                              e.currentTarget.onerror = null;
-                              e.currentTarget.src = '/images/charm_feed_1.jpg';
-                            }}
-                            className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-xl border border-pink-200 shrink-0 bg-white"
-                          />
+                          {prod.images?.[0] ? (
+                            <img
+                              src={prod.images[0]}
+                              alt={prod.name}
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                              className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-xl border border-pink-200 shrink-0 bg-white"
+                            />
+                          ) : (
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl border border-pink-200 shrink-0 bg-pink-50 flex items-center justify-center text-xl">
+                              🌸
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-pink-100 text-pink-700">
@@ -3160,15 +3165,20 @@ export default function AdminPage() {
                       
                       {/* Left: Product Info */}
                       <div className="flex items-start sm:items-center gap-3.5">
-                        <img
-                          src={prod.images?.[0] || '/images/charm_feed_1.jpg'}
-                          alt={prod.name}
-                          onError={(e) => {
-                            e.currentTarget.onerror = null;
-                            e.currentTarget.src = '/images/charm_feed_1.jpg';
-                          }}
-                          className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl object-cover border border-pink-200 bg-white shrink-0"
-                        />
+                        {prod.images?.[0] ? (
+                          <img
+                            src={prod.images[0]}
+                            alt={prod.name}
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                            className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl object-cover border border-pink-200 bg-white shrink-0"
+                          />
+                        ) : (
+                          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl border border-pink-200 bg-pink-50 flex items-center justify-center text-lg shrink-0">
+                            🌸
+                          </div>
+                        )}
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             {prod.sku && (
@@ -3565,8 +3575,7 @@ export default function AdminPage() {
                                   src={imgUrl}
                                   alt={`Banner Lookbook ${hIdx}`}
                                   onError={(e) => {
-                                    e.currentTarget.onerror = null;
-                                    e.currentTarget.src = '/images/charm_feed_1.jpg';
+                                    e.currentTarget.style.display = 'none';
                                   }}
                                   className="w-full h-full object-cover"
                                 />
@@ -4874,8 +4883,7 @@ export default function AdminPage() {
                                 src={imgUrl}
                                 alt={`Preview ${imgIdx}`}
                                 onError={(e) => {
-                                  e.currentTarget.onerror = null;
-                                  e.currentTarget.src = '/images/charm_feed_1.jpg';
+                                  e.currentTarget.style.display = 'none';
                                 }}
                                 className="w-full h-full object-cover"
                               />
@@ -5204,11 +5212,20 @@ export default function AdminPage() {
 
             {/* Product Quick Info Card */}
             <div className="flex items-center gap-3.5 p-3.5 bg-emerald-50/40 rounded-2xl border border-emerald-200">
-              <img
-                src={restockProduct.images?.[0] || '/images/charm_feed_1.jpg'}
-                alt={restockProduct.name}
-                className="w-14 h-14 rounded-xl object-cover border border-emerald-200 bg-white flex-shrink-0"
-              />
+              {restockProduct.images?.[0] ? (
+                <img
+                  src={restockProduct.images[0]}
+                  alt={restockProduct.name}
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                  className="w-14 h-14 rounded-xl object-cover border border-emerald-200 bg-white flex-shrink-0"
+                />
+              ) : (
+                <div className="w-14 h-14 rounded-xl border border-emerald-200 bg-emerald-100 flex items-center justify-center text-lg flex-shrink-0">
+                  🌸
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
                   {restockProduct.categoryName || restockProduct.category}

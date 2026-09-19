@@ -222,11 +222,20 @@ export default function CartDrawer() {
                         className="w-4 h-4 rounded text-rose-600 focus:ring-rose-400 cursor-pointer shrink-0"
                         title="Tick chọn tất cả các màu của sản phẩm này"
                       />
-                      <img
-                        src={group.product.images[0] || '/images/charm_feed_1.jpg'}
-                        alt={group.product.name}
-                        className="w-10 h-10 sm:w-11 sm:h-11 object-cover rounded-xl border border-stone-200 shrink-0 bg-white"
-                      />
+                      {group.product?.images?.[0] ? (
+                        <img
+                          src={group.product.images[0]}
+                          alt={group.product.name}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                          className="w-10 h-10 sm:w-11 sm:h-11 object-cover rounded-xl border border-stone-200 shrink-0 bg-stone-50"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl border border-stone-200 shrink-0 bg-stone-100 flex items-center justify-center text-xs">
+                          🌸
+                        </div>
+                      )}
                       <div className="min-w-0">
                         <h4 className="text-xs font-black text-stone-800 line-clamp-1">
                           {group.product.name}

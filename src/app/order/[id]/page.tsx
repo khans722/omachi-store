@@ -454,11 +454,20 @@ export default function OrderTrackingPage() {
             {order.items.map((item) => (
               <div key={item.id} className="pt-3 first:pt-0 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-3">
-                  <img
-                    src={item.product.images[0] || '/images/charm_feed_1.jpg'}
-                    alt={item.product.name}
-                    className="w-12 h-12 object-cover rounded-xl border border-pink-100 flex-shrink-0"
-                  />
+                  {item.product?.images?.[0] ? (
+                    <img
+                      src={item.product.images[0]}
+                      alt={item.product?.name || 'Sản phẩm'}
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                      className="w-12 h-12 object-cover rounded-xl border border-pink-100 flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl border border-pink-100 flex-shrink-0 bg-pink-50 flex items-center justify-center text-xs">
+                      🌸
+                    </div>
+                  )}
                   <div>
                     <p className="font-bold text-gray-800">{item.product.name}</p>
                     <p className="text-[10px] text-pink-600">
