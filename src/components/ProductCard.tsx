@@ -165,6 +165,7 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
             </div>
 
             <button
+              type="button"
               onClick={handleOpenQuickSelect}
               className={`w-8 h-8 sm:w-auto sm:h-9 px-0 sm:px-3 rounded-full border ${style.btnAction || 'bg-rose-50 text-rose-600 border-rose-200'} font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 shadow-2xs shrink-0 cursor-pointer`}
               title="Chọn phân loại & Mua hàng"

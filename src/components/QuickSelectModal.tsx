@@ -22,37 +22,51 @@ export default function QuickSelectModal({ product, isOpen, onClose }: QuickSele
   const { theme } = useTheme();
   const previewImgRef = useRef<HTMLImageElement>(null);
 
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(
-    product.variants && product.variants.length > 0 ? product.variants[0] : undefined
-  );
-  const minQty = Math.max(1, Number(product.minOrderQuantity || 1));
-  const stepQty = Math.max(1, Number(product.stepQuantity || 1));
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(() => {
+    if (Array.isArray(product?.variants) && product.variants.length > 0) {
+      return product.variants.find((v) => (v.stock ?? 0) > 0) || product.variants[0];
+    }
+    return undefined;
+  });
+  const minQty = Math.max(1, Number(product?.minOrderQuantity || 1));
+  const stepQty = Math.max(1, Number(product?.stepQuantity || 1));
 
   const [quantity, setQuantity] = useState(minQty);
   const [errorMsg, setErrorMsg] = useState('');
 
   // Reset when product changes or modal opens
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && product) {
       const initialMin = Math.max(1, Number(product.minOrderQuantity || 1));
-      setSelectedVariant(product.variants && product.variants.length > 0 ? product.variants[0] : undefined);
+      if (Array.isArray(product.variants) && product.variants.length > 0) {
+        setSelectedVariant((prev) => {
+          if (prev && product.variants?.some((v) => v.id === prev.id)) return prev;
+          return product.variants?.find((v) => (v.stock ?? 0) > 0) || product.variants?.[0];
+        });
+      } else {
+        setSelectedVariant(undefined);
+      }
       setQuantity(initialMin);
       setErrorMsg('');
+      setImgError(false);
     }
   }, [isOpen, product]);
 
   const smartPricing = useMemo(() => {
+    if (!product) return { unitPrice: 0, itemsToNextTier: 0, savings: 0, discountPercent: 0 };
     return calculateSmartUnitPrice(product.basePrice, quantity, product.comboTiers);
-  }, [product.basePrice, quantity, product.comboTiers]);
+  }, [product?.basePrice, quantity, product?.comboTiers]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !product) return null;
 
   const unitPrice = selectedVariant?.price ?? smartPricing.unitPrice;
-  const totalPrice = unitPrice * quantity;
+  const totalPrice = (Number(unitPrice) || 0) * (Number(quantity) || 1);
 
   // Stock calculations
   const availableStock =
-    selectedVariant?.stock !== undefined ? selectedVariant.stock : product.stock || 999;
+    selectedVariant?.stock !== undefined
+      ? Number(selectedVariant.stock) || 0
+      : Number(product?.stock) || 999;
 
   const [imgError, setImgError] = useState(false);
 
