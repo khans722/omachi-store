@@ -47,38 +47,56 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
  * để tính mốc giá sỉ bậc thang tốt nhất cho toàn bộ các màu đó!
  */
 function applyWholesalePricing(cartItems: CartItem[]): CartItem[] {
+  if (!Array.isArray(cartItems)) return [];
+  
   // 1. Tính tổng số lượng của từng mã sản phẩm trong giỏ (gộp tất cả các màu)
   const productTotalQuantities: Record<string, number> = {};
   for (const item of cartItems) {
-    if (item.product.comboTiers && item.product.comboTiers.length > 0) {
-      const pId = item.product.id;
-      productTotalQuantities[pId] = (productTotalQuantities[pId] || 0) + item.quantity;
+    if (!item || !item.product) continue;
+    if (Array.isArray(item.product.comboTiers) && item.product.comboTiers.length > 0) {
+      const pId = String(item.product.id);
+      productTotalQuantities[pId] = (productTotalQuantities[pId] || 0) + (Number(item.quantity) || 1);
     }
   }
 
   // 2. Tự động cập nhật đơn giá theo mốc sỉ của tổng số lượng đó
-  return cartItems.map((item) => {
-    if (item.product.comboTiers && item.product.comboTiers.length > 0) {
-      const totalQty = productTotalQuantities[item.product.id] || item.quantity;
-      const smart = calculateSmartUnitPrice(
-        item.product.basePrice,
-        totalQty,
-        item.product.comboTiers
-      );
+  return cartItems
+    .filter((item) => item && item.product && item.id)
+    .map((item) => {
+      const basePrice = Number(item.product.basePrice) || 0;
+      const qty = Math.max(1, Number(item.quantity) || 1);
 
-      // Nếu có chênh lệch giá do packageOption / variant đặc biệt (so với basePrice) thì giữ phần phụ thu
-      const variantExtra = Math.max(0, (item.selectedPackage?.price ?? item.selectedVariant?.price ?? item.product.basePrice) - item.product.basePrice);
-      const finalUnitPrice = smart.unitPrice + variantExtra;
+      if (Array.isArray(item.product.comboTiers) && item.product.comboTiers.length > 0) {
+        const totalQty = productTotalQuantities[String(item.product.id)] || qty;
+        const smart = calculateSmartUnitPrice(
+          basePrice,
+          totalQty,
+          item.product.comboTiers
+        );
 
+        const variantExtra = Math.max(
+          0,
+          (Number(item.selectedPackage?.price ?? item.selectedVariant?.price ?? basePrice) || basePrice) - basePrice
+        );
+        const finalUnitPrice = (Number(smart.unitPrice) || basePrice) + variantExtra;
+
+        return {
+          ...item,
+          quantity: qty,
+          unitPrice: finalUnitPrice,
+          appliedTier: smart.appliedTier,
+          totalPrice: finalUnitPrice * qty,
+        };
+      }
+
+      const itemUnitPrice = Number(item.selectedPackage?.price ?? item.selectedVariant?.price ?? item.unitPrice ?? basePrice) || basePrice;
       return {
         ...item,
-        unitPrice: finalUnitPrice,
-        appliedTier: smart.appliedTier,
-        totalPrice: finalUnitPrice * item.quantity,
+        quantity: qty,
+        unitPrice: itemUnitPrice,
+        totalPrice: itemUnitPrice * qty,
       };
-    }
-    return item;
-  });
+    });
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
@@ -94,10 +112,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const parsed = JSON.parse(saved);
         // Ensure every item has selected property (default true)
         const normalized = Array.isArray(parsed)
-          ? parsed.map((it: CartItem) => ({
-              ...it,
-              selected: it.selected !== undefined ? it.selected : true,
-            }))
+          ? parsed
+              .filter((it) => it && it.product && typeof it.product === 'object' && it.id)
+              .map((it: CartItem) => ({
+                ...it,
+                quantity: Math.max(1, Number(it.quantity) || 1),
+                selected: it.selected !== false,
+              }))
           : [];
         // Tự động đồng bộ lại giá sỉ theo tổng số lượng các màu
         setItems(applyWholesalePricing(normalized));
@@ -127,41 +148,47 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     packageOption?: ProductPackageOption,
     openDrawer = false
   ) => {
+    if (!product || !product.id) return;
+
     const minQty = Math.max(1, Number(product.minOrderQuantity) || 1);
     const stepQty = Math.max(1, Number(product.stepQuantity) || 1);
-    let validQuantity = Math.max(minQty, quantity);
+    let validQuantity = Math.max(minQty, Number(quantity) || 1);
     if (validQuantity > minQty && (validQuantity - minQty) % stepQty !== 0) {
       validQuantity = minQty + Math.ceil((validQuantity - minQty) / stepQty) * stepQty;
     }
 
     setItems((prevItems) => {
+      const safePrev = Array.isArray(prevItems) ? prevItems : [];
       const cartItemId = `${product.id}-${variant?.id || 'default'}-${packageOption?.id || 'standard'}`;
-      const existingIndex = prevItems.findIndex((item) => item.id === cartItemId);
+      const existingIndex = safePrev.findIndex((item) => item?.id === cartItemId);
 
       let newQuantity = validQuantity;
-      if (existingIndex > -1) {
-        newQuantity = prevItems[existingIndex].quantity + validQuantity;
+      if (existingIndex > -1 && safePrev[existingIndex]) {
+        newQuantity = (Number(safePrev[existingIndex].quantity) || 0) + validQuantity;
       }
+
+      const basePrice = Number(product.basePrice) || 0;
+      const unitPrice = Number(packageOption?.price ?? variant?.price ?? basePrice) || basePrice;
 
       const rawItem: CartItem = {
         id: cartItemId,
         product,
         selectedVariant: variant,
         selectedPackage: packageOption,
-        customNote: customNote || (existingIndex > -1 ? prevItems[existingIndex].customNote : undefined),
+        customNote: customNote || (existingIndex > -1 ? safePrev[existingIndex]?.customNote : undefined),
         quantity: newQuantity,
-        unitPrice: packageOption?.price ?? variant?.price ?? product.basePrice,
+        unitPrice: unitPrice,
         appliedTier: undefined,
-        totalPrice: (packageOption?.price ?? variant?.price ?? product.basePrice) * newQuantity,
+        totalPrice: unitPrice * newQuantity,
         selected: true,
       };
 
       let newItems: CartItem[];
       if (existingIndex > -1) {
-        newItems = [...prevItems];
+        newItems = [...safePrev];
         newItems[existingIndex] = rawItem;
       } else {
-        newItems = [...prevItems, rawItem];
+        newItems = [...safePrev, rawItem];
       }
 
       // Chuẩn sàn 1688: Tự động gom tất cả các màu để tính mốc giá sỉ chung
@@ -180,9 +207,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     customNote?: string,
     packageOption?: ProductPackageOption
   ) => {
+    if (!product || !product.id) return;
+
     const minQty = Math.max(1, Number(product.minOrderQuantity) || 1);
     const stepQty = Math.max(1, Number(product.stepQuantity) || 1);
-    let validQuantity = Math.max(minQty, quantity);
+    let validQuantity = Math.max(minQty, Number(quantity) || 1);
     if (validQuantity > minQty && (validQuantity - minQty) % stepQty !== 0) {
       validQuantity = minQty + Math.ceil((validQuantity - minQty) / stepQty) * stepQty;
     }
@@ -190,10 +219,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const targetId = `${product.id}-${variant?.id || 'default'}-${packageOption?.id || 'standard'}`;
 
     setItems((prevItems) => {
+      const safePrev = Array.isArray(prevItems) ? prevItems : [];
       // Chuẩn Shopee: Bỏ chọn các món khác trong giỏ, chỉ tick chọn món bấm Mua Ngay để thanh toán
-      const unselectedOthers: CartItem[] = prevItems.map((it) => ({ ...it, selected: false }));
-      const existingIndex = unselectedOthers.findIndex((item) => item.id === targetId);
-      const totalQty = existingIndex > -1 ? unselectedOthers[existingIndex].quantity + validQuantity : validQuantity;
+      const unselectedOthers: CartItem[] = safePrev.map((it) => ({ ...it, selected: false }));
+      const existingIndex = unselectedOthers.findIndex((item) => item?.id === targetId);
+      const totalQty = existingIndex > -1 ? (Number(unselectedOthers[existingIndex].quantity) || 0) + validQuantity : validQuantity;
+
+      const basePrice = Number(product.basePrice) || 0;
+      const unitPrice = Number(packageOption?.price ?? variant?.price ?? basePrice) || basePrice;
 
       const targetItem: CartItem = {
         id: targetId,
@@ -202,9 +235,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         selectedPackage: packageOption,
         customNote,
         quantity: totalQty,
-        unitPrice: packageOption?.price ?? variant?.price ?? product.basePrice,
+        unitPrice: unitPrice,
         appliedTier: undefined,
-        totalPrice: (packageOption?.price ?? variant?.price ?? product.basePrice) * totalQty,
+        totalPrice: unitPrice * totalQty,
         selected: true,
       };
 
@@ -229,14 +262,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
 
     setItems((prevItems) => {
-      const updated = prevItems.map((item) => {
-        if (item.id === cartItemId) {
+      const safePrev = Array.isArray(prevItems) ? prevItems : [];
+      const updated = safePrev.map((item) => {
+        if (item?.id === cartItemId && item?.product) {
           const minQty = Math.max(1, Number(item.product.minOrderQuantity) || 1);
-          const clampedQty = Math.max(minQty, newQuantity);
+          const clampedQty = Math.max(minQty, Number(newQuantity) || 1);
           return {
             ...item,
             quantity: clampedQty,
-            totalPrice: item.unitPrice * clampedQty,
+            totalPrice: (Number(item.unitPrice) || 0) * clampedQty,
           };
         }
         return item;
@@ -246,7 +280,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const removeItem = (cartItemId: string) => {
-    setItems((prev) => applyWholesalePricing(prev.filter((item) => item.id !== cartItemId)));
+    setItems((prev) => {
+      const safePrev = Array.isArray(prev) ? prev : [];
+      return applyWholesalePricing(safePrev.filter((item) => item?.id !== cartItemId));
+    });
   };
 
   const clearCart = () => {
@@ -254,41 +291,50 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const toggleSelectItem = (cartItemId: string) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === cartItemId ? { ...item, selected: !item.selected } : item
-      )
-    );
+    setItems((prev) => {
+      const safePrev = Array.isArray(prev) ? prev : [];
+      return safePrev.map((item) =>
+        item?.id === cartItemId ? { ...item, selected: !item.selected } : item
+      );
+    });
   };
 
   const toggleSelectAll = (selected: boolean) => {
-    setItems((prev) => prev.map((item) => ({ ...item, selected })));
+    setItems((prev) => {
+      const safePrev = Array.isArray(prev) ? prev : [];
+      return safePrev.map((item) => ({ ...item, selected }));
+    });
   };
 
   const toggleSelectProductGroup = (productId: string, selected: boolean) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.product.id === productId ? { ...item, selected } : item
-      )
-    );
+    setItems((prev) => {
+      const safePrev = Array.isArray(prev) ? prev : [];
+      return safePrev.map((item) =>
+        item?.product?.id === productId ? { ...item, selected } : item
+      );
+    });
   };
 
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
+  const totalItems = items.reduce((sum, item) => sum + (Number(item?.quantity) || 0), 0);
+  const subtotal = items.reduce((sum, item) => sum + (Number(item?.totalPrice) || 0), 0);
   
   // Calculate total savings compared to base single item price
   const totalSavings = items.reduce((sum, item) => {
-    const originalPrice = item.product.basePrice * item.quantity;
-    return sum + Math.max(0, originalPrice - item.totalPrice);
+    const basePrice = Number(item?.product?.basePrice) || 0;
+    const qty = Number(item?.quantity) || 0;
+    const originalPrice = basePrice * qty;
+    return sum + Math.max(0, originalPrice - (Number(item?.totalPrice) || 0));
   }, 0);
 
   // Selected items calculations
-  const selectedItems = items.filter((it) => it.selected !== false);
-  const selectedTotalItems = selectedItems.reduce((sum, item) => sum + item.quantity, 0);
-  const selectedSubtotal = selectedItems.reduce((sum, item) => sum + item.totalPrice, 0);
+  const selectedItems = items.filter((it) => it && it.selected !== false);
+  const selectedTotalItems = selectedItems.reduce((sum, item) => sum + (Number(item?.quantity) || 0), 0);
+  const selectedSubtotal = selectedItems.reduce((sum, item) => sum + (Number(item?.totalPrice) || 0), 0);
   const selectedTotalSavings = selectedItems.reduce((sum, item) => {
-    const originalPrice = item.product.basePrice * item.quantity;
-    return sum + Math.max(0, originalPrice - item.totalPrice);
+    const basePrice = Number(item?.product?.basePrice) || 0;
+    const qty = Number(item?.quantity) || 0;
+    const originalPrice = basePrice * qty;
+    return sum + Math.max(0, originalPrice - (Number(item?.totalPrice) || 0));
   }, 0);
 
   const isAllSelected = items.length > 0 && selectedItems.length === items.length;

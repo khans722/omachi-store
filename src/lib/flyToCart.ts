@@ -54,19 +54,27 @@ export function flyToCart(
   let startX = window.innerWidth / 2;
   let startY = window.innerHeight / 2;
 
-  if (source) {
-    if ('getBoundingClientRect' in source && typeof (source as HTMLElement).getBoundingClientRect === 'function') {
-      const rect = (source as HTMLElement).getBoundingClientRect();
-      startX = rect.left + rect.width / 2;
-      startY = rect.top + rect.height / 2;
-    } else if ('clientX' in source && 'clientY' in source) {
-      startX = (source as MouseEvent).clientX;
-      startY = (source as MouseEvent).clientY;
-    } else if ('x' in source && 'y' in source) {
-      startX = (source as { x: number; y: number }).x;
-      startY = (source as { x: number; y: number }).y;
-    }
+  if (source && typeof source === 'object') {
+    try {
+      if (typeof (source as HTMLElement).getBoundingClientRect === 'function') {
+        const rect = (source as HTMLElement).getBoundingClientRect();
+        if (rect && (rect.width > 0 || rect.height > 0 || rect.top !== 0 || rect.left !== 0)) {
+          startX = rect.left + rect.width / 2;
+          startY = rect.top + rect.height / 2;
+        }
+      } else if (typeof (source as MouseEvent).clientX === 'number' && typeof (source as MouseEvent).clientY === 'number') {
+        startX = (source as MouseEvent).clientX;
+        startY = (source as MouseEvent).clientY;
+      } else if (typeof (source as { x: number; y: number }).x === 'number' && typeof (source as { x: number; y: number }).y === 'number') {
+        startX = (source as { x: number; y: number }).x;
+        startY = (source as { x: number; y: number }).y;
+      }
+    } catch (_) {}
   }
+
+  // Fallback nếu không phải số hữu hạn
+  if (!Number.isFinite(startX)) startX = window.innerWidth / 2;
+  if (!Number.isFinite(startY)) startY = window.innerHeight / 2;
 
   // 2. Tìm toạ độ đích (Icon Giỏ Hàng)
   let targetX = window.innerWidth - 60;
@@ -76,24 +84,28 @@ export function flyToCart(
   // Ưu tiên thanh điều hướng đáy di động nếu đang hiển thị
   const bottomCart = document.getElementById('bottom-cart-btn');
   if (bottomCart) {
-    const rect = bottomCart.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0 && rect.top < window.innerHeight && rect.bottom > 0) {
-      targetX = rect.left + rect.width / 2;
-      targetY = rect.top + rect.height / 2;
-      targetEl = bottomCart;
-    }
+    try {
+      const rect = bottomCart.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0 && rect.top < window.innerHeight && rect.bottom > 0) {
+        targetX = rect.left + rect.width / 2;
+        targetY = rect.top + rect.height / 2;
+        targetEl = bottomCart;
+      }
+    } catch (_) {}
   }
 
   // Nếu không thấy đáy di động, tìm giỏ hàng trên Navbar (Desktop hoặc Mobile Header)
   if (!targetEl) {
     const navCart = document.getElementById('navbar-cart-btn');
     if (navCart) {
-      const rect = navCart.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
-        targetX = rect.left + rect.width / 2;
-        targetY = rect.top + rect.height / 2;
-        targetEl = navCart;
-      }
+      try {
+        const rect = navCart.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          targetX = rect.left + rect.width / 2;
+          targetY = rect.top + rect.height / 2;
+          targetEl = navCart;
+        }
+      } catch (_) {}
     }
   }
 
@@ -101,14 +113,19 @@ export function flyToCart(
   if (!targetEl) {
     const stickyCart = document.getElementById('product-sticky-cart-btn');
     if (stickyCart) {
-      const rect = stickyCart.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
-        targetX = rect.left + rect.width / 2;
-        targetY = rect.top + rect.height / 2;
-        targetEl = stickyCart;
-      }
+      try {
+        const rect = stickyCart.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          targetX = rect.left + rect.width / 2;
+          targetY = rect.top + rect.height / 2;
+          targetEl = stickyCart;
+        }
+      } catch (_) {}
     }
   }
+
+  if (!Number.isFinite(targetX)) targetX = window.innerWidth - 60;
+  if (!Number.isFinite(targetY)) targetY = 40;
 
   // 3. Tạo phần tử ảnh bay (Flyer)
   const flyer = document.createElement('div');

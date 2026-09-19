@@ -19,15 +19,33 @@ export default function ProductDetailPage() {
 
   const productId = params?.id as string;
   const initialFound = INITIAL_PRODUCTS.find((p) => p.id === productId || p.slug === productId);
-  const [product, setProduct] = useState<Product | undefined>(initialFound);
+  const [product, setProduct] = useState<Product | undefined>(() => {
+    if (initialFound) return initialFound;
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('omachi_products_cache');
+        if (cached) {
+          const list = JSON.parse(cached);
+          if (Array.isArray(list)) {
+            return list.find((p: Product) => p.id === productId || p.slug === productId);
+          }
+        }
+      } catch (_) {}
+    }
+    return undefined;
+  });
 
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(
-    initialFound?.variants && initialFound.variants.length > 0
-      ? initialFound.variants.find((v) => (v.stock ?? 0) > 0) || initialFound.variants[0]
-      : undefined
-  );
+  const [isLoading, setIsLoading] = useState(!initialFound && !product);
 
-  const [quantity, setQuantity] = useState<number>(initialFound?.minOrderQuantity || 1);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(() => {
+    const p = initialFound || product;
+    if (Array.isArray(p?.variants) && p.variants.length > 0) {
+      return p.variants.find((v) => (v.stock ?? 0) > 0) || p.variants[0];
+    }
+    return undefined;
+  });
+
+  const [quantity, setQuantity] = useState<number>(initialFound?.minOrderQuantity || product?.minOrderQuantity || 1);
   const [customNote, setCustomNote] = useState('');
   const [variantError, setVariantError] = useState(false);
   const [warningToast, setWarningToast] = useState<string | null>(null);
@@ -35,7 +53,7 @@ export default function ProductDetailPage() {
 
   const [mainImgError, setMainImgError] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string>(
-    initialFound?.images?.[0] || ''
+    initialFound?.images?.[0] || product?.images?.[0] || ''
   );
   const hasValidMainImage = Boolean(selectedImage) && !mainImgError;
   const [isAddedToast, setIsAddedToast] = useState(false);
@@ -70,10 +88,10 @@ export default function ProductDetailPage() {
             if (found.minOrderQuantity && found.minOrderQuantity > 1) {
               setQuantity(found.minOrderQuantity);
             }
-            if (found.variants && found.variants.length > 0) {
+            if (Array.isArray(found.variants) && found.variants.length > 0) {
               setSelectedVariant((prev) => prev || found.variants.find((v: any) => (v.stock ?? 0) > 0) || found.variants[0]);
             }
-            if (found.images && found.images[0]) {
+            if (Array.isArray(found.images) && found.images[0]) {
               setSelectedImage(found.images[0]);
               setMainImgError(false);
             }
@@ -81,6 +99,8 @@ export default function ProductDetailPage() {
         }
       } catch (e) {
         console.error(e);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchLatest();
@@ -176,6 +196,17 @@ export default function ProductDetailPage() {
 
   const curr = themeConfig[theme] || themeConfig.green;
 
+  if (isLoading) {
+    return (
+      <div className="py-24 text-center space-y-4 max-w-5xl mx-auto animate-pulse">
+        <div className="w-16 h-16 mx-auto rounded-2xl bg-pink-100 flex items-center justify-center text-2xl">
+          🌸
+        </div>
+        <p className="text-xs font-bold text-stone-500">Đang tải thông tin sản phẩm...</p>
+      </div>
+    );
+  }
+
   if (!product) {
     return (
       <div className="py-20 text-center space-y-4">
@@ -201,7 +232,7 @@ export default function ProductDetailPage() {
   }, [product?.basePrice, quantity, product?.comboTiers]);
 
   const sortedComboTiers = useMemo(() => {
-    if (!product?.comboTiers || product.comboTiers.length === 0) return [];
+    if (!product?.comboTiers || !Array.isArray(product.comboTiers) || product.comboTiers.length === 0) return [];
     return [...product.comboTiers].sort((a, b) => a.minQuantity - b.minQuantity);
   }, [product?.comboTiers]);
 
@@ -213,21 +244,28 @@ export default function ProductDetailPage() {
   const stepQty = Math.max(1, Number(product?.stepQuantity || 1));
 
   const totalStockCount =
-    product.variants && product.variants.length > 0
+    Array.isArray(product?.variants) && product.variants.length > 0
       ? product.variants.reduce((acc, v) => acc + (v.stock || 0), 0)
-      : product.stock || 0;
+      : product?.stock || 0;
 
   const maxAvailable =
-    selectedVariant?.stock !== undefined ? Math.max(0, selectedVariant.stock) : product.stock || 9999;
+    selectedVariant?.stock !== undefined ? Math.max(0, selectedVariant.stock) : product?.stock || 9999;
+
+  const getEffectiveVariant = (): ProductVariant | undefined => {
+    if (selectedVariant) return selectedVariant;
+    if (Array.isArray(product?.variants) && product.variants.length > 0) {
+      return product.variants.find((v) => (v.stock ?? 0) > 0) || product.variants[0];
+    }
+    return undefined;
+  };
 
   const validateSelection = (): boolean => {
-    let activeVariant = selectedVariant;
-    if (product.variants && product.variants.length > 0 && !activeVariant) {
-      activeVariant = product.variants.find((v) => (v.stock ?? 0) > 0) || product.variants[0];
+    const activeVariant = getEffectiveVariant();
+    if (activeVariant && !selectedVariant) {
       setSelectedVariant(activeVariant);
     }
 
-    if (activeVariant && (activeVariant.stock ?? 0) <= 0 && (product.stock ?? 0) <= 0) {
+    if (activeVariant && (activeVariant.stock ?? 0) <= 0 && (product?.stock ?? 0) <= 0) {
       setWarningToast(`⚠️ Mẫu "${activeVariant.name}" hiện đã hết hàng, vui lòng chọn mẫu khác nhé!`);
       setTimeout(() => setWarningToast(null), 3000);
       return false;
@@ -246,22 +284,29 @@ export default function ProductDetailPage() {
   };
 
   const handleAddToCart = (e?: React.MouseEvent) => {
-    if (!validateSelection()) return;
+    if (!validateSelection() || !product) return;
+
+    const activeVariant = getEffectiveVariant();
 
     // Hiệu ứng ảnh sản phẩm bay vào giỏ hàng
-    const currentImg = selectedImage || selectedVariant?.image || selectedVariant?.imageUrl || product.images?.[0] || '';
-    flyToCart(e?.currentTarget, currentImg);
+    try {
+      const currentImg = selectedImage || activeVariant?.image || activeVariant?.imageUrl || product.images?.[0] || '';
+      flyToCart(e?.currentTarget, currentImg);
+    } catch (err) {
+      console.error(err);
+    }
 
-    addItem(product, quantity, selectedVariant, customNote, undefined, false);
+    addItem(product, quantity, activeVariant, customNote, undefined, false);
     setIsMobileSheetOpen(false);
     setIsAddedToast(true);
     setTimeout(() => setIsAddedToast(false), 2500);
   };
 
   const handleBuyNow = () => {
-    if (!validateSelection()) return;
+    if (!validateSelection() || !product) return;
 
-    buyNow(product, quantity, selectedVariant, customNote, undefined);
+    const activeVariant = getEffectiveVariant();
+    buyNow(product, quantity, activeVariant, customNote, undefined);
     setIsMobileSheetOpen(false);
     router.push('/checkout');
   };
